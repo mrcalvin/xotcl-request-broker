@@ -160,9 +160,45 @@ ImplementationSelector ad_instproc selectImpl {implLabel} {} {
 		#my log "++++ init of [self] called."
 		my instvar selector
 		my set selector [eval ::xorb::ImplementationSelector is]		
-		#my log "++++ $selector created."	
+		
+		my set identityTable(::xorb::ServiceContract) [list]
+		my set identityTable(::xorb::ServiceImplementation) [list]	
 
 }
+
+SCBroker ad_proc add {obj} {} {
+
+	# create / store identity hash in Broker's identity table
+	set v [ArrayListBuilderVisitor new]
+	$obj accept $v
+	
+	my log "+++ contract name: [$obj label]"
+	my log "+++ contract hash: [ns_sha1 [$v asString]]"
+	my log "+++ serialized contract: [$v asString]"
+	
+	set hash [ns_sha1 [$v asString]]
+	eval my set identityTable([$obj info class],$hash) $hash 
+    
+}
+
+SCBroker ad_proc getIdentities {type} {} {
+	
+	my instvar {identityTable it}
+	#my log "++++ retrieved: $type"
+	
+	#set result [list]
+	foreach {key value} [array get it] {
+	
+		my log "++++ ($key) ==> $value"
+		#lappend result $key
+	}
+	#set pattern "$type,*"
+	set result [array names it $type,*]
+	#my log "+++++ processed identities: $result"
+	return $result
+		
+}
+
 SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 
 	my instvar selector
@@ -175,8 +211,8 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	set impls	[$selector selectImpl $implLabel]
 	
 	#my log "identified contract: $contract"
-	my log "identified impl: $impls"
-	my log "$impls's method arsenal: [$impls info instprocs]"
+	#my log "identified impl: $impls"
+	#my log "$impls's method arsenal: [$impls info instprocs]"
 	
 	# strip off child objects for the purpose of serialization
 	
@@ -202,7 +238,7 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	set serializedCode	[eval ::Serializer deepSerialize $itemsToSerialize [list -map {"::xorb::ServiceContractRepository" "" "::xorb::ServiceImplRepository" ""}]]
 	
 	
-	my log "++++++ serializedCode (Broker) -> $serializedCode"
+	#my log "++++++ serializedCode (Broker) -> $serializedCode"
 	return [list $contract $impls $serializedCode]
 	
 
@@ -213,15 +249,21 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	db_foreach defined_contracts_with_installed_binds {
 	
 			select distinct ctrs.contract_name, ctrs.contract_id, ctrs.contract_desc         
-    		from   	acs_sc_bindings binds,
-           			acs_sc_contracts ctrs
-    		where  ctrs.contract_id = binds.contract_id 
+    		from   	acs_sc_contracts ctrs
+    		
+    		 
 	
 	} {
 	
+	#where  ctrs.contract_id = binds.contract_id, where ctrs.contract_id = 2136
 	#my log "contract_id: $contract_id, contract_name: $contract_name, contract_desc: $contract_desc"
 	set contrObj [eval ServiceContract [self]::[my autoname SContr] -mixin ::xorb::Recoverable -id $contract_id -label $contract_name -description {$contract_desc}]
 	#my log "Created and nested $contrObj"
+	my log "~~~~ [$contrObj info methods]"
+	my log "~~~~ [::Serializer deepSerialize $contrObj]"
+	
+	SCBroker add $contrObj
+	
 	}
 
 	#my show [self]
@@ -261,6 +303,8 @@ ServiceContractRepository ad_proc show {obj} {} {
 	
 	
 	set implObj [eval ServiceImplementation [self]::[my autoname SImpl] -mixin ::xorb::Recoverable -id $impl_id -label {$impl_name} -prettyName {$impl_pretty_name} -owner {$impl_contract_name} -contractName $impl_contract_name]
+	
+	#SCBroker add $implObj
 		
 	#my log "Created and nested $implObj"
 	

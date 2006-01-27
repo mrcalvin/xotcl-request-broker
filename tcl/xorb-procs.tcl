@@ -1,3 +1,11 @@
+ad_library {
+    
+    xorb core library
+    
+}
+
+
+
 #########################################################
 #
 # 	to-dos:
@@ -59,15 +67,10 @@ namespace eval xorb {
 	ServiceContract ad_instproc init {} {} { 
 		
 		
-		#my log "Dispatch of class builder for [self]."
-		my accept [::xorb::ClassBuilderVisitor new]
-		my log "+++ after contr init (methods)[my info methods]."
-		my log "+++ after contr init (instprocs) [my info instprocs]."
-		
-		# cleanup (mixins)
-		
+			
 		if {[lsearch [my info mixin] "::xorb::Recoverable"] != -1} {
 		
+			my accept [::xorb::ClassBuilderVisitor new]
 			my mixin delete "::xorb::Recoverable"
 		
 		}
@@ -150,14 +153,14 @@ namespace eval xorb {
 	ServiceImplementation ad_instproc init {} {} {	
 	
 		#my log "Dispatch of class builder for [self]."
-		my accept [::xorb::ClassBuilderVisitor new]
+		#my accept [::xorb::ClassBuilderVisitor new]
 		#my log "+++ after impl init (methods)[my info methods]."
 		#my log "+++ after impl init (instprocs) [my info instprocs]."
 		
 		# cleanup (mixins)
 		
 		if {[lsearch [my info mixin] "::xorb::Recoverable"] != -1} {
-		
+			my accept [::xorb::ClassBuilderVisitor new]
 			my mixin delete "::xorb::Recoverable"
 		
 		}
@@ -194,6 +197,101 @@ namespace eval xorb {
 	
 	}
 	
+
+#  set spec {
+ #       name "Action_SideEffect"
+  #      description "Get the name of the side effect to create action"
+   #     operations {
+    #        GetObjectTypes {
+#                description "Get the object types for which this implementation is valid."
+#               output { object_types:string,multiple }
+#                iscachable_p "t"
+#            }
+#            GetPrettyName { 
+#                description "Get the pretty name of this implementation."
+#                output { pretty_name:string }
+#                iscachable_p "t"
+#            }
+#            DoSideEffect {
+#                description "Do the side effect"
+#                input {
+#                    case_id:integer
+#                    object_id:integer
+#                    action_id:integer
+#                    entry_id:integer
+#                }
+#            }
+#        } 
+#    }  
+
+::xotcl::Class ArrayListBuilderVisitor
+
+ArrayListBuilderVisitor ad_instproc init {} {} {
+
+		my set strBuffer ""
+		my set strOpBuffer ""
+
+} 
+
+ArrayListBuilderVisitor ad_instproc visit {obj} {} {
+
+	if {[my isobject $obj]} {
+	
+		eval my [namespace tail [$obj info class]] $obj 
+	
+	}
+
+}
+
+ArrayListBuilderVisitor ad_instproc asString {} {} {
+
+	if {[my exists strBuffer] && [my exists strOpBuffer]} {
+		
+		#my log "+++++ strBuffer: [my set strBuffer], strOpBuffer: [my set strOpBuffer]"
+		return "[my set strBuffer] {[my set strOpBuffer]}"
+	}
+	
+}
+
+ArrayListBuilderVisitor ad_instproc ServiceContract {obj} {} {
+
+	my instvar strBuffer
+	
+	set strBuffer "name {[$obj label]} description {[$obj description]} operations "
+	#my log "++++++ strBuffer before: $strBuffer" 
+}
+
+ArrayListBuilderVisitor ad_instproc Operation {obj} {} {
+
+	my instvar strOpBuffer
+	
+	set tmpInput [list]
+	set tmpOutput [list]
+	
+	foreach signObj [$obj children] {
+					
+						if {[$signObj istype "::xorb::Input"]} {
+							
+							foreach argObj [$signObj children] {
+						
+								lappend tmpInput "[namespace tail $argObj]:[$argObj datatype]"
+
+							}
+						} elseif {[$signObj istype "::xorb::Output"]} {
+						
+							foreach argObj [$signObj children] {
+						
+								lappend tmpOutput "[namespace tail $argObj]:[$argObj datatype]"
+							}
+							
+						}
+					}  
+	
+	append strOpBuffer " [namespace tail $obj] {  description {[$obj description]} input {$tmpInput} output {$tmpOutput} }"  
+	
+	  
+
+}
 	
 ::xotcl::Class ClassBuilderVisitor
 
@@ -203,7 +301,8 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 	if {[my isobject $obj]} {
 	
 	my instvar cls
-	
+	my log "++++ isobj in CBV: [my isobject $obj]"
+	my log "+++ [$obj info methods]"
 	switch [$obj info class] {
 	
 		"::xorb::ServiceContract" {
@@ -221,13 +320,13 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				foreach alias [$obj info children] {
 				
-					append cmd "$cls ad_instproc [namespace tail $alias] args {} { set r \[next\]; my log \"++++ inside impl - args: \$r\"; eval [$alias servantMethod] \$r;} \n\n"
+					append cmd "$cls ad_instproc [namespace tail $alias] args {} { set r \[next\]; eval [$alias servantMethod] \$r;} \n\n"
 					#append cmd "$cls ad_instproc [namespace tail $alias] args {} { my log \"++++ inside impl - args: \$args\";  next} \n\n"
 					
 				
 				}
 		
-				my log "+++++ command set of $cls: $cmd"
+				#my log "+++++ command set of $cls: $cmd"
 			    eval $cmd
 		}		
 		"::xorb::Operation"	{
@@ -274,7 +373,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 					
 					append cmd "args}" " " "{$doc}" " " {{
 										
-							my log "i am here"			
+							#my log "i am here"			
 										
 							set reposArgs [list]
 							if {[[self class] exists posArgs([self proc])]} {
@@ -285,7 +384,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 							
 							}
 					
-							my log "++++ resposArgs: $reposArgs"
+							#my log "++++ resposArgs: $reposArgs"
 							return $reposArgs					
 					}}
 					
@@ -308,18 +407,29 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 	
 	
 	
-	::xotcl::Class Storable -parameter {spec}
-	Storable ad_instproc init {} {} {
+	::xotcl::Class Storable
 	
-		if {::xotcl::Object isobject $spec} {
-			if {$spec istype ::xorb::Specification} {
+	Storable ad_instproc init {} {} {
 			
-			acs_sc::contract::new_from_spec [$spec asArrayList]	
+			my label [namespace tail [self]]
+			set v [ArrayListBuilderVisitor new]
+			my accept $v
+			set arrListAsString [$v asString]
+			set hash [ns_sha1 $arrListAsString]
+			# verify whether impl / contract is already stores and registered with the Broker
+			
+			set identities [XorbContainer do ::xorb::SCBroker getIdentities [[self] info class]]
+			my log "++++++ identities collection ($hash)?: $identities"
+			my log "++++++ exists?: [lsearch -exact $identities [[self] info class],$hash]"
+		   	if {[lsearch -exact $identities [[self] info class],$hash] == -1} {
+			
+			my log "I will be stored!"
+			set type [expr {[my istype ::xorb::ServiceContract] ? "contract" : "impl"}]
+			#my log "+++++ arraylist for inserting $arrListAsString"
+			#acs_sc::${type}::new_from_spec -spec "$arrListAsString" 	
 			
 			}
-		}
-		
-		next
+			next
 	
 	}
 	
@@ -511,25 +621,25 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 		set contract [lindex $rawproxy 0]
 		set impls [lindex $rawproxy 1]
 		
-		#my log "+++ serialized proxy code: $serializedCode"
+		my log "+++ serialized proxy code: $serializedCode"
 		
 		eval $serializedCode
 		
 		#set proxy [eval [namespace tail $contract] [self]::[my autoname ServantProxy]]
 		set proxy [eval [namespace tail $contract] [self]::[my autoname ServantProxy] -mixin [namespace tail $impls]]
 		
-		my log "+++ $proxy created / methods: [$proxy info methods] / mixin: [$proxy info mixin]"
+		#my log "+++ $proxy created / methods: [$proxy info methods] / mixin: [$proxy info mixin]"
 	
 	# parse call args -> convert to nonpos args / implement checkoptions (string, integer, ...)
 	
 	set npArgs ""
 	
-	my log "+++++ proxy posArgs: [[$proxy info class] set posArgs($operation)], callArgs: $callArgs"
+	#my log "+++++ proxy posArgs: [[$proxy info class] set posArgs($operation)], callArgs: $callArgs"
 	
 	if {[[$proxy info class] exists posArgs($operation)]} {
 		foreach argName [[$proxy info class] set posArgs($operation)] argValue $callArgs {
 			
-			my log "+++++ npArgs: $npArgs, argName: $argName, argValue: $argValue"
+			#my log "+++++ npArgs: $npArgs, argName: $argName, argValue: $argValue"
 			expr {[string equal $argValue ""] ? "" : [append npArgs " " "-$argName $argValue"]} 
 	
 		}
@@ -538,9 +648,9 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 	
 	# invoke actual op
 	set cmd "$proxy $operation $npArgs"
-	my log "++++ actual invocation call: $cmd"
+	#my log "++++ actual invocation call: $cmd"
 	set r [eval $cmd]
-	my log "++++ result of invoc: $r"
+	#my log "++++ result of invoc: $r"
 	
 	# check restrictions on result value
 	

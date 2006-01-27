@@ -1,3 +1,10 @@
+ad_library {
+    
+    xorb auxiliary library
+    
+}
+
+
 ##################################################
 #
 # additional checkoptions for type verification
@@ -6,16 +13,16 @@
 #
 ##################################################
 
-::xotcl::nonposArgs proc string {argName {string ""}} {}
+::xotcl::nonposArgs ad_proc string {argName {string ""}} {} {}
 
-::xotcl::nonposArgs proc multiple {argName {list ""}} {
+::xotcl::nonposArgs ad_proc multiple {argName {list ""}} {} {
 	
 	if {[catch {llength $list}] || ![string equal $list [split $list]] } { set errmsg "non-positional argument: '$argName' with value '$list' is not a well-formed list"; error $errmsg } 
 
 }
 
 
-::xotcl::nonposArgs proc integer {argName {integer ""}} {
+::xotcl::nonposArgs ad_proc integer {argName {integer ""}} {} {
 
 	if {![string is integer $integer]} {set errmsg "non-positional argument: '$argName' with value '$integer' is not of type integer"; error $errmsg}
 
@@ -105,7 +112,7 @@ namespace eval xorb::aux {
                
         set r [self calledproc]
         
-        my log "++++ $registrationclass & calledproc $r & exists: [info exists operations($r)]"
+        #my log "++++ $registrationclass & calledproc $r & exists: [info exists operations($r)]"
         
         set result ""
         
@@ -120,7 +127,7 @@ namespace eval xorb::aux {
 				set operator [expr {[string equal $connective "OR"] ? "||" : "&&"}]        
 	        	set logExpression [list]
 	        	
-	        	foreach object [my info children] {               
+        	foreach object [my info children] {               
 	                lappend logExpression [eval $object $r $args]
 	            }
 	            
@@ -235,23 +242,35 @@ namespace eval xorb::aux {
   }
   }
 
-#::xorb::aux::Operation new -description "my first sortabletypedcomp" -contains {
-#
-#	::xorb::aux::Argument argx -contains {
-#	
-#		::xorb::aux::Argument argxx
-#	
-#	}
-
-#} 
-
 ############################################
 #
-#	Visitor
+#	Slot support
 #
 ############################################
 
+::xotcl::Class Slot -parameter {name type default multiplicity}
+Slot ad_instproc assign {obj prop value} {} {$obj set $prop $value}
+Slot ad_instproc get {obj prop}   {}    {$obj set $prop}
+Slot ad_instproc add {obj prop value {pos 0}} {} {
 
+if {[$obj exists $prop]} {} {
+    $obj set $prop [linsert [$obj set $prop] $pos $value]
+  } else {
+    $obj set $prop [list $value]
+  }
+}
+Slot ad_instproc delete {-nocomplain:switch obj prop value} {} {
+  set old [$obj set $prop]
+  set p [lsearch -glob $old $value]
+  if {$p>-1} {$obj set $prop [lreplace $old $p $p]} else {
+    error "$value is not a $prop of $obj (valid are: $old)"
+  }
+}
+Slot ad_instproc init {} {} {
+  regexp {^(.*)::([^:]+)$} [self] _ cl name
+  $cl instforward $name -default [list get assign] [self] %1 %self %proc
+  if {[my exists default]} {$cl set __defaults($name) [my default]}
 
+}
 
 }
