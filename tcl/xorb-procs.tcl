@@ -10,8 +10,8 @@ ad_library {
 #
 # 	to-dos:
 #				* optimise queries (re-organise into separate *ql files)
-#				* new label for mixin Recoverable
-#				* Naming of embedded alias / operation objects -> ids instead if alias_/ operation_name
+#				* [done] new label for mixin Recoverable
+#				* [done] Naming of embedded alias / operation objects -> ids instead if alias_/ operation_name
 #				  in order to avoid naming conflicts <object> copy where copy is name of operation and #				  method on object
 
 
@@ -68,11 +68,11 @@ namespace eval xorb {
 		
 		
 			
-		if {[lsearch [my info mixin] "::xorb::Recoverable"] != -1} {
+		if {[lsearch [my info mixin] "::xorb::Retrievable"] != -1} {
 		
-			my accept [::xorb::ClassBuilderVisitor new]
-			my mixin delete "::xorb::Recoverable"
-		
+			my mixin delete "::xorb::Retrievable"
+			my accept [::xorb::ClassBuilderVisitor new -volatile]
+			
 		}
 		
 		if {[lsearch [my info mixin] "::xorb::Storable"] != -1} {
@@ -87,8 +87,9 @@ namespace eval xorb {
 	ServiceContract ad_instproc accept {visitor} {} {
 	
 		$visitor visit [self]
+		#my log "++++ [self]'s children: [my info children]"
 		foreach child [my info children] {
-		
+			 
 			$child accept $visitor
 		
 		}
@@ -113,7 +114,14 @@ namespace eval xorb {
 	#
 	#########################################################
 	
-	::xotcl::Class MessageType -superclass ::xorb::aux::SortableTypedComposite
+	Class NestedClass -superclass ::xotcl::Class
+	NestedClass ad_instproc new {-mixin args} {} {
+		
+		eval next -childof [self callingobject] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
+
+	}
+	
+	::xotcl::Class MessageType -superclass ::xorb::aux::SortableTypedComposite -parameter {label}
 	MessageType addOperations {accept}
 	
 	MessageType ad_instproc accept {visitor} {} {
@@ -122,14 +130,14 @@ namespace eval xorb {
 	
 	}
 		
-	::xotcl::Class Operation -superclass MessageType -parameter {description}
+	NestedClass Operation -superclass MessageType -parameter {description}
 	::xotcl::Class SignatureElement -superclass MessageType
 	
-		::xotcl::Class Input -superclass SignatureElement		
-		::xotcl::Class Output -superclass SignatureElement
+		NestedClass Input -superclass SignatureElement		
+		NestedClass Output -superclass SignatureElement
 	
-	::xotcl::Class Argument -superclass MessageType -parameter {datatype position}	
-	::xotcl::Class ReturnValue -superclass MessageType -parameter {datatype position}
+	NestedClass Argument -superclass MessageType -parameter {datatype position}	
+	NestedClass ReturnValue -superclass MessageType -parameter {datatype position}
 	
 	#########################################################
 	#
@@ -159,9 +167,10 @@ namespace eval xorb {
 		
 		# cleanup (mixins)
 		
-		if {[lsearch [my info mixin] "::xorb::Recoverable"] != -1} {
-			my accept [::xorb::ClassBuilderVisitor new]
-			my mixin delete "::xorb::Recoverable"
+		if {[lsearch [my info mixin] "::xorb::Retrievable"] != -1} {
+			
+			my mixin delete "::xorb::Retrievable"
+			my accept [::xorb::ClassBuilderVisitor new -volatile]
 		
 		}
 		
@@ -184,7 +193,7 @@ namespace eval xorb {
 	
 	}
 	
-	::xotcl::Class Alias -parameter {servantMethod}
+	NestedClass Alias -parameter {label servantMethod}
 	
 	Alias ad_instproc accept {visitor} {} {
 	
@@ -230,13 +239,15 @@ ArrayListBuilderVisitor ad_instproc init {} {} {
 
 		my set strBuffer ""
 		my set strOpBuffer ""
+		my set hostType ""
 
 } 
 
 ArrayListBuilderVisitor ad_instproc visit {obj} {} {
 
 	if {[my isobject $obj]} {
-	
+		
+		#my log "++++ method-to-call: [namespace tail [$obj info class]]"
 		eval my [namespace tail [$obj info class]] $obj 
 	
 	}
@@ -245,17 +256,19 @@ ArrayListBuilderVisitor ad_instproc visit {obj} {} {
 
 ArrayListBuilderVisitor ad_instproc asString {} {} {
 
-	if {[my exists strBuffer] && [my exists strOpBuffer]} {
+	if {[my exists strBuffer]} {
 		
-		#my log "+++++ strBuffer: [my set strBuffer], strOpBuffer: [my set strOpBuffer]"
-		return "[my set strBuffer] {[my set strOpBuffer]}"
+		
+		return [my set strBuffer]
 	}
 	
 }
 
 ArrayListBuilderVisitor ad_instproc ServiceContract {obj} {} {
 
-	my instvar strBuffer
+	my instvar strBuffer hostType
+	
+	set hostType [$obj info class]
 	
 	set strBuffer "name {[$obj label]} description {[$obj description]} operations "
 	#my log "++++++ strBuffer before: $strBuffer" 
@@ -263,7 +276,7 @@ ArrayListBuilderVisitor ad_instproc ServiceContract {obj} {} {
 
 ArrayListBuilderVisitor ad_instproc Operation {obj} {} {
 
-	my instvar strOpBuffer
+	my instvar strBuffer strOpBuffer
 	
 	set tmpInput [list]
 	set tmpOutput [list]
@@ -274,24 +287,73 @@ ArrayListBuilderVisitor ad_instproc Operation {obj} {} {
 							
 							foreach argObj [$signObj children] {
 						
-								lappend tmpInput "[namespace tail $argObj]:[$argObj datatype]"
+								lappend tmpInput "[$argObj label]:[$argObj datatype]"
 
 							}
 						} elseif {[$signObj istype "::xorb::Output"]} {
 						
 							foreach argObj [$signObj children] {
 						
-								lappend tmpOutput "[namespace tail $argObj]:[$argObj datatype]"
+								lappend tmpOutput "[$argObj label]:[$argObj datatype]"
 							}
 							
 						}
 					}  
 	
-	append strOpBuffer " [namespace tail $obj] {  description {[$obj description]} input {$tmpInput} output {$tmpOutput} }"  
-	
+	append strOpBuffer " [$obj label] {  description {[$obj description]} input {$tmpInput} output {$tmpOutput} }"  
+	set strBuffer "$strBuffer {$strOpBuffer}"
 	  
 
 }
+
+ArrayListBuilderVisitor ad_instproc ServiceImplementation {obj} {} {
+	
+	my instvar strBuffer hostType
+	set hostType [$obj info class]
+	
+	set strBuffer "contract_name {[$obj contractName]} owner {[$obj owner]} name {[$obj label]} pretty_name {[$obj prettyName]} aliases {"
+	
+	foreach child [$obj info children] {
+	
+		if {[$child istype ::xorb::Alias]} {
+		
+			append strBuffer " " "[$child label] [$child servantMethod]"	
+		
+		}
+	}
+	
+	append strBuffer "}"
+}
+
+ArrayListBuilderVisitor ad_instproc Alias {obj} {} {}
+
+ArrayListBuilderVisitor ad_instproc getSignature {} {} {
+
+	if {[my exists strBuffer]} {
+	my instvar strBuffer hostType
+	
+	set signature ""
+		if {![catch {array set specification $strBuffer} msg]} {
+			
+			switch $hostType {
+			
+				"::xorb::ServiceContract" { set signature $specification(operations)}
+				"::xorb::ServiceImplementation" {set signature $specification(aliases)}
+			
+			}
+		
+		} else {
+		
+			my log "+++ arraylist builder msg ($strBuffer): $msg"
+		
+		}
+		
+		return [ns_sha1 $signature]
+	
+	}
+
+}
+
 	
 ::xotcl::Class ClassBuilderVisitor
 
@@ -301,8 +363,8 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 	if {[my isobject $obj]} {
 	
 	my instvar cls
-	my log "++++ isobj in CBV: [my isobject $obj]"
-	my log "+++ [$obj info methods]"
+	#my log "++++ ClassBuilder in [$obj label] ([$obj info class])"
+	#my log "+++ [$obj info methods]"
 	switch [$obj info class] {
 	
 		"::xorb::ServiceContract" {
@@ -320,7 +382,19 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				foreach alias [$obj info children] {
 				
-					append cmd "$cls ad_instproc [namespace tail $alias] args {} { set r \[next\]; eval [$alias servantMethod] \$r;} \n\n"
+					append cmd "$cls ad_instproc [$alias label] args {} { 
+										set r \[next\] 
+										set qualifier \[namespace qualifiers [$alias servantMethod]\]
+										if {\[my isobject \$qualifier\]} {
+											eval \$qualifier mixin ::xorb::Serving
+										} 
+										
+										set msg \"\$qualifier's class mixins\"
+										
+										my log \"\$msg: \[ \$qualifier info mixin \]\"
+										eval \$qualifier \[namespace tail [$alias servantMethod]\] \$r  
+										
+										} \n\n"
 					#append cmd "$cls ad_instproc [namespace tail $alias] args {} { my log \"++++ inside impl - args: \$args\";  next} \n\n"
 					
 				
@@ -335,8 +409,9 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 					
 					set cmd ""
 					set doc "[$obj description]\n"
-					append cmd "$cls ad_instproc [namespace tail $obj] {"
+					append cmd "$cls ad_instproc [$obj label] {"
 					
+					#my log "++++ ClassBuilder in [$obj label] ([$obj info class])"
 					#my log "obj childx: [$obj children]"
 					
 					foreach signObj [$obj children] {
@@ -350,14 +425,14 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 							
 							#my log "signObj (Input) childx: [$signObj children]"
 							
-							$cls set posArgs([namespace tail $obj]) [list]
+							$cls set posArgs([$obj label]) [list]
 							
 							foreach argObj [$signObj children] {
 						
-								append cmd "-[namespace tail $argObj]:[$argObj datatype] "
-								append doc "@param [namespace tail $argObj] [$argObj datatype]\n"
+								append cmd "-[$argObj label]:[$argObj datatype] "
+								append doc "@param [$argObj label] [$argObj datatype]\n"
 								
-								eval $cls lappend posArgs([namespace tail $obj]) [namespace tail $argObj]
+								eval $cls lappend posArgs([$obj label]) [$argObj label]
 							}
 						} elseif {[$signObj istype "::xorb::Output"]} {
 						
@@ -365,7 +440,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 						
 							foreach argObj [$signObj children] {
 						
-								append doc "@return [namespace tail $argObj] [$argObj datatype]\n"
+								append doc "@return [$argObj label] [$argObj datatype]\n"
 							}
 							
 						}
@@ -388,7 +463,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 							return $reposArgs					
 					}}
 					
-					#my log "+++ $cmd"
+					#my log "+++ ClassBuilder cmd: $cmd"
 					
 					eval $cmd				
 				}	
@@ -410,31 +485,50 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 	::xotcl::Class Storable
 	
 	Storable ad_instproc init {} {} {
+	
+			# return code 0: simple synchronize
+			# return code 1: no need for sync
+			# return code <db id>: synchronize (delete / re-insert) 
 			
-			my label [namespace tail [self]]
-			set v [ArrayListBuilderVisitor new]
+			
+			set v [ArrayListBuilderVisitor new -volatile]
 			my accept $v
 			set arrListAsString [$v asString]
-			set hash [ns_sha1 $arrListAsString]
+			set type [expr {[my istype ::xorb::ServiceContract] ? "contract" : "impl"}]
 			# verify whether impl / contract is already stores and registered with the Broker
 			
-			set identities [XorbContainer do ::xorb::SCBroker getIdentities [[self] info class]]
-			my log "++++++ identities collection ($hash)?: $identities"
-			my log "++++++ exists?: [lsearch -exact $identities [[self] info class],$hash]"
-		   	if {[lsearch -exact $identities [[self] info class],$hash] == -1} {
+			set verified [eval XorbContainer do ::xorb::Service[string toupper $type 0 0]Repository verify -label [my label] -sig [$v getSignature] [expr {[my exists contractName] ? "-implContract [my contractName]" : ""}]]
+				
+				
+				
+			if {$verified == 0} {
 			
-			my log "I will be stored!"
-			set type [expr {[my istype ::xorb::ServiceContract] ? "contract" : "impl"}]
-			#my log "+++++ arraylist for inserting $arrListAsString"
-			#acs_sc::${type}::new_from_spec -spec "$arrListAsString" 	
-			
-			}
-			next
-	
+				if {![catch {set id [acs_sc::${type}::new_from_spec -spec $arrListAsString]} fid]} {
+				
+					XorbContainer do ::xorb::Service[string toupper $type 0 0]Repository synchronise -id $id	
+				
+				}
+		    		
+		    	
+		    	
+			} elseif {$verified > 1} {
+						my log "++++ verified: $verified"
+						if {![catch {eval acs_sc::${type}::delete [expr {[expr {$type == "contract"}]?"-${type}_id $verified":"-impl_name [my label] -contract_name [my contractName]"}]} msg]} {
+		    			
+		    			if {![catch {set id [acs_sc::${type}::new_from_spec -spec $arrListAsString]} fid]} {
+		    			
+		    				XorbContainer do ::xorb::Service[string toupper $type 0 0]Repository synchronise -id $id
+		    			
+		    			}
+		    		
+		    		}			
+			} 	
+		    
+			next	
 	}
 	
-	::xotcl::Class Recoverable -parameter {id}
-	Recoverable ad_instproc init {} {} {
+	::xotcl::Class Retrievable -parameter {id}
+	Retrievable ad_instproc init {} {} {
 		
 		
 		my instvar id {prettyName impl_pretty_name} {owner impl_owner_name} {contractName impl_contract_name} 
@@ -458,12 +552,14 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				} {
 				
-				append cmd "::xorb::Operation create $operation_name -mixin ::xorb::Recoverable -description {$operation_desc} -id $operation_id\n"
+				
+				append cmd "::xorb::Operation new -mixin ::xorb::Retrievable -label $operation_name -description {$operation_desc} -id $operation_id\n"
 				
 				}
 				
+				#my log "[self]'s cmd: $cmd"
 				my contains $cmd				
-				#my log "[self]'s children: [my info children]"
+				my log "[self]'s children: [my info children]"
 			
 			}
 			"::xorb::Operation" {
@@ -482,7 +578,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				} {
 				
 				set typeToNest [expr {[expr {[string first "InputType" $msg_type_name] != -1}] ? "Input" : "Output"}]				
-				append cmd "::xorb::$typeToNest create $msg_type_name -mixin ::xorb::Recoverable -id $msg_type_id\n"
+				append cmd "::xorb::$typeToNest new -mixin ::xorb::Retrievable -label $msg_type_name -id $msg_type_id\n"
 					
 					
 				
@@ -511,7 +607,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				} {
 				
-					append cmd "::xorb::Argument create $element_name -datatype $msg_type_name -position $element_pos\n"
+					append cmd "::xorb::Argument new -label $element_name -datatype $msg_type_name -position $element_pos\n"
 				
 				}
 				
@@ -538,7 +634,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				} {
 				
-					append cmd "::xorb::ReturnValue create $element_name -datatype $msg_type_name -position $element_pos\n"
+					append cmd "::xorb::ReturnValue new -label $element_name -datatype $msg_type_name -position $element_pos\n"
 				
 				}
 				
@@ -572,7 +668,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 				
 				} {
 				
-				append cmd "::xorb::Alias create $impl_operation_name -servantMethod $impl_alias\n"
+				append cmd "::xorb::Alias new -label $impl_operation_name -servantMethod $impl_alias\n"
 				
 				}
 				
@@ -603,11 +699,19 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 #########################################################
 
 
-::xotcl::Class SCInvoker -ad_proc unknown args {} {
+::xotcl::Class Serving -ad_doc {} 
 
-		
+Serving ad_instproc unknown {method args} {} {
+
+	set servingShadow [my new -childof [self] -volatile]
+	# clear mixin list
+	my mixin delete [self class]
+	#my log "post-clearing: [my info mixin]"
+	eval $servingShadow $method $args
 
 }
+
+::xotcl::Class SCInvoker -ad_proc unknown args {} {}
 
 SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId ""} {-callArgs {}} args} {} {
 
@@ -663,6 +767,19 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 }
 
 
+#::xorb::SCInvoker invoke -contract "auth_authentication" -impl "local" -operation "Authenticate" -callArgs "dotlearner@dotl.rn dtpwd {
+
+namespace eval mytest {
+
+	Class myService
+	myService instproc myMethod args {
+		
+		my log "invocation successful: $args"
+	
+	}
+
+}
 
 
-::xorb::SCInvoker invoke -contract "auth_authentication" -impl "local" -operation "Authenticate" -callArgs "dotlearner@dotl.rn dtpwd {} 9"  
+
+

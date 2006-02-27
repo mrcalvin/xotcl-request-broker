@@ -68,41 +68,41 @@ FirstComeFirstOut ad_instproc isSatisfiedBy {-impl:required} {} {
 ImplementationSelector ad_instproc init args {} {
 
 	#my log "constructor of ImplSel is called"
-	my instvar criterium
-	my set criterium [::xorb::LabelBasedSelection lbsCriterium]
+	#my instvar criterium
+	#my set criterium [::xorb::LabelBasedSelection lbsCriterium]
 	#my log "++++ criterium type: $criterium -> [$criterium info class]"
 
 }
 
-ImplementationSelector ad_instproc selectContract {contractLabel} {} {
-	
-	set contracts [::xorb::ServiceContractRepository info children]
-	my set contractLabel $contractLabel
+#ImplementationSelector ad_instproc selectContract {contractLabel} {} {
+#	
+#	set contracts [::xorb::ServiceContractRepository info children]
+#	my set contractLabel $contractLabel
 	#my log "contract objs: $contracts, contract label: $contractLabel, lsearch: [lsearch $contracts "::xorb::ServiceContractRepository::$contractLabel"]"
-	
-	set resultObj ""
-	
-	foreach contractObj $contracts {
-	
-		if {[$contractObj istype ::xorb::ServiceContract] && [my exists contractLabel]} {
-	
-			set isdone [string equal [my contractLabel] [$contractObj label]] 
-			if {$isdone} {
-			
-				set resultObj $contractObj
-				break
-			
-			} 
-	
-		}
-	
-	} 
-	
-	return $resultObj
+#	
+#	set resultObj ""
+#	
+#	foreach contractObj $contracts {
+#	
+#		if {[$contractObj istype ::xorb::ServiceContract] && [my exists contractLabel]} {
+#	
+#			set isdone [string equal [my contractLabel] [$contractObj label]] 
+#			if {$isdone} {
+#			
+#				set resultObj $contractObj
+#				break
+#			
+#			} 
+#	
+#		}
+#	
+#	} 
+#	
+#	return $resultObj
+#
+#}
 
-}
-
-ImplementationSelector ad_instproc selectImpl {implLabel} {} {
+ImplementationSelector ad_instproc selectImpl {-ids:required implLabel} {} {
 	
 	my instvar criterium contractLabel
 	
@@ -110,19 +110,20 @@ ImplementationSelector ad_instproc selectImpl {implLabel} {} {
 	$criterium contractLabel $contractLabel
 	$criterium implLabel $implLabel
 	
+	# test for binding state - ping db
 		
 	if {[my exists criterium]} {
 		
 		
 	
-		foreach implClass [::xorb::ServiceImplRepository info children] {
+		foreach implClass $ids {
 			
 			
 			#my log "++++ $criterium: [$criterium info methods]"
-			set result [eval $criterium isSatisfiedBy -impl $implClass]
+			set result [eval $criterium isSatisfiedBy -impl "::xorb::ServiceImplRepository::$implClass"]
 			#my log "++++ selectImpl crit 3 ($implClass): $result"
 			
-			expr {$result ? [lappend matchingImpl $implClass] : ""}
+			expr {$result ? [lappend matchingImpl "::xorb::ServiceImplRepository::$implClass"] : ""}
 		
 		} 
 		
@@ -159,43 +160,8 @@ ImplementationSelector ad_instproc selectImpl {implLabel} {} {
 		
 		#my log "++++ init of [self] called."
 		my instvar selector
-		my set selector [eval ::xorb::ImplementationSelector is]		
+		my set selector [eval ::xorb::ImplementationSelector new -childof [self] -set criterium [::xorb::LabelBasedSelection new]]		
 		
-		my set identityTable(::xorb::ServiceContract) [list]
-		my set identityTable(::xorb::ServiceImplementation) [list]	
-
-}
-
-SCBroker ad_proc add {obj} {} {
-
-	# create / store identity hash in Broker's identity table
-	set v [ArrayListBuilderVisitor new]
-	$obj accept $v
-	
-	my log "+++ contract name: [$obj label]"
-	my log "+++ contract hash: [ns_sha1 [$v asString]]"
-	my log "+++ serialized contract: [$v asString]"
-	
-	set hash [ns_sha1 [$v asString]]
-	eval my set identityTable([$obj info class],$hash) $hash 
-    
-}
-
-SCBroker ad_proc getIdentities {type} {} {
-	
-	my instvar {identityTable it}
-	#my log "++++ retrieved: $type"
-	
-	#set result [list]
-	foreach {key value} [array get it] {
-	
-		my log "++++ ($key) ==> $value"
-		#lappend result $key
-	}
-	#set pattern "$type,*"
-	set result [array names it $type,*]
-	#my log "+++++ processed identities: $result"
-	return $result
 		
 }
 
@@ -205,10 +171,33 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	
 	# criterium selection / passing + fallback: $selector criterium 
 	
+	set contractID ""
+	set boundImpls [list]
+	
+	db_foreach select_binding_pairs {
+	
+		select binds.contract_id, binds.impl_id        
+    		from   	acs_sc_bindings binds,
+					acs_sc_contracts ctrs,
+					acs_sc_impls impls
+			where   ctrs.contract_id = binds.contract_id
+			and 	impls.impl_id = binds.impl_id			
+			and 	impls.impl_contract_name = :contractLabel
+			and		impls.impl_contract_name = ctrs.contract_name
+	
+	} {
+		set contractID $contract_id
+		lappend boundImpls $impl_id
+	
+	}
+	
+	my log "binding pairs: $boundImpls"
 	
 	
-	set contract	[$selector selectContract $contractLabel]
-	set impls	[$selector selectImpl $implLabel]
+	
+	set contract "::xorb::ServiceContractRepository::$contractID"
+	$selector contractLabel [$contract label]
+	set impls	[$selector selectImpl -ids $boundImpls $implLabel]
 	
 	#my log "identified contract: $contract"
 	#my log "identified impl: $impls"
@@ -257,16 +246,70 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	
 	#where  ctrs.contract_id = binds.contract_id, where ctrs.contract_id = 2136
 	#my log "contract_id: $contract_id, contract_name: $contract_name, contract_desc: $contract_desc"
-	set contrObj [eval ServiceContract [self]::[my autoname SContr] -mixin ::xorb::Recoverable -id $contract_id -label $contract_name -description {$contract_desc}]
+	set contrObj [eval ServiceContract [self]::$contract_id -mixin ::xorb::Retrievable -id $contract_id -label $contract_name -description {$contract_desc}]
 	#my log "Created and nested $contrObj"
-	my log "~~~~ [$contrObj info methods]"
-	my log "~~~~ [::Serializer deepSerialize $contrObj]"
+	#my log "~~~~ [$contrObj info methods]"
+	#my log "~~~~ [::Serializer deepSerialize $contrObj]"
 	
-	SCBroker add $contrObj
+	#SCBroker add $contrObj
 	
 	}
 
 	#my show [self]
+
+}
+
+ServiceContractRepository ad_proc verify {-label:required -sig:required args} {} {
+
+	# return code 0: simple synchronize
+	# return code 1: synchronize (delete / re-insert)
+	# return code 2: no need for sync
+	
+	set candidateObj ""
+	
+	foreach child [my info children] {
+	
+		if {[string equal [$child label] $label]} {
+		
+			set candidateObj $child
+			break
+		}  	
+	}
+	
+	#my log "+++ candidate: $candidateObj"
+	#my log "+++ candidate's id: [$candidateObj set id]"
+	
+	if {$candidateObj != ""} {
+	
+		set v [ArrayListBuilderVisitor new -volatile]
+		$child accept $v
+		return [expr {[expr {[$v getSignature] == $sig}] ? 1 : [$candidateObj set id]}]
+	
+	} else {
+	
+		return 0;
+	}
+	
+
+}
+
+ServiceContractRepository ad_proc synchronise {-id:required} {} {
+
+	if {[my isobject [self]::$id]} {
+		[self]::$id destroy	
+	}
+	
+	if {![catch {db_1row sync_impl {
+	
+		select distinct ctrs.contract_name, ctrs.contract_id, ctrs.contract_desc         
+    		from   	acs_sc_contracts ctrs
+			where   ctrs.contract_id = :id
+	
+	}} msg]} {
+	
+		eval ServiceContract [self]::$contract_id -mixin ::xorb::Retrievable -id $contract_id -label $contract_name -description {$contract_desc}
+	
+	}	
 
 }
 
@@ -293,8 +336,7 @@ ServiceContractRepository ad_proc show {obj} {} {
     		from   	acs_sc_bindings binds,
            			acs_sc_impl_aliases ia,
            			acs_sc_impls impls
-    		where  	ia.impl_id = binds.impl_id 
-    		and 	binds.impl_id = impls.impl_id 
+    		where  	ia.impl_id = impls.impl_id 
     		
     		} {
 	
@@ -302,7 +344,7 @@ ServiceContractRepository ad_proc show {obj} {} {
 	
 	
 	
-	set implObj [eval ServiceImplementation [self]::[my autoname SImpl] -mixin ::xorb::Recoverable -id $impl_id -label {$impl_name} -prettyName {$impl_pretty_name} -owner {$impl_contract_name} -contractName $impl_contract_name]
+	set implObj [eval ServiceImplementation [self]::$impl_id -mixin ::xorb::Retrievable -id $impl_id -label {$impl_name} -prettyName {$impl_pretty_name} -owner {$impl_contract_name} -contractName $impl_contract_name]
 	
 	#SCBroker add $implObj
 		
@@ -315,5 +357,61 @@ ServiceContractRepository ad_proc show {obj} {} {
 	
 
 } 
+
+ServiceImplRepository ad_proc verify {-label:required -implContract:required -sig:required args} {} {
+
+	# return code 0: simple synchronize
+	# return code 1: synchronize (delete / re-insert)
+	# return code 2: no need for sync
+
+	set candidateObj ""
+	
+	foreach child [my info children] {
+	
+		if {[string equal [$child label] $label] && [string equal [$child contractName] $implContract]} {
+		
+			set candidateObj $child
+			break
+		}  	
+	}
+	
+	if {$candidateObj != ""} {
+	
+		set v [ArrayListBuilderVisitor new -volatile]
+		$child accept $v
+		return [expr {[expr {[$v getSignature] == $sig}] ? 1 : [$candidateObj set id]}]
+	
+	} else {
+	
+		return 0;
+	}
+	
+
+}
+
+ServiceImplRepository ad_proc synchronise {-id:required} {} {
+
+	if {[my isobject [self]::$id]} {
+		[self]::$id destroy	
+	}
+	
+	if {![catch {db_1row sync_impl {
+	
+		select distinct ia.impl_name, ia.impl_id, impls.impl_pretty_name,
+									impls.impl_owner_name,
+									impls.impl_contract_name          
+    		from   	acs_sc_impl_aliases ia,
+           			acs_sc_impls impls
+    		where  	ia.impl_id = impls.impl_id
+			and		impls.impl_id = :id
+	
+	}} msg]} {
+	
+		eval ServiceImplementation [self]::$impl_id -mixin ::xorb::Retrievable -id $impl_id -label {$impl_name} -prettyName {$impl_pretty_name} -owner {$impl_contract_name} -contractName $impl_contract_name
+	
+	}	
+
+}
+
 }
 } -persistent 1
