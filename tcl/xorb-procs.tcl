@@ -157,7 +157,7 @@ namespace eval xorb {
 	#
 	#########################################################
 	
-	::xotcl::Class ServiceImplementation -superclass ::xotcl::Class -parameter {label contractName prettyName owner}
+	::xotcl::Class ServiceImplementation -superclass ::xotcl::Class -parameter {label contractName prettyName {owner ""}}
 	ServiceImplementation ad_instproc init {} {} {	
 	
 		#my log "Dispatch of class builder for [self]."
@@ -392,7 +392,13 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 										set msg \"\$qualifier's class mixins\"
 										
 										my log \"\$msg: \[ \$qualifier info mixin \]\"
-										eval \$qualifier \[namespace tail [$alias servantMethod]\] \$r  
+										if {\[\$qualifier istype \"::xorb::service::InstantService\"\]} {
+											eval \$qualifier \[namespace tail [$alias servantMethod]\] \$args 
+										} else {
+										
+											eval \$qualifier \[namespace tail [$alias servantMethod]\] \$r 
+										}
+										 
 										
 										} \n\n"
 					#append cmd "$cls ad_instproc [namespace tail $alias] args {} { my log \"++++ inside impl - args: \$args\";  next} \n\n"
