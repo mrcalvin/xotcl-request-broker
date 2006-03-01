@@ -2,6 +2,10 @@ ad_library {
     
     xorb service classes
     
+    @author stefan.sobernig@wu-wien.ac.at
+    @creation-date January 30, 2006
+    @cvs-id $Id$
+    
 }
 
 ###################################

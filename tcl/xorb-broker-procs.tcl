@@ -1,3 +1,12 @@
+ad_library {
+
+	@author stefan.sobernig@wu-wien.ac.at
+    @creation-date January 30, 2006
+    @cvs-id $Id$
+
+}
+
+
 ::xotcl::THREAD create XorbContainer { 
 
 namespace eval xorb {
@@ -36,13 +45,23 @@ LabelBasedSelection ad_instproc isSatisfiedBy {-impl:required} {} {
 
 # fallback criterium
 
-::xotcl::Class FirstComeFirstOut -superclass ::xorb::Criterium -set isdone false
+::xotcl::Class FirstComeFirstOut -superclass ::xorb::Criterium
+
+FirstComeFirstOut ad_instproc init args {} {
+
+	my set isdone false
+
+}
+
 FirstComeFirstOut ad_instproc isSatisfiedBy {-impl:required} {} {
 
 	my instvar isdone
-	#my log "Iamnothere2"
+	my log "Iamhere2"
+	my log "isdone exists: [my exists isdone]"
+	my log "isdone: $isdone"
 	if {!$isdone} {
 	
+		my log "impl to check: $impl"
 		set result [ expr { [$impl istype ::xorb::ServiceImplementation] && [string equal [$impl contractName] [my contractLabel]] }]
 		
 		set isdone [expr {$result ? "true" : "false"}]
@@ -111,7 +130,7 @@ ImplementationSelector ad_instproc selectImpl {-ids:required implLabel} {} {
 	$criterium implLabel $implLabel
 	
 	# test for binding state - ping db
-		
+	my log "++++ ids: $ids"	
 	if {[my exists criterium]} {
 		
 		
@@ -137,11 +156,14 @@ ImplementationSelector ad_instproc selectImpl {-ids:required implLabel} {} {
 	
 	# general fallback (first implementation of contract will be returned)
 	
-	if {[llength matchingImpl] == 0} {
+	my log "impls found? [llength $matchingImpl]"
+	my log "matches: $matchingImpl"
 	
-		#my log "Iamnothere"
+	if {[llength $matchingImpl] == 0} {
+	
+		my log "Iamhere"
 		my set criterium [::xorb::FirstComeFirstOut new]
-		set matchingImpl [my selectImpl $implLabel]
+		set matchingImpl [my selectImpl -ids $ids $implLabel]
 	
 	}
 	 
@@ -198,7 +220,7 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 	set contract "::xorb::ServiceContractRepository::$contractID"
 	$selector contractLabel [$contract label]
 	set impls	[$selector selectImpl -ids $boundImpls $implLabel]
-	
+	my log "impls in getServant: $impls"
 	#my log "identified contract: $contract"
 	#my log "identified impl: $impls"
 	#my log "$impls's method arsenal: [$impls info instprocs]"

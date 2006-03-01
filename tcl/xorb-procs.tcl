@@ -2,6 +2,10 @@ ad_library {
     
     xorb core library
     
+    @author stefan.sobernig@wu-wien.ac.at
+    @creation-date January 30, 2006
+    @cvs-id $Id$
+    
 }
 
 
@@ -750,21 +754,28 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 		foreach argName [[$proxy info class] set posArgs($operation)] argValue $callArgs {
 			
 			#my log "+++++ npArgs: $npArgs, argName: $argName, argValue: $argValue"
-			expr {[string equal $argValue ""] ? "" : [append npArgs " " "-$argName $argValue"]} 
+			expr {[string equal $argValue ""] ? "" : [append npArgs " " "-$argName {$argValue}"]} 
 	
 		}
 	}
 	
-	
+	my log "available checkoptions: [::xotcl::nonposArgs info methods]"
 	# invoke actual op
 	set cmd "$proxy $operation $npArgs"
 	#my log "++++ actual invocation call: $cmd"
 	set r [eval $cmd]
+	
 	#my log "++++ result of invoc: $r"
 	
 	# check restrictions on result value
 	
-	# return result
+	
+	# cleanup
+	$proxy destroy
+	[namespace tail $contract] destroy
+	[namespace tail $impls] destroy
+	
+	return $r
 
 
 }
