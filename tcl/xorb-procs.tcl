@@ -762,7 +762,7 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 	my log "available checkoptions: [::xotcl::nonposArgs info methods]"
 	# invoke actual op
 	set cmd "$proxy $operation $npArgs"
-	#my log "++++ actual invocation call: $cmd"
+	my log "++++ actual invocation call: $cmd"
 	set r [eval $cmd]
 	
 	#my log "++++ result of invoc: $r"
