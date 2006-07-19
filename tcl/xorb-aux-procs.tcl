@@ -32,6 +32,17 @@ ad_library {
 
 }
 
+########################
+#
+# register extended nonposArgs object with serializer
+#
+########################
+
+::Serializer exportObjects {
+  
+  ::xotcl::nonposArgs
+}
+
 
 namespace eval xorb::aux {
 
