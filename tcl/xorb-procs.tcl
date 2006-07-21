@@ -126,7 +126,9 @@ namespace eval xorb {
 	}
 	
 	::xotcl::Class MessageType -superclass ::xorb::aux::SortableTypedComposite -parameter {label}
-	MessageType addOperations {accept}
+	
+	#MessageType addOperations {accept}
+	::xorb::aux::SortableTypedComposite addOperations {accept}
 	
 	MessageType ad_instproc accept {visitor} {} {
 	
@@ -309,6 +311,11 @@ ArrayListBuilderVisitor ad_instproc Operation {obj} {} {
 	  
 
 }
+
+ArrayListBuilderVisitor ad_instproc Input {input} {} {}
+ArrayListBuilderVisitor ad_instproc Output {output} {} {}
+ArrayListBuilderVisitor ad_instproc Argument {argument} {} {}
+ArrayListBuilderVisitor ad_instproc ReturnValue {rv} {} {}
 
 ArrayListBuilderVisitor ad_instproc ServiceImplementation {obj} {} {
 	

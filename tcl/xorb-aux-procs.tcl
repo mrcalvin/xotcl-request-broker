@@ -52,6 +52,9 @@ namespace eval xorb::aux {
  Composite ad_instproc addOperations args {} {
         foreach op $args {
             if {![my exists operations($op)]} {
+            
+            		my log "+++4: self: [self], self class: [self class], my class: [my info class]"
+            		
                 my set operations($op) $op
             }
         }
@@ -85,17 +88,25 @@ namespace eval xorb::aux {
     TopDownComposite ad_instproc init {} {} {next}   
   	TopDownComposite ad_instproc compositeFilter args {} {
         
-        #my log "+++ I am here, though I should not ..."
+        
         set result [next]
         set registrationclass [lindex [self filterreg] 0]
-        $registrationclass instvar operations        
+        $registrationclass instvar operations  
+        #set operations(accept) "accept"   
+        
         set r [self calledproc]
+        
 
+        #my log "+++ I am here, though I should not, regclass: $registrationclass, self: [my info class] op: $r, op array: [array names operations]"
         
         if {[info exists operations($r)]} {
-            foreach object [my set __children] {               
+        		
+        	#my log "+++ I am here, though I should not, op: $r"
+            foreach object [my children] {               
                 eval $object $r $args
             }
+            
+            
         }
         return $result
     }

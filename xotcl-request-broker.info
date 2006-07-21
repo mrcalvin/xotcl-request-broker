@@ -8,7 +8,7 @@
     <singleton-p>t</singleton-p>
     <auto-mount>request-broker</auto-mount>
 
-    <version name="0.1d" url="http://openacs.org/repository/download/apm/xotcl-request-broker-0.1d.apm">
+    <version name="0.1d$Revision$" url="http://openacs.org/repository/download/apm/xotcl-request-broker-0.1d.apm">
         <owner url="mailto:stefan.sobernig@wu-wien.ac.at">stefan sobernig</owner>
 
         <!-- No dependency information -->

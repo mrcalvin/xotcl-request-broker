@@ -187,40 +187,83 @@ ImplementationSelector ad_instproc selectImpl {-ids:required implLabel} {} {
 		
 }
 
+SCBroker ad_proc getContract {-serialized:switch -name:required} {} {
+
+	if { [db_0or1row select_contract {
+			
+				select distinct binds.contract_id        
+		    		from   	acs_sc_bindings binds,
+							acs_sc_contracts ctrs
+					where   ctrs.contract_id = binds.contract_id
+					and 		ctrs.contract_name = :name
+					
+			
+			} ]} {
+	
+		if {$serialized} {
+			
+			return [list $contract_id [eval ::Serializer deepSerialize "::xorb::ServiceContractRepository::$contract_id"  [list -map {"::xorb::ServiceContractRepository" ""}]]]
+		
+		} else {
+		
+			return $contract_id
+		}
+		
+		
+		}
+		
+		
+	
+	
+
+}
+
 SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
 
 	my instvar selector
 	
 	# criterium selection / passing + fallback: $selector criterium 
 	
-	set contractID ""
+	set contractID [my getContract -name $contractLabel]
 	set boundImpls [list]
 	
-	db_foreach select_binding_pairs {
+	db_foreach select_binding_impls_for_contract {
 	
-		select binds.contract_id, binds.impl_id        
-    		from   	acs_sc_bindings binds,
-					acs_sc_contracts ctrs,
-					acs_sc_impls impls
-			where   ctrs.contract_id = binds.contract_id
-			and 	impls.impl_id = binds.impl_id			
-			and 	impls.impl_contract_name = :contractLabel
-			and		impls.impl_contract_name = ctrs.contract_name
-	
+		select	binds.impl_id
+		from		acs_sc_bindings binds
+		where	binds.contract_id = :contractID
+				
 	} {
-		set contractID $contract_id
-		lappend boundImpls $impl_id
 	
+		lappend boundImpls $impl_id
+		
 	}
 	
-	my log "binding pairs: $boundImpls"
+	#db_foreach select_binding_pairs {
+	#
+	#	select binds.contract_id, binds.impl_id        
+    	#	from   	acs_sc_bindings binds,
+	#				acs_sc_contracts ctrs,
+	#				acs_sc_impls impls
+	#		where   ctrs.contract_id = binds.contract_id
+	#		and 	impls.impl_id = binds.impl_id			
+	#		and 	impls.impl_contract_name = :contractLabel
+	#		and		impls.impl_contract_name = ctrs.contract_name
+	#
+	#} {
+	#	set contractID $contract_id
+	#	lappend boundImpls $impl_id
+	#
+	#}
+	
+	#my log "binding pairs: $boundImpls"
 	
 	
 	
 	set contract "::xorb::ServiceContractRepository::$contractID"
 	$selector contractLabel [$contract label]
 	set impls	[$selector selectImpl -ids $boundImpls $implLabel]
-	my log "impls in getServant: $impls"
+	#my log "impls in getServant: $impls"
 	#my log "identified contract: $contract"
 	#my log "identified impl: $impls"
 	#my log "$impls's method arsenal: [$impls info instprocs]"
