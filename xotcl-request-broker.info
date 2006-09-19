@@ -14,6 +14,8 @@
         <maturity>0</maturity>
 
         <provides url="xotcl-request-broker" version="0.2"/>
+        <requires url="acs-service-contract" version="5.2.3b2"/>
+        <requires url="xotcl-core" version="0.38"/>
 
         <callbacks>
         </callbacks>
