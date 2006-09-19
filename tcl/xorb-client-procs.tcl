@@ -115,6 +115,11 @@ Stub ad_proc new {-bind:required args} {
 	
 	}
 	
+	###################
+	# inject mixin
+	#
+	::xotcl::Class instmixin ::xorb::client::InvocationProxy
+	
 	# +---------------------------+
 	# |class                      |
 	# |StubBuilder                |
