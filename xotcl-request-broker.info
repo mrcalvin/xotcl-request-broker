@@ -8,10 +8,12 @@
     <singleton-p>t</singleton-p>
     <auto-mount>request-broker</auto-mount>
 
-    <version name="0.1d" url="http://openacs.org/repository/download/apm/xotcl-request-broker-0.1d.apm">
+    <version name="0.2" url="http://media.wu-wien.ac.at/download/xotcl-request-broker-0.2.apm">
         <owner url="mailto:stefan.sobernig@wu-wien.ac.at">stefan sobernig</owner>
+        <release-date>2006-09-19</release-date>
+        <maturity>0</maturity>
 
-        <!-- No dependency information -->
+        <provides url="xotcl-request-broker" version="0.2"/>
 
         <callbacks>
         </callbacks>

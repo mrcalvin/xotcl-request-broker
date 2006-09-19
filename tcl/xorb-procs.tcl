@@ -244,8 +244,8 @@ namespace eval xorb {
 ArrayListBuilderVisitor ad_instproc init {} {} {
 
 		my set strBuffer ""
-		my set strOpBuffer ""
-		my set hostType ""
+		my set alreadySet 0
+		
 
 } 
 
@@ -253,7 +253,7 @@ ArrayListBuilderVisitor ad_instproc visit {obj} {} {
 
 	if {[my isobject $obj]} {
 		
-		#my log "++++ method-to-call: [namespace tail [$obj info class]]"
+	#	my log "++++ method-to-call: [namespace tail [$obj info class]]"
 		eval my [namespace tail [$obj info class]] $obj 
 	
 	}
@@ -262,13 +262,19 @@ ArrayListBuilderVisitor ad_instproc visit {obj} {} {
 
 ArrayListBuilderVisitor ad_instproc asString {} {} {
 
-	if {[my exists strBuffer]} {
+	if {[my exists strBuffer] && [my set hostType] == "::xorb::ServiceContract" && [my exists strOpBuffer] && ![my set alreadySet]} {
 		
+			my set strBuffer "[my set strBuffer] {[my set strOpBuffer]}"
+			my set alreadySet 1
 		
-		return [my set strBuffer]
 	}
+		
+		my log "strBuffer: [my set strBuffer]"
+		return [my set strBuffer]
 	
 }
+	
+
 
 ArrayListBuilderVisitor ad_instproc ServiceContract {obj} {} {
 
@@ -307,7 +313,9 @@ ArrayListBuilderVisitor ad_instproc Operation {obj} {} {
 					}  
 	
 	append strOpBuffer " [$obj label] {  description {[$obj description]} input {$tmpInput} output {$tmpOutput} }"  
-	set strBuffer "$strBuffer {$strOpBuffer}"
+	
+#	my log "+++XXX [$obj label] -> $strOpBuffer"
+	
 	  
 
 }
@@ -341,10 +349,12 @@ ArrayListBuilderVisitor ad_instproc Alias {obj} {} {}
 ArrayListBuilderVisitor ad_instproc getSignature {} {} {
 
 	if {[my exists strBuffer]} {
-	my instvar strBuffer hostType
+	my instvar hostType
 	
+	my log "str=[my asString], host=$hostType"
+	my log "error= [array set specification [my asString]]"
 	set signature ""
-		if {![catch {array set specification $strBuffer} msg]} {
+		if {![catch {array set specification [my asString]} msg]} {
 			
 			switch $hostType {
 			
@@ -354,11 +364,10 @@ ArrayListBuilderVisitor ad_instproc getSignature {} {} {
 			}
 		
 		} else {
-		
-			my log "+++ arraylist builder msg ($strBuffer): $msg"
-		
+			my log "errmsg=$msg"
 		}
 		
+		my log "signature:$signature"
 		return [ns_sha1 $signature]
 	
 	}
@@ -402,9 +411,11 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 										
 										set msg \"\$qualifier's class mixins\"
 										
-										my log \"\$msg: \[ \$qualifier info mixin \]\"
+									#	my log \"\$msg: \[ \$qualifier info mixin \]\"
 										if {\[\$qualifier istype \"::xorb::service::InstantService\"\]} {
-											eval \$qualifier \[namespace tail [$alias servantMethod]\] \$args 
+										#	my log \"args: \$args , r=\$r\"
+										#	my log \"nonposargs: \[\[\$qualifier info class\] info instnonposargs \[namespace tail [$alias servantMethod]\] \]\"
+											eval \$qualifier \[namespace tail [$alias servantMethod]\] \$args
 										} else {
 										
 											eval \$qualifier \[namespace tail [$alias servantMethod]\] \$r 
@@ -481,7 +492,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 					}}
 					
 					#my log "+++ ClassBuilder cmd: $cmd"
-					
+					#my log classbuildercmd=$cmd
 					eval $cmd				
 				}	
 				
@@ -508,13 +519,14 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 			# return code <db id>: synchronize (delete / re-insert) 
 			
 			
-			set v [ArrayListBuilderVisitor new -volatile]
+			set v [ArrayListBuilderVisitor new]
 			my accept $v
 			set arrListAsString [$v asString]
 			set type [expr {[my istype ::xorb::ServiceContract] ? "contract" : "impl"}]
 			# verify whether impl / contract is already stores and registered with the Broker
-			
-			set verified [eval XorbContainer do ::xorb::Service[string toupper $type 0 0]Repository verify -label [my label] -sig [$v getSignature] [expr {[my exists contractName] ? "-implContract [my contractName]" : ""}]]
+			set leftSig [$v getSignature]
+			my log "LEFT(new): |$arrListAsString|, sig=$leftSig"
+			set verified [eval XorbContainer do ::xorb::Service[string toupper $type 0 0]Repository verify -label [my label] -sig $leftSig [expr {[my exists contractName] ? "-implContract [my contractName]" : ""}]]
 				
 				
 				
@@ -529,7 +541,7 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 		    	
 		    	
 			} elseif {$verified > 1} {
-						my log "++++ verified: $verified"
+						my log "++++ verified: [my label], $verified"
 						if {![catch {eval acs_sc::${type}::delete [expr {[expr {$type == "contract"}]?"-${type}_id $verified":"-impl_name [my label] -contract_name [my contractName]"}]} msg]} {
 		    			
 		    			if {![catch {set id [acs_sc::${type}::new_from_spec -spec $arrListAsString]} fid]} {
@@ -538,173 +550,15 @@ ClassBuilderVisitor ad_instproc visit {obj} {} {
 		    			
 		    			}
 		    		
+		    		} else {
+		    			my log "err=$msg"
 		    		}			
 			} 	
 		    
 			next	
 	}
 	
-	::xotcl::Class Retrievable -parameter {id}
-	Retrievable ad_instproc init {} {} {
-		
-		
-		my instvar id {prettyName impl_pretty_name} {owner impl_owner_name} {contractName impl_contract_name} 
-		
-		
-		switch [my info class] {
-		
-			"::xorb::ServiceContract" 			{  
-			
-				my instvar id 
-				set cmd ""				
-				#my log "Populated [self] with dbID: $id, description: [my description]"
-				
-				# populate contract object with affiliated operation objects
-				
-				db_foreach select_ops_for_contract {
-				
-					select	ops.operation_id, ops.operation_name, ops.operation_desc  
-					from   	acs_sc_operations ops
-					where  	ops.contract_id = :id
-				
-				} {
-				
-				
-				append cmd "::xorb::Operation new -mixin ::xorb::Retrievable -label $operation_name -description {$operation_desc} -id $operation_id\n"
-				
-				}
-				
-				#my log "[self]'s cmd: $cmd"
-				my contains $cmd				
-				my log "[self]'s children: [my info children]"
-			
-			}
-			"::xorb::Operation" {
-			
-				my instvar id 
-				set cmd ""
-				db_foreach select_sigelements_for_op {
-				
-					select	msgs.msg_type_id, msgs.msg_type_name 
-					from   	acs_sc_operations ops,
-							acs_sc_msg_types msgs
-					where  	ops.operation_id = :id
-					and		(ops.operation_inputtype_id = msgs.msg_type_id
-					or		ops.operation_outputtype_id = msgs.msg_type_id)
-				
-				} {
-				
-				set typeToNest [expr {[expr {[string first "InputType" $msg_type_name] != -1}] ? "Input" : "Output"}]				
-				append cmd "::xorb::$typeToNest new -mixin ::xorb::Retrievable -label $msg_type_name -id $msg_type_id\n"
-					
-					
-				
-				}
-				
-				#my log $cmd
-				my contains $cmd
-			
-			}
-			"::xorb::Input" {
-			
-				# set an ordering / sorting regime (argument position)
-				
-				my orderby -order "increasing" "position"
-				
-				# create nested and sorted subtree of argument objects
-				my instvar id
-				set cmd ""
-				db_foreach select_args {
-				
-					select	el.element_name, msgs.msg_type_name, el.element_pos 
-					from   	acs_sc_msg_type_elements el,
-							acs_sc_msg_types msgs
-					where  	el.msg_type_id = :id
-					and		el.element_msg_type_id = msgs.msg_type_id
-				
-				} {
-				
-					append cmd "::xorb::Argument new -label $element_name -datatype $msg_type_name -position $element_pos\n"
-				
-				}
-				
-				my contains $cmd
-			
-			}
-			"::xorb::Output" {
-			
-			
-				# impose a sorting regime on sub-composite
-				my orderby -order "increasing" "position"
-				
-				# nest a returnvalue object 
-				
-				my instvar id
-				set cmd ""
-				db_foreach select_rtv {
-				
-					select	el.element_name, msgs.msg_type_name, el.element_pos 
-					from   	acs_sc_msg_type_elements el,
-							acs_sc_msg_types msgs
-					where  	el.msg_type_id = :id
-					and		el.element_msg_type_id = msgs.msg_type_id
-				
-				} {
-				
-					append cmd "::xorb::ReturnValue new -label $element_name -datatype $msg_type_name -position $element_pos\n"
-				
-				}
-				
-				my contains $cmd
-					
-			}
-			"::xorb::ServiceImplementation" 	{
-			
-			my instvar id ;#{prettyName impl_pretty_name} {owner impl_owner_name} {contractName impl_contract_name}   
-			
-				# populate object with key info
-				
-				#db_1row select_impl_basics "select 	impls.impl_pretty_name,
-				#					impls.impl_owner_name,
-				#					impls.impl_contract_name      
-    			#		from   		acs_sc_impls impls
-				#		where  		impls.impl_id = :id"
-				
-				#my log "Populated [self] with dbID: $id, prettyName: [my prettyName], owner: [my owner], contractName: [my contractName]"
-				
-				# populate impl object with affiliated alias objects
-				
-				set cmd ""
-				
-				db_foreach select_aliases_for_impl {
-				
-					select 	al.impl_operation_name,
-							al.impl_alias
-					from	acs_sc_impl_aliases al
-					where 	al.impl_id = :id
-				
-				} {
-				
-				append cmd "::xorb::Alias new -label $impl_operation_name -servantMethod $impl_alias\n"
-				
-				}
-				
-				my contains $cmd
-				
-				#my log "[self]'s children: [my info children]"
-				
-				
-			
-			}
-			
-			
-		
-		}
-		
-		next
 	
-	}
-
 
 #########################################################
 #
@@ -728,9 +582,20 @@ Serving ad_instproc unknown {method args} {} {
 
 }
 
+
+#########################################################
+#
+#	::xorb::client::SCInvoker class
+#
+#	intercepts anonymous call (unknown) and initiates contract / impl
+#	lookup 
+#
+#########################################################
+
+
 ::xotcl::Class SCInvoker -ad_proc unknown args {} {}
 
-SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId ""} {-callArgs {}} args} {} {
+SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId ""} {-callArgs {}} {-tns ""} args} {} {
 
 	# retrieve servant proxy from SCBroker (lookup)
 	
@@ -742,7 +607,7 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 		set contract [lindex $rawproxy 0]
 		set impls [lindex $rawproxy 1]
 		
-		my log "+++ serialized proxy code: $serializedCode"
+	#	my log "+++ serialized proxy code: $serializedCode"
 		
 		eval $serializedCode
 		
@@ -753,22 +618,28 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 	
 	# parse call args -> convert to nonpos args / implement checkoptions (string, integer, ...)
 	
-	set npArgs ""
+	
 	
 	#my log "+++++ proxy posArgs: [[$proxy info class] set posArgs($operation)], callArgs: $callArgs"
 	
-	if {[[$proxy info class] exists posArgs($operation)]} {
+	if {$callArgs eq {}} { 
+			set cmd "$proxy $operation $args"
+	} else {
+	
+		set npArgs ""
+		if {[[$proxy info class] exists posArgs($operation)]} {
 		foreach argName [[$proxy info class] set posArgs($operation)] argValue $callArgs {
 			
 			#my log "+++++ npArgs: $npArgs, argName: $argName, argValue: $argValue"
 			expr {[string equal $argValue ""] ? "" : [append npArgs " " "-$argName {$argValue}"]} 
-	
+		#	my log "available checkoptions: [::xotcl::nonposArgs info methods]"
+			# invoke actual op
+			set cmd "$proxy $operation $npArgs"
 		}
 	}
+	}
 	
-	my log "available checkoptions: [::xotcl::nonposArgs info methods]"
-	# invoke actual op
-	set cmd "$proxy $operation $npArgs"
+	
 	my log "++++ actual invocation call: $cmd"
 	set r [eval $cmd]
 	
@@ -788,21 +659,23 @@ SCInvoker ad_proc invoke {{-contract ""} -operation:required {-impl ""} {-implId
 }
 
 
+
+
 }
 
 
 #::xorb::SCInvoker invoke -contract "auth_authentication" -impl "local" -operation "Authenticate" -callArgs "dotlearner@dotl.rn dtpwd {
 
-namespace eval mytest {
+#namespace eval mytest {
 
-	Class myService
-	myService instproc myMethod args {
+#	Class myService
+#	myService instproc myMethod args {
 		
-		my log "invocation successful: $args"
+#		my log "invocation successful: $args"
 	
-	}
+#	}
 
-}
+#}
 
 
 

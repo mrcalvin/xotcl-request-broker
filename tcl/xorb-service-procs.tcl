@@ -28,13 +28,15 @@ namespace eval xorb::service {
 ###################################
 
 
-::xotcl::Class Service -superclass ::xotcl::Class -parameter {implements} -ad_doc {} 
+::xotcl::Class Service -superclass ::xotcl::Class -parameter {implements package} -ad_doc {} 
 
 Service ad_instproc init {} {} {
 	
 		if {[my exists implements]} {
-		my instvar refImplementation implements
-		set refImplementation [::xorb::ServiceImplementation new -childof [self] -label [namespace tail [self]] -prettyName "Reference Implementation for $implements" -contractName $implements]
+		my instvar refImplementation implements package
+		
+		
+		set refImplementation [::xorb::ServiceImplementation new -childof [self] -label [namespace tail [self]] -prettyName "Reference Implementation for $implements" -contractName $implements -owner $package]
 		ad_after_server_initialization "[self]'s injection" "[self] inject"
 		} 
 		next
@@ -50,8 +52,8 @@ Service instproc ad_instproc  {
    {-operation:switch false}
   proc_name arguments doc body} {
     	
-    	my log "private: $private, depr: $deprecated, warn: $warn, debug: $debug, operation: $operation"
-    	my log "proc_name: $proc_name, arguments: $arguments, doc: $doc, body: $body"
+  #  	my log "private: $private, depr: $deprecated, warn: $warn, debug: $debug, operation: $operation"
+  #  	my log "proc_name: $proc_name, arguments: $arguments, doc: $doc, body: $body"
     	
     	 	    	    	
     	if {[my exists refImplementation] && $operation} {
@@ -62,13 +64,13 @@ Service instproc ad_instproc  {
     		
     		}
     	
-    	my log "++++ [self] am called."
+   # 	my log "++++ [self] am called."
     	
     	#uplevel [list [self] instproc $proc_name $arguments $body]
     	uplevel [list [self] instproc $proc_name $arguments $body]
     	my __api_make_doc inst $proc_name
     		
-    	my log "++++ methods: [[self] info methods]"	
+   # 	my log "++++ methods: [[self] info methods]"	
     	#next
     
   }
@@ -121,19 +123,22 @@ InstantService instproc ad_instproc  {
     		
     		# input
     		
-    		my log "++++ [self]: [[self] info methods]"
+    	#	my log "++++ [self]: [[self] info methods]"
     		
     		#set nonposArgs [my info nonposargs $proc_name]
-    		my log "++++ $arguments"
+    		#my log "++++ $arguments"
     		set argObjs ""
     		foreach nonposArg $arguments {
     			
     			if {[string index $nonposArg 0] == "-"} {
+    			#if {[string first "\[" $nonposArg] != -1} {
+    			#	set nonposArg [string range $nonposArg 0 [expr {[string first "\[" $nonposArg] - 1 }]]
+    			#}
     			set pair [split $nonposArg ":"]
-    			append argObjs "::xorb::Argument new -label [string trimleft [lindex $pair 0] "-"]  -datatype [lindex $pair 1]\n"
+    			append argObjs "::xorb::Argument new -label [string trimleft [lindex $pair 0] "-"]  -datatype {[lindex $pair 1]}\n"
     			}
     		}
-    		my log "++++ $argObjs"
+    		#my log "++++ $argObjs"
     		set input "::xorb::Input new -contains {$argObjs}\n"
     		
     		#output
@@ -145,7 +150,7 @@ InstantService instproc ad_instproc  {
     		
     		set operationSignature "::xorb::Operation new -label $proc_name -description {$doc} -contains { $input $output }"
     		
-    		my log "opSig: $operationSignature"
+    		#my log "opSig: $operationSignature"
     		
     		$instantContract contains $operationSignature       		
     		

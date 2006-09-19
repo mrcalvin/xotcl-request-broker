@@ -10,33 +10,787 @@ ad_library {
 
 
 ##################################################
+##################################################
 #
-# additional checkoptions for type verification
-# (string, integer, multiple)
-#	
+# Storage Handler for message type elements, intercepts
+# calls to acs_msg_type__new_element in acs_sc::msg_type::parse_spec
+# (see msg-type-procs.tcl). therefore, replaces acs_sc::msg_type::element::new
+# only an interim solution!
+# 
 #
 ##################################################
+##################################################
 
-::xotcl::nonposArgs ad_proc string {argName {string ""}} {} {}
+rename ::acs_sc::msg_type::element::new ::acs_sc::msg_type::element::new.orig
 
-::xotcl::nonposArgs ad_proc multiple {argName {list ""}} {} {
+ad_proc ::acs_sc::msg_type::element::new {
+    {-msg_type_name:required}
+    {-element_name:required} 
+    {-element_msg_type_name:required} 
+    {-element_msg_type_isset_p:required} 
+    {-element_pos:required} 
+} {} {
+    ::xorb::aux::MsgTypeElement new -volatile -msg_type_name $msg_type_name -element_name $element_name -element_msg_type_name $element_msg_type_name -element_msg_type_isset_p $element_msg_type_isset_p -element_pos $element_pos 
+}
+
+
+namespace eval xorb::aux {
+
+
+
+
+::xotcl::Class MsgTypeElement -parameter {msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos {element_constraints ""}}
+
+MsgTypeElement ad_instproc init {} {} {
 	
-	if {[catch {llength $list}] || ![string equal $list [split $list]] } { set errmsg "non-positional argument: '$argName' with value '$list' is not a well-formed list"; error $errmsg } 
+	my instvar msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos element_constraints
+	
+	#my log "type=$element_msg_type_name"
+	
+	# # # # # # # # # 
+	# Array and multiple handling
+	#
+	
+	# deal with old-style multiple declaration > foo:integer,multiple
+	if {$element_msg_type_isset_p} {
+		set element_msg_type_name "multiple($element_msg_type_name)"
+	}
+	
+	set lexer [CompoundLexer new -volatile -init $element_msg_type_name]
+	$lexer instvar argType isArray constraints
+	
+	
+	array set arrConstraints [list]
+	set element_constraints [db_null]
+	
+	#my log "isArray: $isArray, argType: $argType"
+	
+	if {$isArray || [string toupper $argType 0 0] eq "Multiple"} {
+		set start [string first "(" $element_msg_type_name]
+		if {$start != -1} {
+			set element_constraints [string range $element_msg_type_name $start end]
+			set element_msg_type_name [string range $element_msg_type_name 0 [expr {$start-1}]]
+		}
+		
+		set element_msg_type_isset_p "t"
+		 
+	}
+	#my log "+++element_name=$element_name // element_msg_type_name=$element_msg_type_name // element_msg_type_isset_p=$element_msg_type_isset_p // element_pos=$element_pos // element_constraints=$element_constraints"
 
+	db_string insert_new_element_plus_constraints {
+		
+		select acs_sc_msg_type__new_element(
+            :msg_type_name,
+            :element_name,
+            :element_msg_type_name,
+            :element_msg_type_isset_p,
+            :element_pos,
+            :element_constraints
+        );
+     }
 }
 
 
-::xotcl::nonposArgs ad_proc integer {argName {integer ""}} {} {
 
-	if {![string is integer $integer]} {set errmsg "non-positional argument: '$argName' with value '$integer' is not of type integer"; error $errmsg}
 
+
+##################################################
+##################################################
+#
+# mixin for backend handling of types (integration into
+# message type infrastructure)
+#
+##################################################
+##################################################
+
+::xotcl::Class StorableType
+StorableType ad_instproc init args {} {
+
+	set name [string tolower [namespace tail [self]] 0 0]
+	set specification ""
+	
+	if {![db_0or1row nn_msgtype_exists {
+		select 	mt.msg_type_id 
+		from 	acs_sc_msg_types as mt
+		where 	mt.msg_type_name = :name 
+	}]} {
+		
+		my set id [db_string insert_nn_msgtype {
+		select acs_sc_msg_type__new(
+            :name, 
+            :specification);
+	}]		
+	} else {
+		my set id $msg_type_id
+	}
+	
+	next
+	
 }
 
-########################
+
+::xotcl::Class StorableCompoundType
+StorableCompoundType ad_instproc init args {} {
+
+	
+	#1 is dict (root element), mapped to acs_sc msg type
+	
+#	my log "+++class=[my info class], istype: [my istype Dict::__Pointer]"
+	
+	
+	if {[my istype Dict]} {
+	
+		set name [namespace tail [self]]
+		set specification ""
+	
+		if {![db_0or1row n_msgtype_exists {
+			select 	mt.msg_type_id 
+			from 	acs_sc_msg_types as mt
+			where 	mt.msg_type_name = :name 
+		}]} {
+		
+			my set id [db_string insert_nn_msgtype {
+				select acs_sc_msg_type__new(
+            		:name, 
+            		:specification);}]
+            	my set inserted true
+            	Dict::$name set id [my set id]	
+            	
+		} else {
+			my set id $msg_type_id 
+			Dict::$name set id $msg_type_id
+			my set inserted false
+		}
+	} elseif {[[my info class] istype CheckOption] || [my istype Dict::__Pointer]} {
+		
+		
+		set msg_type_name [string tolower [namespace tail [my info parent]] 0 0]
+		set element_name [string tolower [namespace tail [self]] 0 0]
+		set element_msg_type_name [string tolower [namespace tail [my info class]] 0 0]
+		set parent_id [db_null]
+		set constraints [db_null]
+		if {[my istype Dict::__Pointer]} {
+			set element_msg_type_name [namespace tail [my substitute]]
+			set parent_id [[my substitute] set id]
+			
+		}
+		set element_msg_type_isset_p 0
+		set element_pos	-1
+		
+	#	my log "+++child_name=$element_name, parent_name:$msg_type_name, id=$parent_id, constraints=$constraints"
+		
+		
+		#my log "msg_type_name: $msg_type_name, element_name: $element_name, el_msg_type_name: $element_msg_type_name, insert? [[my info parent] set inserted]"
+		 
+		if {[[my info parent] set inserted]} {
+			db_0or1row c_insert_subelement {
+				select acs_sc_msg_type__new_element(
+            			:msg_type_name,
+            			:element_name,
+	            		:element_msg_type_name,
+	            		:element_msg_type_isset_p,
+	            		:element_pos,
+	        );
+		}
+		}
+	}
+	next
+	
+}
+
+
+##################################################
+# mixin class implementing basic compound handling (getting compound declaration, ...)
+
+::xotcl::Class CompoundNonPosArgs 
+CompoundNonPosArgs ad_instproc unknown {npArgType argName argValue} {} {
+
+		set lexer [CompoundLexer new -volatile -init $npArgType]
+		$lexer instvar argType isArray constraints
+		
+		set argTypeUpper [string toupper $argType 0 0]
+		
+		if  {$isArray} {
+			[Array new -volatile -type $argType -occurrence $constraints] validate $argName $argValue
+		} elseif {[my isobject Dict::$argType]} {
+			Dict::$argType validate $argName $argValue
+		} elseif {$argTypeUpper eq "Multiple" && [my isobject $argTypeUpper]} {
+			[$argTypeUpper new -volatile -type $constraints] validate $argName $argValue 
+		} else {next}
+}
+
+##################################################
+# basic lexer for compound declarations
+
+
+::xotcl::Class CompoundLexer -parameter {{argType ""} {isArray ""} {constraints ""}}
+
+
+CompoundLexer ad_instproc unbrace {in} {} {
+	
+	return [string map {" \{ " "(" " \}" ")"} $in]
+}
+
+CompoundLexer ad_instproc enbrace {in} {} {
+	
+	return [string map {"(" " \{ " ")" " \} "} $in]
+}
+
+CompoundLexer ad_instproc init {npArgType} {} {
+
+	my instvar argType isArray constraints
+	
+  	 if {$npArgType ne {}} { 
+   
+   		set bracedString [my enbrace $npArgType]
+   		set inserted 0
+		if {[expr {[llength $bracedString]%2}] != 0} { set bracedString "$bracedString {}"; set inserted 1}
+   
+   		array set declaration $bracedString
+   		set level0 [array names declaration]
+   		set isArray false
+   		set argType $npArgType
+   		set constraints ""
+   		
+   		
+   		if {[llength $level0] == 1 && !$inserted} {
+   			set argType $level0
+   			set constraints [my unbrace [string trim $declaration($level0)]]
+   			set isArray [string is integer $constraints]
+   			
+   		} elseif {[llength $level0] == 2 && $inserted} {
+   			
+   			# array of multiples or array of arrays
+   			set l [lsort -increasing [array names declaration]]
+   			set constraints [lindex $l 0]
+   			set isArray [string is integer $constraints]
+   			set argType "[lindex $l 1]([my unbrace [string trim $declaration([lindex $l 1])]])"
+   			
+   		} 
+      
+   		
+		#my log "argType: $argType, constraints=$constraints, isArray: $isArray"
+		
+		
+	
+	}
+	
+}
+
+
+##################################################
+# activate compound lexer
+
+::xotcl::nonposArgs mixin CompoundNonPosArgs
+
+##################################################
+# basic meta-class for defining/ registering new checkoptions
+
+::xotcl::Class CheckOption -superclass Class
+CheckOption ad_instproc init args {} {
+	
+	my abstract instproc getValue {}
+	my abstract instproc getCheckOption {}
+	
+	next
+}
+
+CheckOption ad_proc is {label} {} {
+	return [expr {[my isclass [string toupper $label 0 0]] && [[string toupper $label 0 0] istype [self]]}]
+}
+
+
+##################################################
+# derived meta-class for defining/ registering new atomic checkoptions
+
+::xotcl::Class Atom -superclass CheckOption
+
+# register with backend (as basic message type)
+
+Atom instmixin StorableType
+
+Atom ad_instproc init args {} {
+	
+	next
+	
+	my abstract instproc validate {argName {value ""}}
+	set x [::xotcl::Class new -parameter {detainee}]
+	my superclass $x
+	::Serializer exportObjects $x
+	my instproc init args {
+			
+			# clear from all mixins
+			my mixin {}
+			next
+	}
+	
+	# register with nonposArg Handler
+	
+	if {[lsearch -glob [::xotcl::nonposArgs info methods] [string tolower [namespace tail [self]]]] == -1} {
+		set cmd "::xotcl::nonposArgs proc [string tolower [namespace tail [self]]] {argName {value \"\"}} { 
+		
+				set x \[[self] new -detainee \$value \] 
+			
+				\$x validate \$argName \$value 
+			
+				}"
+		
+		eval $cmd
+	}
+	
+	
+	
+	my ad_instproc getCheckOption {} {} {
+		return [string tolower [namespace tail [self class]] 0 0]
+	}
+	
+	#my log "+++help: i am here"
+	
+	
+}
+
+Atom ad_proc is {label} {} {
+
+	return [expr {[my isclass [string toupper $label 0 0]] && [[string toupper $label 0 0] istype [self]]}]
+}
+
+
+##################################################
+# derived meta-class for defining/ registering new compound checkoptions
+
+
+::xotcl::Class Compound -superclass CheckOption
+
+Compound ad_proc is {label} {} {
+
+	return [expr {[my isclass [string toupper $label 0 0]] && [[string toupper $label 0 0] istype [self]]}]
+}
+ 
+Compound ad_instproc init args {} {
+
+	my abstract instproc validate {argName {value ""}}
+	my abstract instproc getValues {}
+	my abstract instproc ascribe {container node}
+	my instproc init args {
+	
+			# clear from all mixins (StorableCompoundType, RetrievableType, ...)
+			my mixin {}
+			next
+	
+	}
+	set x [::xotcl::Class new -parameter {detainee {domNode ""}}]
+	my superclass $x
+	::Serializer exportObjects $x
+	next
+	
+}
+
+##################################################
+##################################################
+#
+#	compounds / atoms
+#
+##################################################
+##################################################
+
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Compound: 
+ # |	     multiple
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+
+Compound  Multiple -parameter {type}
+
+	Multiple ad_instproc init args {} {
+		my instvar type
+		if {![Atom is $type]} {
+			set errmsg "non-positional argument: 
+				Creating a [self class] with a type constraint '$type' is invalid"; error $errmsg
+		}
+		
+		next
+	} 
+	
+	Multiple ad_instproc validate {argName {value ""}} {} {
+		
+			my log "[self class] // value: $value"
+			my instvar type
+			if {[catch {llength $value}]} { set errmsg "non-positional argument: 
+				'$argName' with value '$value' is not a well-formed list"; error $errmsg } 
+					
+			foreach component $value {
+					::xotcl::nonposArgs $type "$argName's component (pos [lsearch -glob $value $component])" $component
+				}
+	}	
+	
+	Multiple ad_instproc getValues {} {} {
+		
+		if {[my exists detainee]} {
+			return [my detainee]
+		}
+	}
+	
+	Multiple ad_instproc getCheckOption {} {} {
+		
+		return [string tolower [namespace tail [self class] ] 0 0]
+	}
+
+
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Compound: 
+ # |	     dict
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+Compound  Dict 
+
+
+	
+	Dict ad_proc unknown {name elements} {} {
+			
+			#1 create a new instance 
+			#set x [uplevel [self callinglevel] eval [self] create $name]
+			
+			
+			# create a permanent proxy in Dict::* namespace
+			Dict::__Proxy [self]::$name 
+			# create a volatile container for one time parsing / registering
+			set x [[self] create $name -volatile -mixin ::xorb::aux::StorableCompoundType]
+			
+			
+			foreach element $elements {
+				if {![regexp {^([0-9,a-z,A-Z]*):([a-z,A-Z]*)([[.(.]]([a-z,0-9]*)[[.).]])?$} $element -> elName elType info constraints ] || ($elName eq {} && $elType eq {})} {
+					set errmsg "Invalid element specification in '$elements' when trying to populate new custom compound of type [self]"; 					error $errmsg	
+				}
+				
+				set elTypeUpper [string toupper $elType 0 0]
+				
+			#	my log "element=$element, name=$elName, type=$elType, info=$info, constraints=$constraints"
+				
+				
+				#2 identify nested types
+				if {[my isobject Dict::$elType] && $info eq {}} { 
+					$x contains "::xorb::aux::Dict::__Pointer $elName -substitute Dict::$elType -mixin ::xorb::aux::StorableCompoundType"
+				} elseif {[CheckOption is $elTypeUpper] && $info ne {}} {
+					$x contains "::xorb::aux::Array $elName -type $elTypeUpper -occurrence $constraints -mixin ::xorb::aux::StorableCompoundType"
+				} elseif {[Compound is $elTypeUpper] && $elTypeUpper == "Multiple"} {
+					$x contains "::xorb::aux::$elTypeUpper $elName -type $constraints -mixin ::xorb::aux::StorableCompoundType"
+				} elseif {[Atom is $elTypeUpper]} {
+					$x contains "::xorb::aux::$elTypeUpper $elName -mixin ::xorb::aux::StorableCompoundType"
+				}
+				
+				
+			}
+	}
+	
+	Dict ad_instproc validate {argName {value ""}} {} {
+		
+			my log "[self class] // value: $value"
+			
+			if {[catch {array set tmpArray $value}] } { set errmsg "non-positional argument: 
+			'$argName' with value '$value' is not a serialized Tcl array (associative array)"; error $errmsg }
+			
+			foreach childCO [my info children] {
+			
+				set childArgName [namespace tail $childCO]
+			#	my log "childobj:$childCO"
+			#	my log "checkopt: [$childCO getCheckOption]"
+				set checkoption [$childCO getCheckOption]
+				
+				if {![info exists tmpArray($childArgName)]} {
+						set errmsg "non-positional argument: 
+						Array '$argName' with value '$value' does not contain an accessor '$childArgName'"; error $errmsg	
+					}
+				
+				::xotcl::nonposArgs $checkoption $childArgName $tmpArray($childArgName)
+				
+			}
+	}
+	
+	Dict ad_instproc getValues {} {} {
+		
+		if {[my array exists __detainee]} {
+		
+			my detainee [my getValue]
+		}
+		
+		if {[my exists detainee]} {
+			set values [list]
+			 foreach {k v} [my detainee] {
+			 	lappend values $v
+			 }
+			 
+			 return $values
+			 
+		}
+	}
+	
+	
+	
+	Dict ad_instproc getValue {} {} {
+	
+		if {[my array exists __detainee]} {
+		
+			array set tmpArray [list]
+			foreach {n c} [my array get __detainee] {
+				set tmpArray($n) [$c getValue]
+			}
+			
+			
+			return [array get tmpArray]
+		
+		}
+	
+	}
+	
+	Dict ad_instproc ascribe {container node} {} {
+	
+		my set __detainee([$node localName]) $container
+	}
+	
+	Dict ad_instproc getCheckOption {} {} {
+	
+		return [namespace tail [self]]
+	}
+	
+	
+	::xotcl::Class Dict::__Pointer -parameter substitute
+	
+	Dict::__Pointer ad_instproc init {} {} {
+		my forward validate [my substitute] %proc
+		my forward getCheckOption [my substitute] %proc
+	}
+	
+	::xotcl::Class Dict::__Proxy
+	Dict::__Proxy ad_instproc init args {} {
+		my forward validate %self retrieveAndExec %proc
+		my forward getCheckOption %self retrieveAndExec %proc
+	}
+	
+	Dict::__Proxy ad_instproc retrieveAndExec {proc args} {} {
+	
+			set serialisedTypeCode [XorbContainer do ::xorb::CompoundTypeRepository retrieve -name [namespace tail [self]]]
+			if {$serialisedTypeCode ne {}} {
+				eval $serialisedTypeCode
+			}
+			
+			# set volatile
+			[self]::__[namespace tail [self]] volatile
+			# validate
+			eval [self]::__[namespace tail [self]] $proc $args
+			
+			
+	}
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Compound: 
+ # |	     array
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+ Compound  Array -parameter {{type ""} {occurrence ""}}
+ 
+ 	Array ad_instproc getCheckOption {} {} {
+ 		my instvar type occurrence
+ 		if {$type ne {}} {
+ 			return "[string tolower $type 0 0]($occurrence)"
+ 		}
+ 	}
+	
+	Array ad_instproc init args {} {
+		
+		my instvar domNode type occurrence
+		
+		if {$domNode ne {}} {
+		
+		
+		
+		}
+		
+		
+	}
+	
+	Array ad_instproc validate {argName {value ""}} {} {
+		
+			my log "[self class] // value: $value"
+			
+			my instvar occurrence  type
+			set errmsg "non-positional argument: 
+			'$argName' with value '$value' is not a serialized Tcl array (numerical array)";
+		
+			if {[catch {array set tmpArray $value} msg] || [catch {set sortedAccessors [lsort -integer -increasing [array names tmpArray]]} msg] || ![string equal $sortedAccessors [my .. [expr {[lindex $sortedAccessors end]+1}]]]} { error "$errmsg [expr {[info exists msg]? "-> $msg" : "" }]"  }
+		
+		
+			if {$occurrence ne {}} {
+				
+					if {[llength [my getValues $value]] != $occurrence} {
+						set errmsg "non-positional argument: 
+					'$argName' with value '$value' contains a number of components other than $occurrence"; error $errmsg
+					}
+				}
+				
+				#my log "dataType=$type"
+				# 3) type check on components
+			if {$type ne {}} {
+					
+					foreach component [my getValues $value] {
+						::xotcl::nonposArgs $type "$argName's component (pos [lsearch -glob [my getValues $value] $component])" $component
+					}
+				}
+			}
+		
+		
+	Array ad_instproc .. {a {b ""} {step 1}} {} {
+    if {$b eq ""} {set b $a; set a 0} ;# argument shift
+    if {![string is int $a] || ![string is int $b]} {
+        scan $a %c a; scan $b %c b
+        incr b $step ;# let character ranges include the last
+        set mode %c
+    } else {set mode %d}
+    set ss [my sgn $step]
+    if {[my sgn [expr {$b - $a}]] == $ss} {
+        set res [format $mode $a]
+        while {[my sgn [expr {$b-$step-$a}]] == $ss} {
+            lappend res [format $mode [incr a $step]]
+        }
+        set res
+    } ;# one-armed if: else return empty list
+ }
+
+ Array ad_instproc sgn x {} {expr {($x>0) - ($x<0)}}	
+	
+	Array instproc getValues {sArray} {
+		
+		
+			 foreach {k v} $sArray {
+			 	lappend values $v
+			 }
+			 
+			return $values
+			 
+		
+	}
+
+	Array ad_instproc getValue {} {} {
+	
+		if {[my array exists __detainee]} {
+		
+			array set tmpArray [list]
+			foreach {n c} [my array get __detainee] {
+				set tmpArray($n) [$c getValue]
+			}
+			
+			return [array get tmpArray]
+		
+		}
+		
+	} 
+
+	Array ad_instproc ascribe {container node} {} {
+	
+		set idx 0
+		if {[my array exists __detainee]} {
+			set idxs [lsort -integer -increasing [my array names __detainee]]
+			set idx [expr {[lindex $idxs end] + 1}]
+		}
+		
+		my set __detainee($idx) $container
+	
+	}
+
+
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Atom: integer
+ # |
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+Atom Integer
+
+	Integer ad_instproc validate {argName {value ""}} {} {
+		#my log "[self class] // value: $value"
+		if {![string is integer $value]} {set errmsg "non-positional argument: 
+		'$argName' with value '$value' is not of type integer"; error $errmsg}
+	}
+	
+	Integer ad_instproc getValue {} {} {
+	
+		if {[my exists detainee]} {
+				return [my detainee]
+		}	
+	}
+	
+
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Atom: string
+ # |
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+Atom String
+
+	String ad_instproc validate {argName {value ""}} {} {
+		#my log "[self class] // value: $value"
+		if {![string is print $value]} {set errmsg "non-positional argument: 
+		'$argName' with value '$value' is not of type string"; error $errmsg}
+	}
+	
+	String ad_instproc getValue {} {} {
+		if {[my exists detainee]} {
+				return [my detainee]
+		}	
+	}
+
+ # # # # # # # # # # # 
+ #   ______________
+ #  /              \
+ # | Atom: double
+ # |
+ #  \__   _________/
+ #    / ,'
+ #   /,'
+
+ Atom Double
+
+	Double ad_instproc validate {argName {value ""}} {} {
+		#my log "[self class] // value: $value"
+		if {![string is double $value]} {set errmsg "non-positional argument: 
+		'$argName' with value '$value' is not of type double"; error $errmsg}
+	}
+	
+	Double ad_instproc getValue {} {} {
+		if {[my exists detainee]} {
+				return [my detainee]
+		}	
+	}
+
+	
+
+
+} 
+
+##################################################
+##################################################
 #
 # register extended nonposArgs object with serializer
 #
-########################
+##################################################
+##################################################
 
 ::Serializer exportObjects {
   
@@ -53,7 +807,7 @@ namespace eval xorb::aux {
         foreach op $args {
             if {![my exists operations($op)]} {
             
-            		my log "+++4: self: [self], self class: [self class], my class: [my info class]"
+            		#my log "+++4: self: [self], self class: [self class], my class: [my info class]"
             		
                 my set operations($op) $op
             }
@@ -222,8 +976,9 @@ namespace eval xorb::aux {
   
   ::xotcl::Class SortableTypedComposite::ChildManager -ad_instproc init args {} {
     set r [next]
-    #puts "[self callingobject] -> allowedType: [[self callingobject] set allowedType]"
-    #puts "Typecheck (self:[self], allowedType: [[self callingobject] set allowedType]): [[self] istype [[self callingobject] set allowedType]]"
+   # my log "+++[self callingobject]"
+    #my log "[self callingobject] -> allowedType: [[self callingobject] set allowedType]"
+    #my log "Typecheck (self:[self], allowedType: [[self callingobject] set allowedType]): [[self] istype [[self callingobject] set allowedType]]"
     if { [[self] istype [[self callingobject] set allowedType]] } {
     [self callingobject] lappend __children [self]
     my set __parent [self callingobject]    
@@ -247,7 +1002,7 @@ namespace eval xorb::aux {
     } else { 
       set insert 0
     }
-    #puts "+++ [self] $cmds"
+    #my log "+++ [self] $cmds"
     
     set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
     if {$insert} {
@@ -267,36 +1022,4 @@ namespace eval xorb::aux {
     next
   }
   }
-
-############################################
-#
-#	Slot support
-#
-############################################
-
-::xotcl::Class Slot -parameter {name type default multiplicity}
-Slot ad_instproc assign {obj prop value} {} {$obj set $prop $value}
-Slot ad_instproc get {obj prop}   {}    {$obj set $prop}
-Slot ad_instproc add {obj prop value {pos 0}} {} {
-
-if {[$obj exists $prop]} {} {
-    $obj set $prop [linsert [$obj set $prop] $pos $value]
-  } else {
-    $obj set $prop [list $value]
-  }
-}
-Slot ad_instproc delete {-nocomplain:switch obj prop value} {} {
-  set old [$obj set $prop]
-  set p [lsearch -glob $old $value]
-  if {$p>-1} {$obj set $prop [lreplace $old $p $p]} else {
-    error "$value is not a $prop of $obj (valid are: $old)"
-  }
-}
-Slot ad_instproc init {} {} {
-  regexp {^(.*)::([^:]+)$} [self] _ cl name
-  $cl instforward $name -default [list get assign] [self] %1 %self %proc
-  if {[my exists default]} {$cl set __defaults($name) [my default]}
-
-}
-
 }
