@@ -8,6 +8,25 @@ ad_library {
     
 }
 
+##################################################
+##################################################
+#
+# generic helper classes
+# 
+#
+##################################################
+##################################################
+
+::Serializer exportMethods {
+  ::xotcl::Object instproc error
+ 
+}
+
+
+::xotcl::Object instproc error msg {
+ ns_log notice "[self] [self callingclass]->[self callingproc]: $msg"
+  error "[self] [self callingclass]->[self callingproc]: $msg"
+}
 
 ##################################################
 ##################################################
@@ -292,6 +311,7 @@ CheckOption ad_instproc init args {} {
 	my abstract instproc getValue {}
 	my abstract instproc getCheckOption {}
 	
+	
 	next
 }
 
@@ -317,12 +337,12 @@ Atom ad_instproc init args {} {
 	set x [::xotcl::Class new -parameter {detainee}]
 	my superclass $x
 	::Serializer exportObjects $x
-	my instproc init args {
+#	my instproc init args {
 			
 			# clear from all mixins
-			my mixin {}
-			next
-	}
+#			my mixin {}
+#			next
+#	}
 	
 	# register with nonposArg Handler
 	
@@ -370,20 +390,38 @@ Compound ad_instproc init args {} {
 
 	my abstract instproc validate {argName {value ""}}
 	my abstract instproc getValues {}
-	my abstract instproc ascribe {container node}
-	my instproc init args {
+	my abstract instproc ascribe {container accessor}
 	
-			# clear from all mixins (StorableCompoundType, RetrievableType, ...)
-			my mixin {}
-			next
-	
-	}
 	set x [::xotcl::Class new -parameter {detainee {domNode ""}}]
 	my superclass $x
 	::Serializer exportObjects $x
 	next
 	
 }
+
+##################################################
+##################################################
+#
+#	orthogonal superclass Type
+#
+##################################################
+##################################################
+
+::xotcl::Class Type 
+Type ad_instproc init args {} {
+		
+	# clear from all mixins (StorableCompoundType, RetrievableType, ...)
+	my mixin {}
+	
+	# call ascription procedure (when nesting is achieved by contains)
+	if {[my info parent] ne {} && ([my info parent] istype Dict || [my info parent] istype Array)} {
+		[my info parent] ascribe [self] [my name]
+	}
+	
+	next
+
+}	
+
 
 ##################################################
 ##################################################
@@ -403,7 +441,7 @@ Compound ad_instproc init args {} {
  #   /,'
 
 
-Compound  Multiple -parameter {type}
+Compound  Multiple -superclass Type -parameter {type}
 
 	Multiple ad_instproc init args {} {
 		my instvar type
@@ -449,7 +487,7 @@ Compound  Multiple -parameter {type}
  #    / ,'
  #   /,'
 
-Compound  Dict 
+Compound  Dict -superclass Type
 
 
 	
@@ -550,9 +588,9 @@ Compound  Dict
 	
 	}
 	
-	Dict ad_instproc ascribe {container node} {} {
+	Dict ad_instproc ascribe {container accessor} {} {
 	
-		my set __detainee([$node localName]) $container
+		my set __detainee($accessor) $container
 	}
 	
 	Dict ad_instproc getCheckOption {} {} {
@@ -597,7 +635,7 @@ Compound  Dict
  #    / ,'
  #   /,'
 
- Compound  Array -parameter {{type ""} {occurrence ""}}
+ Compound  Array -superclass Type -parameter {{type ""} {occurrence ""}}
  
  	Array ad_instproc getCheckOption {} {} {
  		my instvar type occurrence
@@ -606,18 +644,6 @@ Compound  Dict
  		}
  	}
 	
-	Array ad_instproc init args {} {
-		
-		my instvar domNode type occurrence
-		
-		if {$domNode ne {}} {
-		
-		
-		
-		}
-		
-		
-	}
 	
 	Array ad_instproc validate {argName {value ""}} {} {
 		
@@ -688,14 +714,14 @@ Compound  Dict
 			foreach {n c} [my array get __detainee] {
 				set tmpArray($n) [$c getValue]
 			}
-			
+			my log "+++[array get tmpArray]"
 			return [array get tmpArray]
 		
 		}
 		
 	} 
 
-	Array ad_instproc ascribe {container node} {} {
+	Array ad_instproc ascribe {container accessor} {} {
 	
 		set idx 0
 		if {[my array exists __detainee]} {
@@ -717,7 +743,7 @@ Compound  Dict
  #    / ,'
  #   /,'
 
-Atom Integer
+Atom Integer -superclass Type
 
 	Integer ad_instproc validate {argName {value ""}} {} {
 		#my log "[self class] // value: $value"
@@ -742,7 +768,7 @@ Atom Integer
  #    / ,'
  #   /,'
 
-Atom String
+Atom String -superclass Type
 
 	String ad_instproc validate {argName {value ""}} {} {
 		#my log "[self class] // value: $value"
@@ -765,7 +791,7 @@ Atom String
  #    / ,'
  #   /,'
 
- Atom Double
+ Atom Double -superclass Type
 
 	Double ad_instproc validate {argName {value ""}} {} {
 		#my log "[self class] // value: $value"
@@ -975,8 +1001,10 @@ namespace eval xorb::aux {
   }
   
   ::xotcl::Class SortableTypedComposite::ChildManager -ad_instproc init args {} {
+  
     set r [next]
-   # my log "+++[self callingobject]"
+    my log "+++[self callingobject], class: [[self callingobject] info class], current: [self], current class: [my info class]"
+    
     #my log "[self callingobject] -> allowedType: [[self callingobject] set allowedType]"
     #my log "Typecheck (self:[self], allowedType: [[self callingobject] set allowedType]): [[self] istype [[self callingobject] set allowedType]]"
     if { [[self] istype [[self callingobject] set allowedType]] } {

@@ -119,10 +119,16 @@ namespace eval xorb {
 	#########################################################
 	
 	Class NestedClass -superclass ::xotcl::Class
-	NestedClass ad_instproc new {-mixin args} {} {
+	
+	ns_log notice "+++xotcl:$::xotcl::version"
+	
+	if {$::xotcl::version < 1.5} {
+		NestedClass ad_instproc new {-mixin args} {} {
 		
-		eval next -childof [self callingobject] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
+			my log "+++ -mixin-arg exists:[info exists mixin], args=$args"
+			eval next -childof [self callingobject] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
 
+		}
 	}
 	
 	::xotcl::Class MessageType -superclass ::xorb::aux::SortableTypedComposite -parameter {label}
