@@ -28,6 +28,8 @@ ad_library {
   error "[self] [self callingclass]->[self callingproc]: $msg"
 }
 
+
+
 ##################################################
 ##################################################
 #
@@ -55,6 +57,42 @@ ad_proc ::acs_sc::msg_type::element::new {
 
 namespace eval xorb::aux {
 
+
+##################################################
+##################################################
+#
+#	allow nesting by using "new" in XOTcl < 1.5
+#
+##################################################
+##################################################
+
+Class NestedClass -superclass ::xotcl::Class
+	
+	#ns_log notice "+++xotcl:$::xotcl::version"
+	
+	if {$::xotcl::version < 1.5} {
+		NestedClass ad_instproc new {-nochild:switch -mixin -childof args} {} {
+			#my log "nester=[[self callingobject] info class], -mixin-arg exists:[info exists mixin], -childof-arg exists:[info exists childof], args=$args"
+			
+			if {$nochild} {
+				eval next [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
+			} elseif {[info exists childof]} {
+				eval next [list -childof $childof] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
+			} else {
+				eval next [expr {[self callingobject] ne {} ? [list -childof [self callingobject]] : ""}] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
+			}
+			#my log "+++ -mixin-arg exists:[info exists mixin], args=$args"
+			
+
+		}
+	} else {
+	
+		NestedClass ad_instproc new {-nochild:switch args} {} {
+			
+			eval next $args
+
+		}
+	}
 
 
 
@@ -159,7 +197,7 @@ StorableCompoundType ad_instproc init args {} {
 	
 	if {[my istype Dict]} {
 	
-		set name [namespace tail [self]]
+		set name [my name]
 		set specification ""
 	
 		if {![db_0or1row n_msgtype_exists {
@@ -230,11 +268,11 @@ CompoundNonPosArgs ad_instproc unknown {npArgType argName argValue} {} {
 		set argTypeUpper [string toupper $argType 0 0]
 		
 		if  {$isArray} {
-			[Array new -volatile -type $argType -occurrence $constraints] validate $argName $argValue
+			[Array new -nochild -name $argName -type $argType -occurrence $constraints] validate $argName $argValue
 		} elseif {[my isobject Dict::$argType]} {
 			Dict::$argType validate $argName $argValue
 		} elseif {$argTypeUpper eq "Multiple" && [my isobject $argTypeUpper]} {
-			[$argTypeUpper new -volatile -type $constraints] validate $argName $argValue 
+			[$argTypeUpper new -nochild -name $argName -type $constraints] validate $argName $argValue 
 		} else {next}
 }
 
@@ -323,7 +361,7 @@ CheckOption ad_proc is {label} {} {
 ##################################################
 # derived meta-class for defining/ registering new atomic checkoptions
 
-::xotcl::Class Atom -superclass CheckOption
+::xotcl::Class Atom -superclass {CheckOption NestedClass}
 
 # register with backend (as basic message type)
 
@@ -334,9 +372,9 @@ Atom ad_instproc init args {} {
 	next
 	
 	my abstract instproc validate {argName {value ""}}
-	set x [::xotcl::Class new -parameter {detainee}]
-	my superclass $x
-	::Serializer exportObjects $x
+	#set x [::xotcl::Class new -parameter {detainee name}]
+	#my superclass $x
+	#::Serializer exportObjects $x
 #	my instproc init args {
 			
 			# clear from all mixins
@@ -379,7 +417,7 @@ Atom ad_proc is {label} {} {
 # derived meta-class for defining/ registering new compound checkoptions
 
 
-::xotcl::Class Compound -superclass CheckOption
+::xotcl::Class Compound -superclass {CheckOption NestedClass}
 
 Compound ad_proc is {label} {} {
 
@@ -392,9 +430,9 @@ Compound ad_instproc init args {} {
 	my abstract instproc getValues {}
 	my abstract instproc ascribe {container accessor}
 	
-	set x [::xotcl::Class new -parameter {detainee {domNode ""}}]
-	my superclass $x
-	::Serializer exportObjects $x
+	#set x [::xotcl::Class new -parameter {detainee {domNode ""}}]
+	#my superclass $x
+	#::Serializer exportObjects $x
 	next
 	
 }
@@ -407,14 +445,15 @@ Compound ad_instproc init args {} {
 ##################################################
 ##################################################
 
-::xotcl::Class Type 
+::xotcl::Class Type -parameter {detainee name {domNode ""}}
+
 Type ad_instproc init args {} {
 		
 	# clear from all mixins (StorableCompoundType, RetrievableType, ...)
 	my mixin {}
-	
 	# call ascription procedure (when nesting is achieved by contains)
-	if {[my info parent] ne {} && ([my info parent] istype Dict || [my info parent] istype Array)} {
+	if {[my info parent] ne {} && [my isobject [my info parent]] && ([[my info parent] istype Dict] || [[my info parent] istype Array])} {
+	
 		[my info parent] ascribe [self] [my name]
 	}
 	
@@ -474,7 +513,8 @@ Compound  Multiple -superclass Type -parameter {type}
 	
 	Multiple ad_instproc getCheckOption {} {} {
 		
-		return [string tolower [namespace tail [self class] ] 0 0]
+		my instvar type
+		return "[string tolower [namespace tail [self class] ] 0 0]($type)"
 	}
 
 
@@ -500,7 +540,7 @@ Compound  Dict -superclass Type
 			# create a permanent proxy in Dict::* namespace
 			Dict::__Proxy [self]::$name 
 			# create a volatile container for one time parsing / registering
-			set x [[self] create $name -volatile -mixin ::xorb::aux::StorableCompoundType]
+			set x [[self] new -nochild -name $name -mixin ::xorb::aux::StorableCompoundType]
 			
 			
 			foreach element $elements {
@@ -515,13 +555,13 @@ Compound  Dict -superclass Type
 				
 				#2 identify nested types
 				if {[my isobject Dict::$elType] && $info eq {}} { 
-					$x contains "::xorb::aux::Dict::__Pointer $elName -substitute Dict::$elType -mixin ::xorb::aux::StorableCompoundType"
+					$x contains "::xorb::aux::Dict::__Pointer new -name $elName -substitute Dict::$elType -mixin ::xorb::aux::StorableCompoundType"
 				} elseif {[CheckOption is $elTypeUpper] && $info ne {}} {
-					$x contains "::xorb::aux::Array $elName -type $elTypeUpper -occurrence $constraints -mixin ::xorb::aux::StorableCompoundType"
+					$x contains "::xorb::aux::Array new -name $elName -type $elTypeUpper -occurrence $constraints -mixin ::xorb::aux::StorableCompoundType"
 				} elseif {[Compound is $elTypeUpper] && $elTypeUpper == "Multiple"} {
-					$x contains "::xorb::aux::$elTypeUpper $elName -type $constraints -mixin ::xorb::aux::StorableCompoundType"
+					$x contains "::xorb::aux::$elTypeUpper new -name $elName -type $constraints -mixin ::xorb::aux::StorableCompoundType"
 				} elseif {[Atom is $elTypeUpper]} {
-					$x contains "::xorb::aux::$elTypeUpper $elName -mixin ::xorb::aux::StorableCompoundType"
+					$x contains "::xorb::aux::$elTypeUpper new -name $elName -mixin ::xorb::aux::StorableCompoundType"
 				}
 				
 				
@@ -537,7 +577,7 @@ Compound  Dict -superclass Type
 			
 			foreach childCO [my info children] {
 			
-				set childArgName [namespace tail $childCO]
+				set childArgName [$childCO name]
 			#	my log "childobj:$childCO"
 			#	my log "checkopt: [$childCO getCheckOption]"
 				set checkoption [$childCO getCheckOption]
@@ -599,7 +639,7 @@ Compound  Dict -superclass Type
 	}
 	
 	
-	::xotcl::Class Dict::__Pointer -parameter substitute
+	NestedClass Dict::__Pointer -superclass Type -parameter substitute
 	
 	Dict::__Pointer ad_instproc init {} {} {
 		my forward validate [my substitute] %proc
@@ -806,6 +846,11 @@ Atom String -superclass Type
 	}
 
 	
+ ################################################
+ #	export namespace constructs
+ ################################################
+   
+  namespace export Multiple Dict Array String Integer Double
 
 
 } 
@@ -826,7 +871,11 @@ Atom String -superclass Type
 
 namespace eval xorb::aux {
 
-	::xotcl::Class Composite -superclass ::xotcl::Class
+
+	
+
+
+::xotcl::Class Composite -superclass ::xotcl::Class
 	
 	 
  Composite ad_instproc addOperations args {} {
@@ -1050,4 +1099,6 @@ namespace eval xorb::aux {
     next
   }
   }
+  
+  
 }

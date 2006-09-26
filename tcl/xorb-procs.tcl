@@ -118,18 +118,6 @@ namespace eval xorb {
 	#
 	#########################################################
 	
-	Class NestedClass -superclass ::xotcl::Class
-	
-	ns_log notice "+++xotcl:$::xotcl::version"
-	
-	if {$::xotcl::version < 1.5} {
-		NestedClass ad_instproc new {-mixin args} {} {
-		
-			my log "+++ -mixin-arg exists:[info exists mixin], args=$args"
-			eval next -childof [self callingobject] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
-
-		}
-	}
 	
 	::xotcl::Class MessageType -superclass ::xorb::aux::SortableTypedComposite -parameter {label}
 	
@@ -142,14 +130,14 @@ namespace eval xorb {
 	
 	}
 		
-	NestedClass Operation -superclass MessageType -parameter {description}
+	::xorb::aux::NestedClass Operation -superclass MessageType -parameter {description}
 	::xotcl::Class SignatureElement -superclass MessageType
 	
-		NestedClass Input -superclass SignatureElement		
-		NestedClass Output -superclass SignatureElement
+		::xorb::aux::NestedClass Input -superclass SignatureElement		
+		::xorb::aux::NestedClass Output -superclass SignatureElement
 	
-	NestedClass Argument -superclass MessageType -parameter {datatype position}	
-	NestedClass ReturnValue -superclass MessageType -parameter {datatype position}
+	::xorb::aux::NestedClass Argument -superclass MessageType -parameter {datatype position}	
+	::xorb::aux::NestedClass ReturnValue -superclass MessageType -parameter {datatype position}
 	
 	#########################################################
 	#
@@ -205,7 +193,7 @@ namespace eval xorb {
 	
 	}
 	
-	NestedClass Alias -parameter {label servantMethod}
+	::xorb::aux::NestedClass Alias -parameter {label servantMethod}
 	
 	Alias ad_instproc accept {visitor} {} {
 	
