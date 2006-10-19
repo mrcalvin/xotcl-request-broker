@@ -79,6 +79,8 @@ Class NestedClass -superclass ::xotcl::Class
 			} elseif {[info exists childof]} {
 				eval next [list -childof $childof] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
 			} else {
+			
+				my log "nester=[expr {[self callingobject] ne {} ?[[self callingobject] info class]  : ""}], -mixin-arg exists:[info exists mixin], -childof-arg exists:[info exists childof], args=$args"
 				eval next [expr {[self callingobject] ne {} ? [list -childof [self callingobject]] : ""}] [expr {[info exists mixin] ? [list -mixin $mixin] : ""}] $args
 			}
 			#my log "+++ -mixin-arg exists:[info exists mixin], args=$args"
@@ -89,6 +91,7 @@ Class NestedClass -superclass ::xotcl::Class
 	
 		NestedClass ad_instproc new {-nochild:switch args} {} {
 			
+			my log "args=$args"
 			eval next $args
 
 		}
@@ -246,7 +249,7 @@ StorableCompoundType ad_instproc init args {} {
             			:element_name,
 	            		:element_msg_type_name,
 	            		:element_msg_type_isset_p,
-	            		:element_pos,
+	            		:element_pos
 	        );
 		}
 		}
