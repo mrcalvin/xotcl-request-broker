@@ -1,0 +1,11 @@
+--- tcl/40-thread-mod-procs.tcl.old	2006-11-14 11:54:10.000000000 +0100
++++ tcl/40-thread-mod-procs.tcl	2006-11-14 11:54:35.000000000 +0100
+@@ -183,7 +183,7 @@
+     # lazy creation of a new slave thread
+ 
+     thread::mutex lock [my set mutex]
+-    #my check_blueprint
++    my check_blueprint
+     #my log "after lock"
+     if {![nsv_exists [self class] [self]]} {
+       set tid [::thread::create]

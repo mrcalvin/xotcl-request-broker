@@ -1,0 +1,11 @@
+--- /usr/src/xotcl-1.5.2/library/comm/Access.xotcl	2006-09-27 10:12:40.000000000 +0200
++++ comm/Access.xotcl	2006-11-02 14:49:41.000000000 +0100
+@@ -1027,7 +1027,7 @@
+ 	my instvar S chunkLength totalsize
+ 	set length [$S gets lengthString]
+ 	if {$length > 0} {
+-	    set chunkLength [expr {0x$lengthString}]
++	    set chunkLength [expr 0x$lengthString]
+ 	    #my showVars lengthString chunkLength
+ 	    if {$chunkLength == 0} {
+ 		$S event readable [self] readChunkedTrailer

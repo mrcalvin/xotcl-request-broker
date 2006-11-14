@@ -1,0 +1,32 @@
+--- /Users/neumann/src/xotcl-1.4.0/library/serialize/Serializer.xotcl	2006-02-28 10:13:17.000000000 +0100
++++ /usr/local/aolserver4/lib/xotcl1.4.0/serialize/Serializer.xotcl	2006-07-24 20:06:53.000000000 +0200
+@@ -277,7 +277,7 @@
+       set set [my array names s]
+       if {[llength $set] == 0} break
+       incr stratum
+-      #puts "$stratum set=$set"
++      #my warn "$stratum set=$set"
+       my set level($stratum) {}
+       foreach c $set {
+ 	if {[my [my category $c]-needsNothing $c]} {
+@@ -329,10 +329,8 @@
+       }
+     }
+     foreach e $list {
+-      if {[namespace exists $e]} {
+-	set namespace($e) 1
+-	set namespace([namespace parent $e]) 1
+-      }
++      set namespace($e) 1
++      set namespace([namespace qualifiers $e]) 1
+     }
+ 
+     set exports ""
+@@ -340,6 +338,7 @@
+     # delete ::xotcl from the namespace list, if it exists...
+     catch {unset namespace(::xotcl)}
+     foreach ns [array name namespace] {
++      if {![namespace exists $ns]} continue
+       if {![my isobject $ns]} {
+ 	append nsdefines "namespace eval $ns {}\n"
+       } elseif {$ns ne [namespace origin $ns] } {
