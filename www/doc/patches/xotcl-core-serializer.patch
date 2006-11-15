@@ -1,5 +1,5 @@
 --- /Users/neumann/src/xotcl-1.4.0/library/serialize/Serializer.xotcl	2006-02-28 10:13:17.000000000 +0100
-+++ /usr/local/aolserver4/lib/xotcl1.4.0/serialize/Serializer.xotcl	2006-07-24 20:06:53.000000000 +0200
++++ serialize/Serializer.xotcl	2006-07-24 20:06:53.000000000 +0200
 @@ -277,7 +277,7 @@
        set set [my array names s]
        if {[llength $set] == 0} break
