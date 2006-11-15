@@ -28,7 +28,7 @@ namespace eval xorb::service {
 ###################################
 
 
-::xotcl::Class Service -superclass ::xotcl::Class -parameter {implements package} -ad_doc {} 
+::xotcl::Class Service -superclass ::xotcl::Class -parameter {implements {package ""}} -ad_doc {} 
 
 Service ad_instproc init {} {} {
 	
