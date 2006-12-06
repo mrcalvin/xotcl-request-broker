@@ -221,7 +221,7 @@ Stub ad_proc new {-bind:required args} {
 			foreach arg $arguments {
 			    if { [string index $arg 0] eq {-} } {
 					lappend nonposArgs $arg
-						if { [string last $arg :i] } {
+						if { [string last $arg :remote] } {
 		   				 #nonposArg
 					    	 lappend callArgs [string trimleft [lindex [split $arg :] 0] -]
 					    }
