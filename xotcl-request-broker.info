@@ -15,7 +15,7 @@
 
         <provides url="xotcl-request-broker" version="0.3"/>
         <requires url="acs-service-contract" version="5.2.3b2"/>
-        <requires url="xotcl-core" version="0.38"/>
+        <requires url="xotcl-core" version="0.47"/>
 
         <callbacks>
         </callbacks>
