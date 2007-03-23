@@ -4,7 +4,7 @@ ad_library {
   
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date January 30, 2006
-  @cvs-id $Id: xorb-procs.tcl 17 2006-09-26 14:34:40Z ssoberni $
+  @cvs-id $Id$
   
 }
 
@@ -12,7 +12,7 @@ namespace eval xorb {
 
   namespace import -force ::xoexception::try
   namespace import -force ::xorb::aux::*
-
+  
   ####################################################
   # Implementing a chain of interceptors + flows
   ####################################################
@@ -50,7 +50,6 @@ namespace eval xorb {
       [self]::RequestFlow mixin [$c unfold]
       [self]::ResponseFlow mixin [$c unfold -reverse]
     }
-    my log "requestFlow=[[self]::RequestFlow info mixin],responseFlow=[[self]::ResponseFlow info mixin],unfold=[$c unfold]"
   }
 
   InterceptorChain instproc handleRequest {requestObj} {
@@ -157,7 +156,7 @@ Configuration instproc setDefaults {obj} {
     # # restrictions
     # # # # # # # # # # # # 
     # # # # # # # # # # # #
-
+  
     my log "---arr=[array get properties]"
     if {[self] ne "::xorb::Standard"} {
       # position, if 0 then 1
@@ -223,15 +222,15 @@ Configuration instproc setDefaults {obj} {
     } else {
       return 0
     }
-
   }
 
-  ::xotcl::Class Configuration::Element -slots {
-    Attribute interceptor
-  }
-# / / / / / / / / / / / / / / / / / / / / / /
-  # base configuration; only provides for (de-)
-  # marshalling
+::xotcl::Class Configuration::Element -slots {
+  Attribute interceptor
+}
+
+  # / / / / / / / / / / / / / / / / / / / / / /
+# base configuration; only provides for (de-)
+# marshalling
 
   Configuration Standard
 
