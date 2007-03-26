@@ -3,7 +3,7 @@
 # |x|o|r|b| |t|e|s|t| |s|u|i|t|e|
 # +-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+
 # author: stefan.sobernig@wu-wien.a.at
-# cvs-id: $Id: xorb-aux-procs.tcl 10 2006-07-21 15:57:15Z ssoberni $
+# cvs-id: $Id$
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 Object test
@@ -201,7 +201,7 @@ foreach c $clist {
   lappend sql_2 "msg_type_name like '$name.%'"
 }
 #1b) impls
-set ilist [list myImplementation AAImplementation ::xowiki::ExamplePage]
+set ilist [list myImplementation AAImplementation ::xowiki::ExamplePage AA-2-LC-Adapter AA-2-LO-Adapter]
 set sql_3 [list "delete from acs_sc_impls"]
 foreach i $ilist {
   set name $i
@@ -931,6 +931,242 @@ ServantClass instproc servantMethod {
 # # # # # # # # # # # # # #
 # # # # # # # # # # # # # #
 
+test subsection "Adapters"
+
+# / / / / / / / / / / / / /
+# define an implementation
+# in terms of an adapter to
+# a piece of existing code.
+
+# ::xorb::ServiceContract AATreaty -defines {
+#   ::xorb::Abstract m1 -arguments {
+#     arg1:string
+#     arg2:string
+#     arg3:string
+#   } -description "m1's description"
+#   ::xorb::Abstract m2 -arguments {
+#     arg1:string
+#     arg2:string
+#     arg3:string
+#   } -returns "returnValue:integer" -description "m2's description"
+#   ::xorb::Abstract m3 -arguments {
+#     arg1:string
+#     arg2:string
+#     arg3:string
+#   } -returns "returnValue:integer" -description "m3's description"
+# } -ad_doc {myTreaty's description}
+
+# # # # # # # # # # # # # # #
+# staging: set Default policy
+# to "none"
+
+::xorb::deployment::Default default_permission none
+
+# / / / / / / / / / / / / /
+# 1) legacy classes
+# the legacy piece
+::xotcl::Class LegacyClass
+LegacyClass ad_instproc legacyM3 {
+  -arg1:string
+  -arg2:integer
+} {doc} {
+  ns_write "<pre>[self]-:[self proc] invoked</pre>"
+}
+LegacyClass ad_instproc legacyM2 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} { ns_write "[self]-:[self proc] invoked" }
+LegacyClass ad_instproc legacyM1 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} { ns_write "[self]-:[self proc] invoked" }
+
+# relate it/ make it compatible
+# to AATreaty->m3
+
+ClassAdapter AA-2-LC-Adapter \
+    -implements AATreaty \
+    -adapts {
+      m3	{::template::LegacyClass legacyM3}
+      m2	{::template::LegacyClass legacyM2}
+      m1	{::template::LegacyClass legacyM1}
+    }
+
+?+ {
+  AA-2-LC-Adapter deploy -now
+} "Use deployment mechanism to sync 'adaptor implementation'"
+
+# setting the call environment
+# 1) NEGATIVE test -> no record adaptation to legacy instproc!
+::xo::cc virtualObject AA-2-LC-Adapter
+::xo::cc virtualCall m3
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - class)"
+?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+  Dispatching invocation call (negative class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# adapter method (handle signature mismatches)
+AA-2-LC-Adapter ad_instproc legacyM3 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} {
+  if {![string is integer $arg2]} {set arg2 123}
+  next -arg1 $arg3 -arg2 $arg2;#LegacyClass->legacyClass
+}
+
+# 2) POSITIVE test
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - class)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# / / / / / / / / / / / / /
+# 2) legacy objects
+# the legacy piece
+::xotcl::Object LegacyObject
+LegacyObject ad_proc legacyM3 {
+  -arg1:string
+  -arg2:integer
+} {doc} {
+  ns_write "<pre>[self]-:[self proc] invoked</pre>"
+}
+LegacyObject ad_proc legacyM2 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} { ns_write "<pre>[self]-:[self proc] invoked</pre>" }
+LegacyObject ad_proc legacyM1 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} { ns_write "<pre>[self]-:[self proc] invoked</pre>" }
+
+# relate it/ make it compatible
+# to AATreaty->m3
+
+ObjectAdapter AA-2-LO-Adapter \
+    -implements AATreaty \
+    -adapts {
+      m3	{::template::LegacyObject legacyM3}
+      m2	{::template::LegacyObject legacyM2}
+      m1	{::template::LegacyObject legacyM1}
+    }
+
+?+ {
+  AA-2-LO-Adapter deploy -now
+} "Use deployment mechanism to sync 'adaptor implementation'"
+
+# setting the call environment
+# 1) NEGATIVE test -> no record adaptation to legacy instproc!
+::xo::cc virtualObject AA-2-LO-Adapter
+::xo::cc virtualCall m3
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - object)"
+?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+  Dispatching invocation call (negative class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# adapter method (handle signature mismatches)
+AA-2-LO-Adapter ad_instproc legacyM3 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} {
+  if {![string is integer $arg2]} {set arg2 123}
+  next -arg1 $arg3 -arg2 $arg2;#LegacyClass->legacyClass
+}
+
+# 2) POSITIVE test
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - object)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# 3) legacy procs
+# the legacy piece
+ad_proc legacyM3 {
+  -arg1
+  -arg2
+} {doc} {
+  ns_write "<pre>[info vars] invoked</pre>"
+}
+ad_proc legacyM2 {
+  -arg1
+  -arg2
+  -arg3
+} {doc} { ns_write "<pre>[info current] invoked</pre>" }
+ad_proc legacyM1 {
+  -arg1
+  -arg2
+  -arg3
+} {doc} { ns_write "<pre>[info current] invoked</pre>" }
+
+# relate it/ make it compatible
+# to AATreaty->m3
+
+ProcAdapter AA-2-LP-Adapter \
+    -implements AATreaty \
+    -adapts {
+      m3	::template::legacyM3
+      m2	::template::legacyM2
+      m1	::template::legacyM1
+    }
+
+?+ {
+  AA-2-LP-Adapter deploy -now
+} "Use deployment mechanism to sync 'adaptor implementation'"
+
+# setting the call environment
+# 1) NEGATIVE test -> no record adaptation to legacy instproc!
+::xo::cc virtualObject AA-2-LP-Adapter
+::xo::cc virtualCall m3
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - proc)"
+?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+  Dispatching invocation call (negative proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# adapter method (handle signature mismatches)
+AA-2-LP-Adapter ad_instproc legacyM3 {
+  -arg1:string
+  -arg2:string
+  -arg3:string
+} {doc} {
+  if {![string is integer $arg2]} {set arg2 123}
+  next -arg1 $arg3 -arg2 $arg2;#legacyM3 proc
+}
+
+# 2) POSITIVE test
+?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - proc)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+
+# # # # # # # # # # # # # # #
+# re-set Default policy
+# to "public"
+::xorb::deployment::Default default_permission public
+
+# # # # # # # # # # # # # #
+# # # # # # # # # # # # # #
+# Access policies
+# # # # # # # # # # # # # #
+# # # # # # # # # # # # # #
+
 test subsection "Invocation access policies"
 
 # / / / / / / / / / / / / /
@@ -1164,6 +1400,38 @@ AAImplementation sync -delete
 
 AAImplementation mixin delete ::xorb::Synchronizable
 
+AA-2-LC-Adapter mixin add ::xorb::Synchronizable
+AA-2-LC-Adapter sync -delete
+
+? { db_0or1row impl_deleted \
+  [AA-2-LC-Adapter subst { select * 
+  from acs_sc_impls
+    where impl_id = $id }]
+ } 0 "Staging: AA-2-LC-Adapter (id:[AA-2-LC-Adapter id]) was removed."
+
+AA-2-LC-Adapter mixin delete ::xorb::Synchronizable
+
+AA-2-LO-Adapter mixin add ::xorb::Synchronizable
+AA-2-LO-Adapter sync -delete
+
+? { db_0or1row impl_deleted \
+  [AA-2-LO-Adapter subst { select * 
+  from acs_sc_impls
+    where impl_id = $id }]
+ } 0 "Staging: AA-2-LO-Adapter (id:[AA-2-LO-Adapter id]) was removed."
+
+AA-2-LO-Adapter mixin delete ::xorb::Synchronizable
+
+AA-2-LP-Adapter mixin add ::xorb::Synchronizable
+AA-2-LP-Adapter sync -delete
+
+? { db_0or1row impl_deleted \
+  [AA-2-LP-Adapter subst { select * 
+  from acs_sc_impls
+    where impl_id = $id }]
+ } 0 "Staging: AA-2-LP-Adapter (id:[AA-2-LP-Adapter id]) was removed."
+
+AA-2-LP-Adapter mixin delete ::xorb::Synchronizable
 
 AATreaty mixin add ::xorb::Synchronizable
 AATreaty sync -delete

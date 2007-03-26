@@ -699,8 +699,10 @@ ad_after_server_initialization synchronise_implementations {
     my clearState
     # continue with new sync
     array set __status__ [my action]
+    my log "PRE_ACTION:exists?[info exists __status__(action)]"
     if {[info exists __status__(action)]} {
       set action $__status__(action)
+      my log "ACTION([self])=$action"
       my filter notificationFilter
       my id [expr {[info exists __status__(id)]?$__status__(id):{}}]
       if {$delete && $action ne "save"} {
@@ -1143,7 +1145,7 @@ ad_after_server_initialization synchronise_implementations {
 	$__skeleton__ set registry([my name]) [list $qservant $__type__]
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 	set isLifecycled 0
-	if {$__type__ eq "1" || $__type__ eq "2"} {
+	if {$__type__ eq "1" || $__type__ eq "2" || $__type__ eq "3"} {
 	  # servant is either object or class
 	  # activation / lifecycling is applicable
 	  set s [namespace qualifiers $qservant]
@@ -1157,7 +1159,7 @@ ad_after_server_initialization synchronise_implementations {
 	$__skeleton__ instproc [my name] args [subst {
 	  set d [concat \[list $declaration\]]
 	  ::xoexception::try {
-	    if {\[string first - \$d\] == -1 && \
+	    if {\$d ne {} && \[string first - \$d\] == -1 && \
 		    \[string first - \$args\] != -1} {
 	      array set arr \$args
 	      set nargs \[list\]
@@ -1175,9 +1177,17 @@ ad_after_server_initialization synchronise_implementations {
 	    set rulingPolicy \[parameter::get -parameter "per_instance_policy"\]
 	    set p \[\$rulingPolicy check_permissions $__skeleton__ \[self proc\]\]
 	    if {\$p} {  
-	      set r \[eval my __[my name] \[expr { 
+	      ::xoexception::try {
+		set r \[eval my __[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
-	      }\]\]
+		}\]\] 
+	      } catch {Exception e} {
+		error \$e
+	      } catch {error e} {
+		global errorInfo
+		error \[::xorb::exceptions::ServantDispatchException new \
+		    "Dispatching call [my name] to servant failed: \$errorInfo"\]
+	      }
 	      
 	    } else {
 	      error \[::xorb::exceptions::BreachOfPolicyException new "[subst {
@@ -1217,12 +1227,23 @@ ad_after_server_initialization synchronise_implementations {
 	set type [my identify $servant]
 	set obj [namespace qualifiers $servant]
 	set p [namespace tail $servant]
-	#my log servant=$servant,type=$type,obj=$obj,p=$p
 	switch -- $type {
 	  0 { return [info args $servant] }
-	  1 { return [concat [$obj info nonposargs $p] [$obj info args $p]] }
-	  2 { return [concat [$obj info instnonposargs $p] \
-			  [$obj info instargs $p]]}
+	  1 {
+	    if {[$obj istype ::xorb::Adapter]} {
+	      return {}
+	    } else {
+	      return [concat [$obj info nonposargs $p] [$obj info args $p]]
+	    }
+	  }
+	  2 {
+	    if {[$obj istype ::xorb::Adapter]} {
+	      return {}
+	    } else {
+	      return [concat [$obj info instnonposargs $p] \
+			[$obj info instargs $p]]
+	    }
+	  }
 	  -1 {error [::xorb::exceptions::SkeletonGenerationException new \
 			 [subst {
 			   The servant ($servant) could not be resolved 
@@ -1242,12 +1263,15 @@ ad_after_server_initialization synchronise_implementations {
 		&& ![::xotcl::Object isobject $parent]} {
 	  # servant is pure tcl proc or ad_proc
 	  return 0
-	} elseif {[info procs $servant] ne {} \
-		      && [::xotcl::Object isobject $parent]} {
+	} elseif {[::xotcl::Object isobject $parent] && \
+		      ([info procs $servant] ne {} || \
+			   [$parent istype ::xorb::ObjectAdapter] || \
+			   [$parent istype ::xorb::ProcAdapter])} {
 	  # servant is ::xotcl::Object->proc
 	  return 1
 	} elseif {[::xotcl::Object isclass $parent] && \
-		      [$parent info instprocs $tail] ne {}} {
+		       ([$parent info instprocs $tail] ne {} || \
+			    [$parent istype ::xorb::ClassAdapter])} {
 	  # servant is ::xotcl::Class->instproc
 	  return 2
 	} else {

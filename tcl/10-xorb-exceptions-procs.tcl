@@ -5,7 +5,7 @@ ad_library {
   
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date December 1, 2006
-  @cvs-id $Id: xorb-procs.tcl 17 2006-09-26 14:34:40Z ssoberni $
+  @cvs-id $Id$
   
 }
 
@@ -107,6 +107,11 @@ namespace eval xorb::exceptions {
   LoggableException UnknownNonConformanceException -ad_doc {
     An unknown exception was caught when trying to verify an
     implementation's conformance
+  }
+
+  LoggableException ServantDispatchException -ad_doc {
+    When forwarding the call dispatch to the actual servant,
+    an exception occurred.
   }
 
   # LoggableException UnknownException -ad_doc {

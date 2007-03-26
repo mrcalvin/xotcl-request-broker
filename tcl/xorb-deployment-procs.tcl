@@ -5,7 +5,7 @@ ad_library {
   
   @creation-date 2007-03-09
   @author stefan.sobernig@wu-wien.ac.at
-  @cvs-id $Id: package-procs.tcl,v 1.46 2007/03/09 11:05:34 gustafn Exp $
+  @cvs-id $Id$
   
 }
 
@@ -122,10 +122,11 @@ namespace eval ::xorb::deployment {
 	lappend uqSet [namespace tail $a]
       }
     }
-    my log "++c=$c,uqSet=$uqSet"
-    set aliases [$obj info slots]
+    set aliases [list] 
+    foreach a [$obj info slots] {lappend aliases [$a name]}
+    my log "++c=$c,uqSet=$uqSet,aliases=$aliases"
     foreach uq $uqSet {
-      if {[lsearch -glob $aliases *::$uq] == -1} {
+      if {[lsearch -exact $aliases $uq] == -1} {
 	  error [::xorb::exceptions::NonConformanceException new [subst {
 	    Contract '$contract' is not fully contained by Implementation 
 	    '[$obj name]': An alias (delegate) for operation '$contract->$uq' 

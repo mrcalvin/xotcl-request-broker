@@ -3,7 +3,7 @@ ad_library {
   Re-use facilities (following the ADAPTER pattern)
   
   @author stefan.sobernig@wu-wien.ac.at
-  @creation-date January 30, 2006
+  @creation-date March 23, 2007
   @cvs-id $Id$
   
 }
@@ -22,16 +22,15 @@ namespace eval ::xorb {
       -slots {
 	Attribute adapts
       }
-  
+
   Adapter instproc adapterFilter args {
     set r [self calledproc]
-    set cl [[self] info class]
-    $cl instvar adapts
-    if {![catch {array set tmp $adapts}] && [info exists tmp($r)]} {
+    if {![catch { array set tmp [[my info class] adapts]
+    } msg] && [info exists tmp($r)]} {
       set adaptee [lindex $tmp($r) 0]
       if {![::xotcl::Object isobject $adaptee]} {
 	#TODO:-destroy_on_cleanup
-	set tmpObj [Object new -childof [self]]
+	set tmpObj [::xotcl::Object new -destroy_on_cleanup]
 	$tmpObj forward $r $adaptee
 	set adaptee $tmpObj
       } 
@@ -56,9 +55,12 @@ namespace eval ::xorb {
       foreach {call adaptee+adapteeCall} $adapts {
 	foreach {adaptee adapteeCall} ${adaptee+adapteeCall} break
 	set adapteeCall [namespace tail $adapteeCall]
-	my superclass add $adaptee
-	append slots "Delegate new -name $call -proxies [self]::$adapteeCall\n"
+	set superclass($adaptee) 1
+	append slots [subst {::xorb::Delegate new \
+				 -name $call \
+				 -proxies [self]::$adapteeCall\n}]
       }
+      my superclass [array names superclass]
       if {[info exists slots]} {my slots $slots}
     }
     next;#ServiceImplementation->init
@@ -79,7 +81,9 @@ namespace eval ::xorb {
     foreach {call adaptee+adapteeCall} $adapts {
       foreach {adaptee adapteeCall} ${adaptee+adapteeCall} break
       set adapteeCall [namespace tail $adapteeCall]
-      append slots "Delegate new -name $call -proxies [self]::$adapteeCall\n"
+      append slots [subst {::xorb::Delegate new \
+			       -name $call \
+			       -proxies [self]::$adapteeCall\n}]
       set reversed($adapteeCall) $adaptee
     }
     if {[array exists reversed]} {my adapts [array get reversed]}
@@ -102,12 +106,20 @@ namespace eval ::xorb {
     foreach {call adapteeCall} ${adapts} {
       set adaptee $adapteeCall
       set adapteeCall [namespace tail $adapteeCall]
-      append slots "Delegate new -name $call -proxies [self]::$adapteeCall\n"
+      append slots [subst {::xorb::Delegate new \
+			       -name $call \
+			       -proxies [self]::$adapteeCall\n}]
       set reversed($adapteeCall) $adaptee
     }
-    if {[array exists reversed]} {my adapts [array get reversed]}
+    if {[array exists reversed]} {
+      my log "adapts=$adapts"
+      my adapts [array get reversed]
+    }
     if {[info exists slots]} {my slots $slots}
     my instfilter add adapterFilter
     next;#ServiceImplementation->init
   }
+
+  namespace export Adapter ClassAdapter ObjectAdapter\
+      ProcAdapter
 }

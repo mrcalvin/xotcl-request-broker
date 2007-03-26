@@ -340,7 +340,8 @@ SCBroker ad_proc getServant {-contractLabel:required -implLabel args} {} {
   }
   Repository proc which {type} {
     foreach i [my allinstances] {
-      if {[$i itemType] eq $type} {return $i}
+      if {[$i itemType] eq $type || \
+	      [$type info superclass [$i itemType]]} {return $i}
     }
   }
   Repository proc event {call type args} {
