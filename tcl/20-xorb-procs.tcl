@@ -130,9 +130,7 @@ namespace eval xorb {
       }
     }
     # lsort on keys of __mixins__
-    my log "MIXINS=[array get mixins]"
-    my log "SORTING=[lsort -increasing -integer [array names mixins]]"
-    foreach idx [lsort -increasing -integer [array names mixins]] {
+   foreach idx [lsort -increasing -integer [array names mixins]] {
       eval lappend interceptors $mixins($idx)
     }
     if {$reverse} {
@@ -360,6 +358,17 @@ Configuration instproc setDefaults {obj} {
   Base instproc getSignature {} {
     return [ns_sha1 [my stream]]
   }
+Base instproc slotInfo {option} {
+  switch $option {
+    "ordered" {
+      set ul [list]
+      foreach s [my info slots] {
+	lappend ul [list [$s name] $s]
+      }
+      return [join [lsort -index 0 $ul]]
+    }
+  }
+}
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
   # ServiceContract 
@@ -402,12 +411,12 @@ Configuration instproc setDefaults {obj} {
     set arr(name) [my name]
     set arr(description) [my description]
     set ops [list]
-    my log "orig-line=[lsort [my info slots]]"
-    foreach s [lsort [my info slots]] {
+    #my log "orig-line=[lsort [my info slots]]"
+    foreach {n s} [my slotInfo ordered] {
       #my log "+++obj-meth=[$obj info methods]"
       #my log "+++s=$s"
-      if {[$s istype Abstract]} {
-	lappend ops [$obj [$s name]]
+      if {[$s istype ::xorb::Abstract]} {
+	lappend ops [$obj $n]
       } 
     }
     set arr(operations) [string trim [join $ops]]
@@ -574,7 +583,7 @@ Method instproc init {{arguments {}} {doc {}} {body {}} args} {
     my deleteCmd {acs_sc::${middle}::delete -contract_name $implements -impl_name $name}
     next
   }
-ServiceImplementation instforward by %self slots
+ServiceImplementation instforward using %self slots
 ServiceImplementation instproc stream {} {
     set obj [[self] new -volatile]
     set arr(name) [my name]
@@ -582,12 +591,14 @@ ServiceImplementation instproc stream {} {
     set arr(owner) [my owner]
     set arr(contract_name) [my implements]
   set ops [list]
-  my log "orig-line=[lsort [my info slots]]"
-  foreach s [lsort [my info slots]] {
-      #my log "+++s=$s"
-      #my log "+++obj-meth=[$obj info methods], call=[$s name]"
-      lappend ops [$obj [$s name]] 
+  my log "orig-line=[my slotInfo ordered]"
+  foreach {n s} [my slotInfo ordered] {
+    #my log "+++s=$s"
+    #my log "+++obj-meth=[$obj info methods], call=[$s name]"
+    if {[$s istype ::xorb::Delegate]} {
+      lappend ops [$obj $n] 
     }
+  }
     set arr(aliases) [join $ops]
     return [array get arr]
   }

@@ -457,7 +457,7 @@ myTreaty mixin delete ::xorb::Synchronizable
 
 test subsection "Skeleton: Implementation specification"
 
-::xorb::ServiceImplementation myImplementation -implements myTreaty -by {
+::xorb::ServiceImplementation myImplementation -implements myTreaty -using {
     ::xorb::Delegate m2 -proxies ::myproc
     ::xorb::Method m3 {
       arg1:required 
@@ -513,7 +513,7 @@ test subsection "Update on implementations: recreation => conformance, binding"
 # initial impl
 myImplementation sync
 # extended one
-myImplementation by {
+myImplementation using {
   ::xorb::Delegate m4 -proxies ::myproc2
 }
 
@@ -559,7 +559,7 @@ ServiceContract CallerInterface -defines {
   ::xorb::Abstract abstractCallTwo
 }
 
-ServiceImplementation CalleeInterface -implements CallerInterface -by {
+ServiceImplementation CalleeInterface -implements CallerInterface -using {
   ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
   ::xorb::Delegate abstractCallOne -proxies ::template::servantProc
 }
@@ -567,7 +567,7 @@ ServiceImplementation CalleeInterface -implements CallerInterface -by {
 ? {CalleeInterface check} 1 "Verifying conformance of implementation ('check', implementation is fully containing contract)"
 CalleeInterface destroy
 
-ServiceImplementation CalleeInterface -implements CallerInterface -by {
+ServiceImplementation CalleeInterface -implements CallerInterface -using {
   ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
 }
 
@@ -582,7 +582,7 @@ test subsection "Deployment"
 
 Interceptor GeneralInterceptor
 Interceptor SoapInterceptor
-ServiceImplementation CalleeInterface -implements CallerInterface -by {
+ServiceImplementation CalleeInterface -implements CallerInterface -using {
   ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
   ::xorb::Delegate abstractCallOne -proxies ::template::servantProc
 }
@@ -613,7 +613,7 @@ set p [parameter::get -parameter "per_instance_policy"]
   ServiceImplementation FtsContentProviderImpl \
 	     -name ::xowiki::ExamplePage \
 	     -implements FtsContentProvider \
-	     -by {
+	     -using {
 	       ::xorb::Delegate datasource -proxies ::xowiki::datasource
 	       ::xorb::Method url {
 		 revision_id:required
@@ -752,7 +752,7 @@ ServantClass instproc servantMethod {-arg1 -arg2 -arg3} {}
 } -ad_doc {myTreaty's description}
 
 
-::xorb::ServiceImplementation AAImplementation -implements AATreaty -by {
+::xorb::ServiceImplementation AAImplementation -implements AATreaty -using {
   ::xorb::Delegate m1 -proxies ::template::servantProc
   ::xorb::Delegate m2 -proxies {::template::ServantObj servantMethod} 
   ::xorb::Delegate m3 -proxies ::template::ServantClass::servantMethod
@@ -1155,6 +1155,93 @@ AA-2-LP-Adapter ad_instproc legacyM3 {
       ([::xo::cc virtualArgs]).
 }]
 
+# / / / / / / / / / / / / / / / / / / / /
+# applied test:
+# 	- use Adapter and Implementation
+#	facilities in one specification
+#	object
+#	- deployment + invocation test
+
+# 1) servant
+
+namespace eval ::mSearch {
+  ad_proc doSearch {
+    -keywords
+    -key
+    -offset
+  } {doSearch's doc} {
+    ns_write "<pre>[info vars] invoked</pre>"
+  }
+} 
+
+# 2) adapter
+
+?+ { ProcAdapter AATreaty-2-mSearch-Adapter \
+	 -implements AATreaty \
+	 -using {
+	   ::xorb::Method m2 {
+	     arg1:string
+	     arg2:string
+	     arg3:string
+	   } {m2's doc} {
+	     ns_write "<pre>[info vars] invoked</pre>"
+	   }
+	   ::xorb::Method m3 {
+	     arg1:string
+	     arg2:string
+	     arg3:string
+	   } {m3's doc} {
+	     ns_write "<pre>[info vars] invoked</pre>"
+	   }
+	 } -adapts {
+	   m1	::mSearch::doSearch
+	 }
+ 
+ AATreaty-2-mSearch-Adapter instproc doSearch {
+    -arg1:string
+    -arg2:string
+    -arg3:string
+  } {
+    next -key $arg1 -keywords $arg2 -offset $arg3 ;# -> ::mSearch::doSearch
+  }
+} "Declaring ProcAdapter plus implementation elements ('methods')"
+
+?+ {AATreaty-2-mSearch-Adapter deploy -now} "Deploying 'AATreaty-2-mSearch-Adapter'"
+
+# 3) POSITIVE test -> m1
+
+::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualCall m1
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive MIXED proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# 3a) POSITIVE test -> m2
+::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualCall m2
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive MIXED proc adaptor test, calling m2): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# 3b) POSITIVE test -> m3
+
+::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualCall m3
+::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+
+?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+?++ {$i invoke} 1 [subst {
+  Dispatching invocation call (positive MIXED proc adaptor test, calling m3): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
 
 # # # # # # # # # # # # # # #
 # re-set Default policy
@@ -1432,6 +1519,17 @@ AA-2-LP-Adapter sync -delete
  } 0 "Staging: AA-2-LP-Adapter (id:[AA-2-LP-Adapter id]) was removed."
 
 AA-2-LP-Adapter mixin delete ::xorb::Synchronizable
+
+AATreaty-2-mSearch-Adapter mixin add ::xorb::Synchronizable
+AATreaty-2-mSearch-Adapter sync -delete
+
+? { db_0or1row impl_deleted \
+  [AATreaty-2-mSearch-Adapter subst { select * 
+  from acs_sc_impls
+    where impl_id = $id }]
+ } 0 "Staging: AA-2-LP-Adapter (id:[AATreaty-2-mSearch-Adapter id]) was removed."
+
+AATreaty-2-mSearch-Adapter mixin delete ::xorb::Synchronizable
 
 AATreaty mixin add ::xorb::Synchronizable
 AATreaty sync -delete

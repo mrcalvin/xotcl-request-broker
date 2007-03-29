@@ -32,7 +32,7 @@ namespace eval ::xorb::demo {
   set i [ServiceImplementation new \
 	     -name ::xowiki::CustomPage \
 	     -implements FtsContentProvider \
-	     -by {
+	     -using {
 	       ::xorb::Delegate datasource -proxies ::xowiki::datasource
 	       ::xorb::Delegate url -proxies ::xowiki::url
 	     }
@@ -84,7 +84,7 @@ namespace eval ::xorb::demo {
   ServiceImplementation FtsContentProviderTestPageImpl \
 	     -name ::xowiki::TestPage \
 	     -implements FtsContentProvider \
-	     -by {
+	     -using {
 	       ::xorb::Delegate datasource -proxies ::xowiki::datasource
 	       ::xorb::Method url {
 		 revision_id:required
@@ -165,7 +165,58 @@ namespace eval ::xorb::demo {
   # - 	Declaring an adapter
   # -	search package as implementation
   #	for LightweightSQI (see Ex. 2)
+  # -	Adapters extend ServiceImplementation
+  # 	in a way to allow for (1) declaring an
+  #	implementation for pre-existing ('legacy')
+  #	code and (2) adapting for signature
+  #	mismatches between the servant code and
+  #	what is stipulated by a contract
+  # -	There are three flavours of adapters:
+  #	Adapters for procs (ad_procs), for XOTcl
+  #	objects and XOTcl classes.
+  # -	see tcl/xorb-adapters-procs.tcl
 
+  # / / / / / / / / / / / / / / / /
+  # 1) declare adapter class
+  ProcAdapter SQI-2-TSearch-Adapter \
+      -implements LightweightSQI \
+      -using {
+	::xorb::Method setQueryLanguage {
+	  targetSessionID:string
+	  queryLanguageID:string
+	} {setQueryLanguage's doc} {
+	  # do something
+	}
+	::xorb::Method setResultsFormat {
+	  targetSessionID:string
+	  resultsFormat:string
+	} {setResultsFormat's doc} {
+	  # do something
+	}
+      } -adapts {
+	synchronousQuery	::tsearch2::search
+      }
+  # / / / / / / / / / / / / / / / /
+  # 2) provide for a signature adapter
+  # between synchronousQuery and 
+  # ::tsearch2::search
+  SQI-2-TSearch-Adapter instproc search {
+    -targetSessionID:string
+    -queryStatement:string
+    -startResult:integer
+  } {
+    set query $queryStatement
+    set offset $start
+    set limit 50
+    set user_id $targetSessionID
+    set df {}
+    set packages [list xowiki]
+    next $query $offset $limit $user_id $df $packages;# -> ::tsearch2::search
+  }
+
+  # / / / / / / / / / / / / / / / /
+  # 3) deploy implementation
+  SQI-2-TSearch-Adapter deploy
 }
 
 
