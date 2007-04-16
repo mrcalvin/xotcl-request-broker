@@ -3,7 +3,7 @@ ad_library {
   
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date July, 25 2006
-  @cvs-id $Id: xorb-broker-procs.tcl 11 2006-07-25 01:59:33Z ssoberni $
+  @cvs-id $Id$
 
 }
 
@@ -167,7 +167,7 @@ namespace eval xorb::client {
   ###################
   # inject mixin
   #
-  ::xotcl::Class instmixin ::xorb::client::InvocationProxy
+  #::xotcl::Class instmixin ::xorb::client::InvocationProxy
   
   # +---------------------------+
   # |class                      |
