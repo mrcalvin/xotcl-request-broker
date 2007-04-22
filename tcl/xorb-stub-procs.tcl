@@ -13,16 +13,43 @@ ad_library {
 
 
 namespace eval ::xorb::stub {
-  
+
+  namespace import -force ::xorb::client::*
+  namespace import -force ::xoexception::try
   # / / / / / / / / / / / / / / / / / / /
   # merry with ::xorb::InvocationContext
-  
+
+  ::xotcl::Class ContextObjectClass -slots {
+    Attribute clientPlugin
+  } -superclass ::xotcl::Class
+
+#   ContextObjectClass instproc recreate {obj} {
+#     # / / / / / / / / / / / / / /
+#     # 1) save context info for
+#     # subsequent calls
+#     set objectId [$obj virtualObject] 
+#     # / / / / / / / / / / / / / /
+#     # 2) TODO: call history
+#     next
+#     # reset
+#     $obj set virtualObject $objectId
+#   }
+
   ::xotcl::Class ContextObject -slots {
     Attribute virtualObject
     Attribute virtualCall
     Attribute virtualArgs
+    Attribute marshalledRequest
+    Attribute marshalledResponse
+    Attribute unmarshalledRequest
+    Attribute unmarshalledResponse
   }
-  ContextObject instproc contextualise {object} {
+
+#   ContextObject instproc reset {} {
+#     set c [my info class]
+#     $c recreate [self]
+#   }
+  ContextObject instproc use {object} {
     # / / / / / / / / / / / / / / /
     # TODO: provide decoration with
     # object-wide context mixin, i.e.
@@ -44,7 +71,7 @@ namespace eval ::xorb::stub {
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
 
-  ::xotcl::Class TclContextObject -slots {
+  ::xotcl::Class TclGlueObject -slots {
     Attribute contract
   } -superclass ContextObject
 
@@ -67,19 +94,111 @@ namespace eval ::xorb::stub {
   ::xotcl::Class CallAbstractionRequestor -slots {
     Attribute call
     Attribute signatureMask
+    Attribute returntype -default {}
   } -superclass Requestor  
   
   CallAbstractionRequestor instproc handle args {
-    my instvar earlyBoundContext stubObject
-    my log VARS=[info vars]
-    my log SER=[my serialize]
+    my instvar earlyBoundContext stubObject call \
+	signatureMask returntype
+
+    namespace import -force ::xorb::exceptions::*
     # / / / / / / / / / / / / /
     # early bound context available?
-    set contextObj [expr {$earlyBoundContext ne {}?\
-			      $earlyBoundContext:[$stubObject contextobject]}]
-    set msg(cObj) $contextObj
-    set msg(args) $args
-    return [array get msg]
+    # lately bound context?
+    # any ?
+    if {$earlyBoundContext ne {}} {
+      set contextObj $earlyBoundContext
+    } elseif {[$stubObject info methods glueobject] ne {}} {
+      set contextObj [$stubObject glueobject]
+    } else {
+      error "Requestor cannot resolve any context ('glue') object."
+    }
+    
+    # / / / / / / / / / / / / /
+    # derive from context object
+    # prototype!
+
+    $contextObj copy [self]::co
+    set contextObj [self]::co
+    
+    # / / / / / / / / / / / / /
+    # turn context object into
+    # proper invocation context?
+    # populate invocation context
+    
+    $contextObj virtualCall $call
+
+    # / / / / / / / / / / / / /
+    # simulate xotcl nonposArgs
+    # parser, i.e. enforce both
+    # typing (checkoption-enhanced)
+    # signature
+    # - upon init of requestor?
+    # - upon handle call?
+    my log signatureMask=$signatureMask
+    my proc __parse__ $signatureMask {
+      my log +++INSIDE=[info vars]
+      foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
+    }
+    my log +++OUTSIDE=[info vars]
+    # call parser
+    
+    eval my __parse__ [lindex $args 0]
+    
+    $contextObj virtualArgs [array get parsedArgs]
+
+    # / / / / / / / / / / / / /
+    # set client protocol and
+    # mix into requesthandler
+    set contextClass [$contextObj info class]
+    set plugin [$contextClass clientPlugin]
+    
+    try {
+      ::xorb::client::crHandler mixin add $plugin
+      ::xorb::client::crHandler handleRequest $contextObj
+      ::xorb::client::crHandler mixin delete $plugin
+    } catch {Exception e} {
+      $e write
+    } catch {error e} {
+      global errorInfo
+      error $errorInfo
+    }
+
+    # / / / / / / / / / / / / /
+    # verify returntype constraint
+    # introducing anythings:
+    # unmarshalledResponse is of 
+    # type Anything
+    set any [$contextObj unmarshalledResponse]
+    if {![$any isVoid] && $returntype eq "void"} {
+      set value [$contextObj unmarshalledResponse]
+      error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
+		 "We expected a void return value, but got: $value"]
+    }
+
+    # / / / / / / / / / / / / / / /
+    # TODO: Validation of non-void types
+    # / / / / / / / / / / / / / / /
+    # TODO: support for two return modes:
+    # 1) returns -> <type> as conventional proc return
+    # 2) returns -> <name>:<type> set a variable
+    # in upper scope
+    my log isvoid=[$any isVoid]
+    if {![$any isVoid] && $returntype ne "void"} {
+      # / / / / / / / / / / / / /
+      # clear context obj
+      # before new request 
+      # procedure
+      # options: manual clearance
+      # our recreate mechanism
+      #$contextObj reset
+      #return
+      return [$any as $returntype]
+    }
+
+    #set msg(cObj) $contextObj
+    #set msg(args) $args
+    #return [array get msg]
   }
   
   Requestor proc require {
@@ -91,8 +210,7 @@ namespace eval ::xorb::stub {
     # style, for instance and return
     # specific instance of subclass
     my log REQUIRE:args=$args
-    return [eval CallAbstractionRequestor new \
-		-configure $args]
+    return [eval CallAbstractionRequestor new $args]
   }
 
 
@@ -114,10 +232,10 @@ namespace eval ::xorb::stub {
   # passing.
   
   ::Serializer exportMethods {  
-    ::xotcl::nonposArgs proc ContextObject
+    ::xotcl::nonposArgs proc contextobject
   }
 
-  ::xotcl::nonposArgs proc ContextObject {args} {
+  ::xotcl::nonposArgs proc contextobject {args} {
     if {[llength $args] == 2} {
       foreach {name value} $args break
       if {![my isobject $value] \
@@ -129,13 +247,13 @@ namespace eval ::xorb::stub {
   
   
   # / / / / / / / / / / / / / / / / / /
-  # actual stub 'keywords'
+  # actual glue 'keyword'
   # resembles implementation of xotcl's
   # abstract procs and instprocs
   
   ::Serializer exportMethods {  
-    ::xotcl::Object instproc stub
-    ::xotcl::Object instproc ad_stub
+    ::xotcl::Object instproc glue
+    ::xotcl::Object instproc ad_glue
     ::xotcl::Object instproc __makeStubBody__
   }
   
@@ -163,26 +281,45 @@ namespace eval ::xorb::stub {
     # to be called from within the
     # proc scope of stub, ad_stub,
     # StubClass->instproc, StubObject->proc
-    upvar contextobject contextobject \
-	returntype returntype \
+    upvar glueobject glueobject \
+	returns returns \
 	methName methName \
 	argList argList
-    set context [expr {[info exists contextobject]?\
-			   "-earlyBoundContext $contextobject":""}]
+    set context [expr {[info exists glueobject]?\
+			   "-earlyBoundContext $glueobject":""}]
+    set voidness [expr {[info exists returns]?\
+			    "-returntype $returns":""}]
     set self [self]
+    # / / / / / / / / / / / /
+    # The nasty embedding in
+    # double brackets is necessary
+    # due to 'list' not enclosing
+    # non-whitespaced strings!!!!
+    # TODO: escape in empty
+    # arglist case, otherwise
+    # MakeProc / nonposArgs
+    # parser in xotcl.c segfaults
+    if {$argList ne {}} {
+      set argList "{{$argList}}"
+    } else {
+      set argList "{$argList}"
+    }
+    #set argList [expr {[llength $argList] == 1?"{{$argList}}":[list $argList]}]
+    #set argList [list [list $argList]]
+    my log "argList=argList"
     set body [subst -nocommands {
       set requestor [::xorb::stub::Requestor require \
 			 -call $methName \
-			 -signatureMask {$argList} \
-			 -stubObject $self $context]
+			 -signatureMask $argList \
+			 -stubObject $self $context $voidness]
       \$requestor handle \$args
     }]
     return $body
   }
 
-  Object instproc stub {
-    -contextobject:ContextObject
-    -returntype
+  Object instproc glue {
+    -glueobject:contextobject
+    -returns
     methType 
     methName 
     argList
@@ -194,13 +331,13 @@ namespace eval ::xorb::stub {
     uplevel [list [self] $methType $methName args $body]
   }
   
-  Object instproc ad_stub {
+  Object instproc ad_glue {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
     {-debug:switch false}
-    -contextobject:ContextObject
-    -returntype
+    -glueobject:contextobject
+    -returns
     methType 
     methName 
     argList
@@ -223,7 +360,7 @@ namespace eval ::xorb::stub {
   # / / / / / / / / / / / / / / /
   
   ::xotcl::Class Stub -slots {
-    Attribute contextobject -type ::xorb::stub::ContextObject
+    Attribute glueobject -type ::xorb::stub::ContextObject
   }
   ::xotcl::Object instmixin add Stub
 
@@ -252,15 +389,15 @@ namespace eval ::xorb::stub {
   # / / / / / / / / / / / / / / /
   # Some simplistic facades
 
-  ::xotcl::Class StubObject -superclass ::xotcl::Object
-  StubObject instforward context %self contextobject
-  StubObject instproc ad_proc {
+  ::xotcl::Class GObject -superclass ::xotcl::Object
+  #GObject instforward with %self glueobject
+  GObject instproc ad_proc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
     {-debug:switch false}
-    -contextobject:ContextObject
-    -returntype
+    -glueobject:contextobject
+    -returns
     methName
     argList
     doc
@@ -274,31 +411,32 @@ namespace eval ::xorb::stub {
     my __api_make_doc "" $methName
   }
 
-  ::xotcl::Class StubClass -superclass ::xotcl::Class
-  StubClass instforward context %self contextobject
-  StubClass instproc init args {
-    my superclass StubObject
+  ::xotcl::Class GClass -superclass ::xotcl::Class
+  #GClass instforward with %self glueobject
+  GClass instproc init args {
+    my superclass GObject
     next
   }
-  StubClass instproc ad_instproc {
+  GClass instproc ad_instproc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
     {-debug:switch false}
-    -contextobject:ContextObject
-    -returntype
+    -glueobject:contextobject
+    -returns
     methName
     argList
     doc
     body
   } {
     # / / / / / / / / / / / / /
-    # TODO: Neophtos' 'next'
+    # TODO: Neophytos' 'next'
     # extension -> body
     set stubBody [my __makeStubBody__]
     uplevel [list [self] instproc $methName args $stubBody]
     my __api_make_doc "" $methName
   }
   
-  namespace export ContextObject Requestor StubObject StubClass
+  namespace export ContextObject Requestor GObject GClass \
+      ContextObjectClass
 }

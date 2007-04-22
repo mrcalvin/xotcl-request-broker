@@ -10,8 +10,79 @@ ad_library {
 
 namespace eval xorb::client {
 
+  namespace import -force ::xoexception::try
+  
+  ::xotcl::Class ClientRequestHandler
+  ClientRequestHandler instproc handleRequest {invocationObject} {
+
+    # / / / / / / / / / / /
+    # delegate to transport layer
+    TransportProvider handle $invocationObject
+    my handleResponse $invocationObject
+  }
+  ClientRequestHandler instproc handleResponse {invocationObject} {
+    next
+  }
+
+  ClientRequestHandler create crHandler
+
+  ::xotcl::Class TransportProvider
+  TransportProvider proc getClass {key} {
+    my log classes=[Class allinstances]
+    my log classes=[my info subclass]
+    foreach p [my info subclass] {
+      my log p=$p,k=$key
+      if {[$p set key] eq $key} {
+	return $p
+      }
+    }
+    error [::xorb::exceptions::NoTransportProvider new \
+	       "Requested protocol key: $key"]
+  }
+  TransportProvider proc handle {invocationObject} {
+    # / / / / / / / /
+    # 1) resolve responsible
+    # protocol provider
+    set objectId [$invocationObject virtualObject]
+    if {[regexp {^(\w+)://(.*)$} $objectId _ providerKey absObjRef]} {
+      $invocationObject virtualObject $absObjRef
+      set pc [my getClass $providerKey]
+    } else {
+      error "Invalid object id when trying to resolve transport provider."
+    }
+    # 2) instantiate an object
+    # from this provider
+    set providerObj [$pc new -volatile]
+    # 3) pass it to the handling
+    # instance
+    try {
+      set r [$providerObj handle $invocationObject]
+    } catch {error e} {
+      error [::xorb::exceptions::TransportProviderFailed new \
+		"Reason: $e"]
+    }
+    
+    if {[info exists r]} {
+      $invocationObject marshalledResponse $r
+    }
+  }
+  TransportProvider instproc handle args {
+    next
+  }
+
+  namespace export ClientRequestHandler crHandler \
+      TransportProvider 
+
   # # # # # # # # # # # #
-  # # # # # # # # # e# # #
+  # # # # # # # # # # # #
+  # # # # # # # # # # # #
+  # # # # # # # # # # # #
+  # # # # # # # # # # # #
+  # # # # # # # # # # # #
+  
+
+  # # # # # # # # # # # #
+  # # # # # # # # # # # #
   # # Stub infrastructure
   # # # # # # # # # # # #
   # # # # # # # # # # # #

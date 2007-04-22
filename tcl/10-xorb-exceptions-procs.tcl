@@ -114,9 +114,24 @@ namespace eval xorb::exceptions {
     an exception occurred.
   }
 
+  LoggableException NoTransportProvider -ad_doc {
+    The is no transport handler registered/ available
+    to serve the given protocol request.
+  }
+
+  LoggableException TransportProviderFailed -ad_doc {
+   The actual delivery/ transport of the given
+    protocol request failed. 
+  }
+
+  LoggableException ViolationOfReturnTypeConstraint -ad_doc {
+    The call return a value of type different to the expected/ 
+    required returntype
+  }
+
   # LoggableException UnknownException -ad_doc {
   #   An unspecified exception was caught
   # }
   namespace export SkeletonGenerationException LoggableException\
-      InvocationException
+      InvocationException NoTransportProvider
 }
