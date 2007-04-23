@@ -5,7 +5,7 @@ ad_library {
 
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date 2007-01-25
-  @cvs-id $Id: context-procs.tcl,v 1.7 2007/01/07 21:33:55 gustafn Exp $
+  @cvs-id $Id$
 }
 
 namespace eval ::xorb::context {
@@ -60,15 +60,20 @@ namespace eval ::xorb::context {
 
   ContextClass InvocationContext -parameter {
     virtualObject
-    {virtualCall {}}
-    {virtualArgs {}}
+    virtualCall
+    virtualArgs
     {protocol {local}}
   } -superclass ::xo::ConnectionContext
+ 
   InvocationContext instproc getProtocolTree {} {
     my instvar protocol
-    set p [string toupper 0 0 $protocol]
+
+
+
+
+    set p [string toupper $protocol 0 0]
     if {[$p istype ::xorb::protocols::PluginClass]} {
-      set l [list]
+      set l [$p prettyName]
       foreach h [$p info heritage] {
 	lappend l [$h prettyName]
       }
@@ -78,10 +83,10 @@ namespace eval ::xorb::context {
 
   ContextClass RemotingInvocationContext -parameter {
     method
-    {marshalledRequest ""}
-    {marshalledResponse ""}
-    {unmarshalledRequest ""}
-    {unmarshalledResponse ""}
+    marshalledRequest
+    marshalledResponse
+    unmarshalledRequest
+    unmarshalledResponse
     {protocol {}}
     {transport {}}
   } -superclass InvocationContext

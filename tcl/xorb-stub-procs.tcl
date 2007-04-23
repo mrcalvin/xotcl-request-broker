@@ -135,15 +135,16 @@ namespace eval ::xorb::stub {
     # signature
     # - upon init of requestor?
     # - upon handle call?
-    my log signatureMask=$signatureMask
+    #my log signatureMask=$signatureMask
     my proc __parse__ $signatureMask {
       my log +++INSIDE=[info vars]
       foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
     }
     my log +++OUTSIDE=[info vars]
     # call parser
-    
+    ::xotcl::nonposArgs mixin add ::xorb::datatypes::Anything::CheckOption
     eval my __parse__ [lindex $args 0]
+    ::xotcl::nonposArgs mixin delete ::xorb::datatypes::Anything::CheckOption
     
     $contextObj virtualArgs [array get parsedArgs]
 

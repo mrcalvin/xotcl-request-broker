@@ -44,7 +44,7 @@ namespace eval xorb {
   InterceptorChain instproc load {config} {
     set c [lsearch -glob -inline \
 	       [Configuration allinstances] *$config]
-    my log "c=$c"
+    my log "c=$c,ptree=[::xo::cc getProtocolTree]"
     if {$c ne {}} {
       my log "unfold=[$c unfold]"
       [self]::RequestFlow mixin [$c unfold]
@@ -306,6 +306,7 @@ Configuration instproc setDefaults {obj} {
     # chain of interceptors
     # - demarshalling
     # - ...
+    my log "NEXT=[self next]"
     set requestFlowResult [next];#InterceptorChain->handleRequest
     #my log "---requestFlowResult=$requestFlowResult"
     # / / / / / / / / / / / / / / /
@@ -323,13 +324,15 @@ Configuration instproc setDefaults {obj} {
     
     # / / / / / / / / / / / / / / /
     # 4) process result
-    my handleResponse $requestObj $r
+    my log AFTER-INVOKE=$r,NEXT-1=[my procsearch handleResponse]
+    my handleResponse $requestFlowResult $r
      
   }
   
-  RequestHandler ad_instproc handleResponse {requestObj responseObj} {} {
+  RequestHandler ad_instproc handleResponse {responseObj} {} {
     # / / / / / / / / / / / / / / / / / / / / /
     # 4) Pass response to response flow
+    my log NEXT-3=[self next]
     set responseFlowResult [next $responseObj]
     #my dispatchResponse $responseFlowResult
     return $responseFlowResult;# protocol-specific mixin->dispatchResponse 
@@ -518,7 +521,7 @@ ad_after_server_initialization synchronise_contracts {
   }
 
   ::xotcl::Class Abstract -superclass ::xotcl::Slot -slots {
-    Attribute arguments
+    Attribute arguments -default {}
     Attribute returns -default {}
     Attribute description
   }
@@ -566,17 +569,18 @@ Delegate instproc get {domain slot} {
   ::xotcl::Class Method -superclass Delegate 
   
 Method instproc init {{arguments {}} {doc {}} {body {}} args} {
-    my instvar domain
-    foreach a $arguments {
-      lappend dashedArgs -$a
-    }
-    set name [namespace tail [self]]
+  my instvar domain
+  set dashedArgs [list]
+  foreach a $arguments {
+    lappend dashedArgs -$a
+  }
+  set name [namespace tail [self]]
   if {$body ne {}} {
     $domain ad_instproc __${name}__ $dashedArgs $doc $body 
   }
-    next -selfproxy
-  }
-  
+  next -selfproxy
+}
+
 # Attribute name -type "my qname" -proc qname {value} {
 #       # / / / / / / / / / / / /
 #       # The name may not be set
@@ -1098,10 +1102,17 @@ ad_after_server_initialization synchronise_implementations {
    
   
     $__skeleton__ instproc [my name] $arguments [subst {
-      set r \[next\]
+      # / / / / / / / / / / / / / / / /
+      # a generic container for storing
+      # validated, uplifted values of 
+      # anythings
+      # see Class Anything::CheckOption+Uplift
+      # in xorb-datatypes-procs.tcl
+      array set uplift \[list\]
+      set r \[eval next \[array get uplift\]\]
       [expr {[my exists __rvc_call__]?\
 		 [subst { ::xoexception::try {
-		   [my set __rvc_call__] \$r
+		   set r \[[my set __rvc_call__] \$r\]
 		 } catch {error e} {
 		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$e\]
 		 }}]:""}]
@@ -1148,7 +1159,16 @@ ad_after_server_initialization synchronise_implementations {
       foreach d $declaration {
 	lappend nargs -$d
       }
-      my proc $call [join $nargs] {}
+      my proc $call [join $nargs] {
+	# / / / / / / / / / / / /
+	# provide for the repackaging
+	# of the return value(s) as
+	# anythings
+	# TODO: multiple values/ anythings
+	if {[info exists returnObjs]} {
+	  return $returnObjs 
+	}
+      }
     }
   }
 
@@ -1208,7 +1228,17 @@ ad_after_server_initialization synchronise_implementations {
 	    }]:""}]
 	  
 	    # enforce ruling deployment policy
-	    set rulingPolicy \[parameter::get -parameter "per_instance_policy"\]
+	    # TODO: when called from protocol plug-in
+	    # package, it cannot resolve the context
+	    # of the broker package and therefore
+	    # not retrieve the package parameters!
+	    # set rulingPolicy \[parameter::get -parameter "per_instance_policy"\]
+	    # simple solution: add package param to xotcl-soap etc.
+	    # but what does this mean for brokerage in general
+	    # (when a simple acs::sc::invoke is called from within the sphere
+	    # of other packages?)
+	    set rulingPolicy ::xorb::deployment::Default
+	    my log rulingPolicy=\$rulingPolicy
 	    set p \[\$rulingPolicy check_permissions $__skeleton__ \[self proc\]\]
 	    if {\$p} {  
 	      ::xoexception::try {
@@ -1465,7 +1495,14 @@ ad_after_server_initialization synchronise_implementations {
     # 1) invocation data
     set impl [::xo::cc virtualObject]
     set call [::xo::cc virtualCall]
-    set arguments [::xo::cc virtualArgs]
+    set arguments [list]
+
+    # / / / / / / / / / / / / / / / / / /
+    # 1a) handle anythings
+    
+    foreach any [::xo::cc virtualArgs] {
+      lappend arguments -[$any name] $any
+    }
     
     if {$call eq {}} {
       error [::xorb::exceptions::InvocationException new \
@@ -1487,7 +1524,10 @@ ad_after_server_initialization synchronise_implementations {
       # / / / / / / / / / / / / /
       # TODO: set context for actual
       # invocation
-      eval $skeleton $call $arguments
+      my log "NEXT=[$skeleton procsearch $call],arguments=$arguments"
+      ::xotcl::nonposArgs mixin add ::xorb::datatypes::Anything::CheckOption+Uplift
+      set result [eval $skeleton $call $arguments]
+      ::xotcl::nonposArgs mixin delete ::xorb::datatypes::Anything::CheckOption+Uplift
       # / / / / / / / / / / / / /
       # TODO: remove context for actual
       # invocation
@@ -1501,12 +1541,15 @@ ad_after_server_initialization synchronise_implementations {
 		   Call '$call' on '$skeleton' ([$skeleton info class]) 
 		   with args '$arguments' failed due to '$e'}]]
     }
+    if {$result ne {}} {
+      return $result
+    }
   }
     
   namespace export ServiceContract ServiceImplementation Abstract \
       Delegate Method Synchronizable Persistent IDepository Skeleton \
       Invoker ServantAdapter ReturnValueChecker Configuration InterceptorChain \
-      Standard Interceptor LoggingInterceptor Extend RequestHandler rhandler \
+      Standard Interceptor LoggingInterceptor Extended RequestHandler rhandler \
       
 }
 

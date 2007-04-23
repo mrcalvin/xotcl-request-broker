@@ -16,15 +16,57 @@ ad_library {
 
 namespace eval ::xorb::datatypes {
   
-   # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
   # Anything
   # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
   
+  ::xotcl::Class MetaAny -slots {
+    Attribute checkoption
+  } -superclass ::xotcl::Class
+
+  MetaAny instproc init args {
+    my instvar checkoption
+    if {![info exists checkoption]} {
+      set checkoption [string tolower [namespace tail [self]] 0 0] 
+    }
+    if {![my isStored]} {
+      db_transaction {
+	db_exec_plsql insert_new_datatype \
+            "select acs_sc_msg_type__new(:checkoption,'');"
+      }
+    }
+    next
+  }
+  MetaAny instproc delete {} {
+    my instvar checkoption
+    if {[my isStored]} {
+      db_transaction {
+	db_exec_plsql delete_datatype \
+	    "select acs_sc_msg_type__delete(:checkoption);"
+      }
+    }
+  }
+  MetaAny proc deleteAll {} {
+    # / / / / / / / / / / / / /
+    # to be called by before-uninstall
+    # hook
+    foreach i {[my allinstances]} {
+      $i delete
+    }
+  }
+  MetaAny instproc isStored {} {
+    my instvar checkoption
+    return [db_0or1row is_datatype_stored {
+      select * from acs_sc_msg_types where msg_type_name = :checkoption
+    }]
+  }
+
   ::xotcl::Class Anything -slots {
     Attribute isRoot -type boolean -default false
     Attribute isVoid -type boolean -default false
+    Attribute name
   }
 
   # / / / / / / / / / / / /
@@ -46,6 +88,30 @@ namespace eval ::xorb::datatypes {
     return  [lsearch -inline -glob [my subClassTree] *$key]
   }
   
+  Anything instproc marshal {document node soapElement} {
+    # / / / / / / / / / / / / / / /
+    # currently provides for XS-like
+    # streaming/ annotation of anys
+    my instvar isVoid
+    if {!$isVoid} {
+      my instvar __value__ name
+      # / / / / / / / / / / / / / / / / /
+      # TODO: get xsd key from actual objects
+      # abstract from the xotcl-soap case here
+      # no simple trimleft of prefix 'Xs'
+      set xstype [string trimleft [namespace tail [my info class]] Xs]
+      set xstype [string tolower $xstype 0 0]
+      if {![info exists name]} {
+	set name [string map {Response Return} [$soapElement elementName]]
+      }
+      set returnNode [$node appendChild \
+			  [$document createElement $name]]
+      $returnNode setAttribute xsi:type "xsd:$xstype"
+      $returnNode appendChild \
+	  [$document createTextNode $__value__]
+    }
+  }
+
   Anything instproc parse {node} {
     my instvar __value__ isRoot isVoid
     puts n=$node,type=[$node nodeType]
@@ -158,8 +224,8 @@ namespace eval ::xorb::datatypes {
   # -	only for call abstractions
   # 	(Invoker, Requestor)?
 
-  ::xotcl::Class Anything::nonposArgs
-  Anything::nonposArgs instproc unknown {checkoption argName argValue} {
+  ::xotcl::Class Anything::CheckOption
+  Anything::CheckOption instproc unknown {checkoption argName argValue} {
     set anyBase [[self class] info parent]
     set anyImpl [$anyBase getTypeClass $checkoption]
     if {$anyImpl ne {}} {
@@ -180,11 +246,39 @@ namespace eval ::xorb::datatypes {
     }
   }
 
+  ::xotcl::Class Anything::CheckOption+Uplift
+  Anything::CheckOption+Uplift instproc unknown {checkoption args} {
+    set anyBase [[self class] info parent]
+    set anyImpl [$anyBase getTypeClass $checkoption]
+    if {$anyImpl ne {}} {
+      switch [llength $args] {
+	1 {
+	  foreach argName $args break
+	}
+	2 {
+	  foreach {argName argValue} $args break
+	  if {[my isobject $argValue] && \
+		  [$argValue istype $anyBase]} {
+	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
+	  } else {
+	    # TODO: for return value checks -> conversion in any object?
+	    set any [$anyImpl new -set __value__ $argValue -name $argName]
+	    if {[$any validate]} {
+	      uplevel [list lappend returnObjs $any]
+	    }
+	  }
+ 	}
+      }
+    } else {
+      next
+    }
+  }
+
   # / / / / / / / / / / / / / / /
   # TODO: keep it that way?
-  ::xotcl::nonposArgs mixin add Anything::nonposArgs
+  #::xotcl::nonposArgs mixin add Anything::nonposArgs
 
 
-  namespace export Anything
+  namespace export Anything MetaAny
 
 }
