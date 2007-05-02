@@ -28,10 +28,10 @@ namespace eval xorb::client {
 
   ::xotcl::Class TransportProvider
   TransportProvider proc getClass {key} {
-    my log classes=[Class allinstances]
-    my log classes=[my info subclass]
+#    my log classes=[Class allinstances]
+#    my log classes=[my info subclass]
     foreach p [my info subclass] {
-      my log p=$p,k=$key
+ #     my log p=$p,k=$key
       if {[$p set key] eq $key} {
 	return $p
       }

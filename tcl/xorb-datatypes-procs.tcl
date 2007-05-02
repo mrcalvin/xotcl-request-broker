@@ -39,6 +39,10 @@ namespace eval ::xorb::datatypes {
     }
     next
   }
+  MetaAny instproc validate {value} {
+    set any [my new -volatile -set __value__ $value]
+    return [$any validate]
+  }
   MetaAny instproc delete {} {
     my instvar checkoption
     if {[my isStored]} {
@@ -87,13 +91,18 @@ namespace eval ::xorb::datatypes {
     set key [string toupper $key 0 0]
     return  [lsearch -inline -glob [my subClassTree] *$key]
   }
+
+  # / / / / / / / / / / / / / / / / /
+  # TODO: refacture marshal und parse 
+  # (demarshal) into xotcl-soap
+  # !!!!!!
   
   Anything instproc marshal {document node soapElement} {
     # / / / / / / / / / / / / / / /
     # currently provides for XS-like
     # streaming/ annotation of anys
     my instvar isVoid
-    if {!$isVoid} {
+    if {!$isVoid && [my isPrimitive]} {
       my instvar __value__ name
       # / / / / / / / / / / / / / / / / /
       # TODO: get xsd key from actual objects
@@ -101,22 +110,35 @@ namespace eval ::xorb::datatypes {
       # no simple trimleft of prefix 'Xs'
       set xstype [string trimleft [namespace tail [my info class]] Xs]
       set xstype [string tolower $xstype 0 0]
-      if {![info exists name]} {
+      if {[$soapElement istype ::xosoap::marshaller::SoapBodyResponse] && \
+	      ![info exists name]} {
 	set name [string map {Response Return} [$soapElement elementName]]
       }
-      set returnNode [$node appendChild \
+      set anyNode [$node appendChild \
 			  [$document createElement $name]]
-      $returnNode setAttribute xsi:type "xsd:$xstype"
-      $returnNode appendChild \
+      $anyNode setAttribute xsi:type "xsd:$xstype"
+      $anyNode appendChild \
 	  [$document createTextNode $__value__]
+    } else {
+      # complex type
+      my instvar __ordinary_map__ name
+      set anyNode [$node appendChild \
+		       [$document createElement $name]]
+      foreach c $__ordinary_map__ {
+	$c marshal $document $anyNode $soapElement
+      }
     }
+  }
+
+  Anything instproc containsResultNode {} {
+    my instvar isRoot
+    return [expr {$isRoot && [llength [my info children]] == 1}]
   }
 
   Anything instproc parse {node} {
     my instvar __value__ isRoot isVoid
-    puts n=$node,type=[$node nodeType]
+    #my log n=$node,type=[$node nodeType],xml=[$node asXML]
     set checkNode [$node firstChild]
-    my log "checkNode=$checkNode"
     #set checkNode [expr {$initial?$node:[$node firstChild]}]
     if {$isRoot && $checkNode eq {}} {
       # XsVoid
@@ -128,19 +150,48 @@ namespace eval ::xorb::datatypes {
       # look-ahead tests
       # 	1. return-element encoding flaviours: as leaf or 
       #	intermediary composite type
-      
-      if {$isRoot} {
+      #my log isRoot=$isRoot
+      if {$isRoot && [[$checkNode firstChild] nodeType] eq "TEXT_NODE"} {
 	set __value__ [$checkNode text]
 	set isRoot false
       } else {
 	puts children=[$node childNodes]
 	foreach c [$node childNodes] {
-	  my set $i [[self class] new -childof [self] -parse $c]
-	  my set __map__([$c nodeName]) $i
-	  incr i
+	  #my set $i [[self class] new -childof [self] -parse $c]
+	 # my set __map__([$c nodeName]) $i
+	  #incr i
+	  set any [[self class] new \
+		       -childof [self] \
+		       -name [$c nodeName] \
+		       -parse $c]
+	  my add -parse $any
 	}
       }
     }
+  }
+  Anything instproc parseObject {class object} {
+    foreach s [$class info slots] {
+      set type [$s anyType]
+      set s [namespace tail $s] 
+      set value [$object set $s]
+      if {[my isobject $value]} {
+	my add -parse [Anything new \
+			   -childof [self] \
+			   -name $s \
+			   -parseObject $type $value]
+      } else {
+	my add -parse [$type new \
+			   -childof [self] \
+			   -name $s \
+			   -set __value__ $value]
+      }
+    }
+  }
+  
+  
+  Anything instproc add {-parse:switch any} {
+    my lappend __ordinary_map__ $any
+    if {$parse} {my set [$any name] $any} 
   }
   
   Anything instproc isPrimitive {} {
@@ -153,31 +204,54 @@ namespace eval ::xorb::datatypes {
     -default
     typeKey
   } {
-    if {$typeKey eq {}} {
-      return [self]
-    } elseif {[my isclass $typeKey]} {
-      my mixin add $typeKey
-      return [self]
-    } else {
-      set className [[self class] getTypeClass $typeKey]
-      my log "+++3:typeKey=$typeKey,classname=$className"
-      if {$className ne {}} {
-	my class $className
-	my instvar __value__
-	my log "+++4:reset-class"
-	if {[my validate]} {
-	  if {$object} {
-	    return [self]
-	  } else {
-	    return [my unwrap]
-	  }
-	} elseif {[info exists default]} {
-	  return $default
-	} else {
-	  error "Type cast is not possible."
-	}
+    my log SER=[my serialize],typeKey=$typeKey
+    if {[my isPrimitive]} {
+      if {$typeKey eq {}} {
+	return [self]
       } else {
-	error "No type handler for '$typeKey' is registered."
+	set className [expr {[my isclass $typeKey]?$typeKey:\
+				 [[self class] getTypeClass $typeKey]}]
+	my log "+++3:typeKey=$typeKey,classname=$className"
+	if {$className ne {}} {
+	  my class $className
+	  my instvar __value__
+	  my log "+++4:reset-class"
+	  if {[my validate]} {
+	    if {$object} {
+	      return [self]
+	    } else {
+	      return [my unwrap]
+	    }
+	  } elseif {[info exists default]} {
+	    return $default
+	  } else {
+	    error "Type cast is not possible."
+	  }
+	} else {
+	  error "No type handler for '$typeKey' is registered."
+	}
+      }
+    } else {
+      set isObj  [regexp {^object(=(.*))?$} $typeKey _ class]
+      set anyObj my
+      if {[my containsResultNode]} {
+	set anyObj [my info children] 
+      }
+      if {!$isObj || $class eq {}} {
+	error "type key specification '$typeKey' invalid."
+      } else {
+	set class [string trimleft $class =]
+	foreach s [$class info slots] {
+	  set type [$s anyType]
+	  set s [namespace tail $s] 
+	  set any [$anyObj set $s]
+	  my log any=$any,typeKey=$type
+	  set unwrapped [$any as $type]
+	  my log unwrapped=$unwrapped
+	  $anyObj set $s [$any as $type]
+	}
+	$anyObj mixin add $class
+	return $anyObj
       }
     }
   }
@@ -208,6 +282,28 @@ namespace eval ::xorb::datatypes {
       # TODO
     }
   }
+
+  # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # #
+  # Attribute slot integration
+  # for short-cut usage with
+  # Any types.
+  # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # #
+
+
+  ::xotcl::Class AnyAttribute -superclass ::xotcl::Attribute -slots {
+    Attribute anyType
+  }
+  AnyAttribute instproc init args {
+    my instvar type
+    if {[info exists type]} {
+      my anyType $type
+      my type "$type validate"
+    }
+    next
+  }
+
 
   # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
@@ -250,7 +346,8 @@ namespace eval ::xorb::datatypes {
   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
     set anyBase [[self class] info parent]
     set anyImpl [$anyBase getTypeClass $checkoption]
-    if {$anyImpl ne {}} {
+    set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
+    if {$anyImpl ne {} || $isObj} {
       switch [llength $args] {
 	1 {
 	  foreach argName $args break
@@ -260,6 +357,17 @@ namespace eval ::xorb::datatypes {
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
 	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
+	  } elseif {[my isobject $argValue] && $isObj} {
+	    if {$class eq {}} {
+	      set class [$argValue info class]
+	    } else {
+	      set class [string trimleft $class =]
+	    }
+	    my log "+++class=$class"
+	    uplevel [list lappend returnObjs \
+			 [$anyBase new \
+			      -name $argName \
+			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
 	    set any [$anyImpl new -set __value__ $argValue -name $argName]
