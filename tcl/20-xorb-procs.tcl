@@ -881,7 +881,7 @@ ad_after_server_initialization synchronise_implementations {
 	order by el.element_pos ASC
       } {
 	
-	if {$element_msg_type_isset_p && $element_constraints ne [db_null]} {
+	if {$element_constraints ne [db_null]} {
 	  set msg_type_name "$msg_type_name$element_constraints"
 	}
 	lappend value $element_name:$msg_type_name
@@ -902,7 +902,7 @@ ad_after_server_initialization synchronise_implementations {
 	and	el.element_msg_type_id = msgs.msg_type_id
 	order by el.element_pos ASC
       } {
-	if {$element_msg_type_isset_p && $element_constraints ne [db_null]} {
+	if {$element_constraints ne [db_null]} {
 	  set msg_type_name "$msg_type_name$element_constraints"
 	}
 	lappend value $element_name:$msg_type_name

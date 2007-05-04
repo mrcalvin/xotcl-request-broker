@@ -4,7 +4,7 @@ ad_library {
     
     @author stefan.sobernig@wu-wien.ac.at
     @creation-date January 30, 2006
-    @cvs-id $Id: xorb-aux-procs.tcl 18 2006-10-19 12:52:46Z ssoberni $
+    @cvs-id $Id$
     
 }
 
@@ -267,11 +267,52 @@ ad_proc ::acs_sc::msg_type::element::new {
     {-element_msg_type_isset_p:required} 
     {-element_pos:required} 
 } {} {
-    ::xorb::aux::MsgTypeElement new -volatile -msg_type_name $msg_type_name -element_name $element_name -element_msg_type_name $element_msg_type_name -element_msg_type_isset_p $element_msg_type_isset_p -element_pos $element_pos 
+    ::xorb::aux::MsgTypeElement new -volatile \
+	-msg_type_name $msg_type_name \
+	-element_name $element_name \
+	-element_msg_type_name $element_msg_type_name \
+	-element_msg_type_isset_p $element_msg_type_isset_p \
+	-element_pos $element_pos 
 }
 
 
 namespace eval xorb::aux {
+  ::xotcl::Class MsgTypeElement -slots {
+    Attribute msg_type_name 
+    Attribute element_name 
+    Attribute element_msg_type_name 
+    Attribute element_msg_type_isset_p 
+    Attribute element_pos 
+    Attribute element_constraints
+  }
+
+  MsgTypeElement ad_instproc init {} {} {
+	
+	my instvar msg_type_name element_name element_msg_type_name \
+	    element_msg_type_isset_p element_pos element_constraints
+	# / / / / / / / / / / / / / / / 
+	# TODO: chage acs::sc::msg_type_element__new accordingly
+	# currently we use a dirty hack to deal with
+	# constraints!
+	set element_constraints [db_null]
+	#my log "+++BEFORE+++ element_name=$element_name // element_msg_type_name=$element_msg_type_name // element_msg_type_isset_p=$element_msg_type_isset_p // element_pos=$element_pos // element_constraints=$element_constraints"
+	::xorb::datatypes::Anything tokenise $element_msg_type_name
+	if {$typeInfo ne {}} {set element_constraints $typeInfo}
+	set element_msg_type_name $hook
+	#my log "+++AFTER+++ element_name=$element_name // element_msg_type_name=$element_msg_type_name // element_msg_type_isset_p=$element_msg_type_isset_p // element_pos=$element_pos // element_constraints=$element_constraints"
+
+	db_string insert_new_element_plus_constraints {
+		
+		select acs_sc_msg_type__new_element(
+            :msg_type_name,
+            :element_name,
+            :element_msg_type_name,
+            :element_msg_type_isset_p,
+            :element_pos,
+            :element_constraints
+        );
+     }
+}
 
 
 ##################################################
@@ -315,56 +356,56 @@ Class NestedClass -superclass ::xotcl::Class
 
 
 
-::xotcl::Class MsgTypeElement -parameter {msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos {element_constraints ""}}
+#::xotcl::Class MsgTypeElement -parameter {msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos {element_constraints ""}}
 
-MsgTypeElement ad_instproc init {} {} {
+# MsgTypeElement ad_instproc init {} {} {
 	
-	my instvar msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos element_constraints
+# 	my instvar msg_type_name element_name element_msg_type_name element_msg_type_isset_p element_pos element_constraints
 	
-	#my log "type=$element_msg_type_name"
+# 	#my log "type=$element_msg_type_name"
 	
-	# # # # # # # # # 
-	# Array and multiple handling
-	#
+# 	# # # # # # # # # 
+# 	# Array and multiple handling
+# 	#
 	
-	# deal with old-style multiple declaration > foo:integer,multiple
-	if {$element_msg_type_isset_p} {
-		set element_msg_type_name "multiple($element_msg_type_name)"
-	}
+# 	# deal with old-style multiple declaration > foo:integer,multiple
+# 	if {$element_msg_type_isset_p} {
+# 		set element_msg_type_name "multiple($element_msg_type_name)"
+# 	}
 	
-	set lexer [CompoundLexer new -volatile -init $element_msg_type_name]
-	$lexer instvar argType isArray constraints
+# 	set lexer [CompoundLexer new -volatile -init $element_msg_type_name]
+# 	$lexer instvar argType isArray constraints
 	
 	
-	array set arrConstraints [list]
-	set element_constraints [db_null]
+# 	array set arrConstraints [list]
+# 	set element_constraints [db_null]
 	
-	#my log "isArray: $isArray, argType: $argType"
+# 	#my log "isArray: $isArray, argType: $argType"
 	
-	if {$isArray || [string toupper $argType 0 0] eq "Multiple"} {
-		set start [string first "(" $element_msg_type_name]
-		if {$start != -1} {
-			set element_constraints [string range $element_msg_type_name $start end]
-			set element_msg_type_name [string range $element_msg_type_name 0 [expr {$start-1}]]
-		}
+# 	if {$isArray || [string toupper $argType 0 0] eq "Multiple"} {
+# 		set start [string first "(" $element_msg_type_name]
+# 		if {$start != -1} {
+# 			set element_constraints [string range $element_msg_type_name $start end]
+# 			set element_msg_type_name [string range $element_msg_type_name 0 [expr {$start-1}]]
+# 		}
 		
-		set element_msg_type_isset_p "t"
+# 		set element_msg_type_isset_p "t"
 		 
-	}
-	#my log "+++element_name=$element_name // element_msg_type_name=$element_msg_type_name // element_msg_type_isset_p=$element_msg_type_isset_p // element_pos=$element_pos // element_constraints=$element_constraints"
+# 	}
+# 	#my log "+++element_name=$element_name // element_msg_type_name=$element_msg_type_name // element_msg_type_isset_p=$element_msg_type_isset_p // element_pos=$element_pos // element_constraints=$element_constraints"
 
-	db_string insert_new_element_plus_constraints {
+# 	db_string insert_new_element_plus_constraints {
 		
-		select acs_sc_msg_type__new_element(
-            :msg_type_name,
-            :element_name,
-            :element_msg_type_name,
-            :element_msg_type_isset_p,
-            :element_pos,
-            :element_constraints
-        );
-     }
-}
+# 		select acs_sc_msg_type__new_element(
+#             :msg_type_name,
+#             :element_name,
+#             :element_msg_type_name,
+#             :element_msg_type_isset_p,
+#             :element_pos,
+#             :element_constraints
+#         );
+#      }
+# }
 
 
 

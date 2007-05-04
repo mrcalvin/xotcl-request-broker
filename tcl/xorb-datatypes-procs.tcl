@@ -77,112 +77,69 @@ namespace eval ::xorb::datatypes {
   # TODO: cache subclass tree?
   Anything proc subClassTree {{c {}}} {
     my instvar descendants
-    my log "+++1"
+    #my log "+++1"
     if {$c eq {}} {set c [self]}
     foreach s [$c info subclass] {
       set descendants($s) 0
       my subClassTree $s
     }
-    my log "+++2: [array names descendants]"
+    #my log "+++2: [array names descendants]"
     return [array names descendants]
   }
   
   Anything proc getTypeClass {key} {
-    set key [string toupper $key 0 0]
-    return  [lsearch -inline -glob [my subClassTree] *$key]
+    #  && [$key info superclass [self]] needed?
+    if {[my isclass $key]} {
+      return $key
+    } else {
+      set key [string toupper $key 0 0]
+      return  [lsearch -inline -glob [my subClassTree] *$key]
+    }
   }
 
   # / / / / / / / / / / / / / / / / /
   # TODO: refacture marshal und parse 
   # (demarshal) into xotcl-soap
   # !!!!!!
-  
-  Anything instproc marshal {document node soapElement} {
-    # / / / / / / / / / / / / / / /
-    # currently provides for XS-like
-    # streaming/ annotation of anys
-    my instvar isVoid
-    if {!$isVoid && [my isPrimitive]} {
-      my instvar __value__ name
-      # / / / / / / / / / / / / / / / / /
-      # TODO: get xsd key from actual objects
-      # abstract from the xotcl-soap case here
-      # no simple trimleft of prefix 'Xs'
-      set xstype [string trimleft [namespace tail [my info class]] Xs]
-      set xstype [string tolower $xstype 0 0]
-      if {[$soapElement istype ::xosoap::marshaller::SoapBodyResponse] && \
-	      ![info exists name]} {
-	set name [string map {Response Return} [$soapElement elementName]]
-      }
-      set anyNode [$node appendChild \
-			  [$document createElement $name]]
-      $anyNode setAttribute xsi:type "xsd:$xstype"
-      $anyNode appendChild \
-	  [$document createTextNode $__value__]
-    } else {
-      # complex type
-      my instvar __ordinary_map__ name
-      set anyNode [$node appendChild \
-		       [$document createElement $name]]
-      foreach c $__ordinary_map__ {
-	$c marshal $document $anyNode $soapElement
-      }
-    }
-  }
+  Anything instproc marshal args {next}
 
   Anything instproc containsResultNode {} {
     my instvar isRoot
     return [expr {$isRoot && [llength [my info children]] == 1}]
   }
 
-  Anything instproc parse {node} {
-    my instvar __value__ isRoot isVoid
-    #my log n=$node,type=[$node nodeType],xml=[$node asXML]
-    set checkNode [$node firstChild]
-    #set checkNode [expr {$initial?$node:[$node firstChild]}]
-    if {$isRoot && $checkNode eq {}} {
-      # XsVoid
-      set isVoid true
-    } elseif {[$checkNode nodeType] eq "TEXT_NODE"} {
-      set __value__ [$node text]
-    } elseif {[$checkNode nodeType] eq "ELEMENT_NODE"} {
-      # / / / / / / / / / / / / / / /
-      # look-ahead tests
-      # 	1. return-element encoding flaviours: as leaf or 
-      #	intermediary composite type
-      #my log isRoot=$isRoot
-      if {$isRoot && [[$checkNode firstChild] nodeType] eq "TEXT_NODE"} {
-	set __value__ [$checkNode text]
-	set isRoot false
-      } else {
-	puts children=[$node childNodes]
-	foreach c [$node childNodes] {
-	  #my set $i [[self class] new -childof [self] -parse $c]
-	 # my set __map__([$c nodeName]) $i
-	  #incr i
-	  set any [[self class] new \
-		       -childof [self] \
-		       -name [$c nodeName] \
-		       -parse $c]
-	  my add -parse $any
-	}
-      }
-    }
-  }
   Anything instproc parseObject {class object} {
+    #c1 ::xosoap::xsd::XsString
+    #c2 soapStruct=::example::soapStruct
+   
+    #c2 hook=soapStruct,typeInfo=::example::soapStruct
+    # 2) resolve typeKey
+    
+    # set typeKey [expr {[info exists hook]?$hook:"Anything"}]
+#     set typeInfo [expr {[info exists typeInfo]?$typeInfo:$class}]
+#     set typeInfo [string trimleft $typeInfo =]
+#     set typeKey [[self class] getTypeClass $typeKey]
+    #my log PCLASS=$typeKey,typeInfo=$typeInfo
     foreach s [$class info slots] {
       set type [$s anyType]
-      set s [namespace tail $s] 
+      [self class] tokenise $type
+      set typeKey [expr {[info exists hook]?$hook:$type}]
+      set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+      set typeInfo [string trimleft $typeInfo =]
+      set typeKey [[self class] getTypeClass $typeKey]
+      $s instvar tagName
+      set s [namespace tail $s]
       set value [$object set $s]
+      my log CLASS=$typeKey,object=$value,isobject?[my isobject $value]
       if {[my isobject $value]} {
-	my add -parse [Anything new \
+	my add -parse [$typeKey new \
 			   -childof [self] \
-			   -name $s \
-			   -parseObject $type $value]
+			   -name $tagName \
+			   -parseObject $typeInfo $value]
       } else {
 	my add -parse [$type new \
 			   -childof [self] \
-			   -name $s \
+			   -name $tagName \
 			   -set __value__ $value]
       }
     }
@@ -199,62 +156,117 @@ namespace eval ::xorb::datatypes {
     return [info exists __value__]
   } 
   
-  Anything instproc as {
+  Anything proc tokenise {typeKey} {
+    # / / / / / / / / / / / / / / /
+    # a simple tokeniser: it allows for
+    # the following notational forms
+    # for anything type keys:
+    # <anything><some-non-word-character><constraints>
+    # e.g.:
+    # soapArray=xsInteger[4]
+    # soapStruct=::xosoap::demo::exampleStruct
+    # soapArray=::xosoap::demo::exampleStruct[4]
+    # xsCompound={
+    #  sizeOf 4
+    #  contains   xsInteger
+    #  is     
+    #}
+    uplevel [list regexp {^(\w+)(.*)?$} $typeKey _ hook typeInfo]
+  }
+
+   Anything instproc as {
     -object:switch
     -default
     typeKey
   } {
-    my log SER=[my serialize],typeKey=$typeKey
-    if {[my isPrimitive]} {
-      if {$typeKey eq {}} {
-	return [self]
-      } else {
-	set className [expr {[my isclass $typeKey]?$typeKey:\
-				 [[self class] getTypeClass $typeKey]}]
-	my log "+++3:typeKey=$typeKey,classname=$className"
-	if {$className ne {}} {
-	  my class $className
-	  my instvar __value__
-	  my log "+++4:reset-class"
-	  if {[my validate]} {
-	    if {$object} {
-	      return [self]
-	    } else {
-	      return [my unwrap]
-	    }
-	  } elseif {[info exists default]} {
-	    return $default
-	  } else {
-	    error "Type cast is not possible."
-	  }
-	} else {
-	  error "No type handler for '$typeKey' is registered."
-	}
-      }
+    if {$typeKey eq {}} {
+      return [self]
     } else {
-      set isObj  [regexp {^object(=(.*))?$} $typeKey _ class]
-      set anyObj my
-      if {[my containsResultNode]} {
-	set anyObj [my info children] 
-      }
-      if {!$isObj || $class eq {}} {
-	error "type key specification '$typeKey' invalid."
-      } else {
-	set class [string trimleft $class =]
-	foreach s [$class info slots] {
-	  set type [$s anyType]
-	  set s [namespace tail $s] 
-	  set any [$anyObj set $s]
-	  my log any=$any,typeKey=$type
-	  set unwrapped [$any as $type]
-	  my log unwrapped=$unwrapped
-	  $anyObj set $s [$any as $type]
+      # 1) apply tokeniser > yields two variables: hook + typeInfo
+      [self class] tokenise $typeKey
+      # 2) resolve typeKey
+      set typeKey [expr {[info exists hook]?$hook:$typeKey}]
+      set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+      set className [[self class] getTypeClass $typeKey]
+      my log "+++3:typeKey=$typeKey,classname=$className,typeInfo=$typeInfo"
+      if {$className ne {}} {
+	# 3) recast anything into concrete anything implementation
+	my class $className
+
+	# 4) process anything further: validation + unwrapping
+	if {[my validate $typeInfo]} {
+	  if {$object} {
+	    return [self]
+	  } else {
+	    return [my unwrap]
+	  }
+	} elseif {[info exists default]} {
+	  return $default
+	} else {
+	  error "Type cast is not possible."
 	}
-	$anyObj mixin add $class
-	return $anyObj
+      } else {
+	error "No type handler for '$typeKey' is registered."
       }
     }
   }
+  
+ #  Anything instproc as {
+#     -object:switch
+#     -default
+#     typeKey
+#   } {
+#     my log SER=[my serialize],typeKey=$typeKey
+#     if {[my isPrimitive]} {
+#       if {$typeKey eq {}} {
+# 	return [self]
+#       } else {
+# 	set className [expr {[my isclass $typeKey]?$typeKey:\
+# 				 [[self class] getTypeClass $typeKey]}]
+# 	my log "+++3:typeKey=$typeKey,classname=$className"
+# 	if {$className ne {}} {
+# 	  my class $className
+# 	  my instvar __value__
+# 	  my log "+++4:reset-class"
+# 	  if {[my validate]} {
+# 	    if {$object} {
+# 	      return [self]
+# 	    } else {
+# 	      return [my unwrap]
+# 	    }
+# 	  } elseif {[info exists default]} {
+# 	    return $default
+# 	  } else {
+# 	    error "Type cast is not possible."
+# 	  }
+# 	} else {
+# 	  error "No type handler for '$typeKey' is registered."
+# 	}
+#       }
+#     } else {
+#       set isObj  [regexp {^object(=(.*))?$} $typeKey _ class]
+#       set anyObj my
+#       if {[my containsResultNode]} {
+# 	set anyObj [my info children] 
+#       }
+#       if {!$isObj || $class eq {}} {
+# 	error "type key specification '$typeKey' invalid."
+#       } else {
+# 	set class [string trimleft $class =]
+# 	foreach s [$class info slots] {
+# 	  set type [$s anyType]
+# 	  set s [namespace tail $s] 
+# 	  set any [$anyObj set $s]
+# 	  my log any=$any,typeKey=$type
+# 	  set unwrapped [$any as $type]
+# 	  my log unwrapped=$unwrapped
+# 	  $anyObj set $s [$any as $type]
+# 	}
+# 	$anyObj mixin add $class
+# 	return $anyObj
+#       }
+#     }
+#   }
 
   # / / / / / / / / / / / / / /
   # TODO: How to organise validation
@@ -294,14 +306,19 @@ namespace eval ::xorb::datatypes {
 
   ::xotcl::Class AnyAttribute -superclass ::xotcl::Attribute -slots {
     Attribute anyType
+    Attribute tagName
   }
   AnyAttribute instproc init args {
-    my instvar type
+    my instvar type tagName
     if {[info exists type]} {
       my anyType $type
       my type "$type validate"
     }
-    next
+    my log tagName?[info exists tagName]
+    if {![info exists tagName]} {
+      set tagName [namespace tail [self]]
+    }
+     next
   }
 
 
@@ -345,8 +362,18 @@ namespace eval ::xorb::datatypes {
   ::xotcl::Class Anything::CheckOption+Uplift
   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
     set anyBase [[self class] info parent]
-    set anyImpl [$anyBase getTypeClass $checkoption]
-    set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
+    $anyBase tokenise $checkoption
+    set typeKey [expr {[info exists hook]?$hook:$checkoption}]
+    set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+    set anyImpl [$anyBase getTypeClass $typeKey]
+    # / / / / / / / / / / / / / / / / 
+    # TODO: generalise the verification
+    # should be independent from protocol
+    # plugins, introduce Simple and Compound subclasses
+    # for Anything!
+    set isObj [$anyImpl info superclass ::xosoap::xsd::XsCompound]
+    set class $typeInfo
+    #set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
     if {$anyImpl ne {} || $isObj} {
       switch [llength $args] {
 	1 {
@@ -363,11 +390,14 @@ namespace eval ::xorb::datatypes {
 	    } else {
 	      set class [string trimleft $class =]
 	    }
-	    my log "+++class=$class"
 	    uplevel [list lappend returnObjs \
-			 [$anyBase new \
+			 [$anyImpl new \
 			      -name $argName \
 			      -parseObject $class $argValue]]
+	    #  uplevel [list lappend returnObjs \
+		# 			 [$anyBase new \
+		# 			      -name $argName \
+		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
 	    set any [$anyImpl new -set __value__ $argValue -name $argName]
