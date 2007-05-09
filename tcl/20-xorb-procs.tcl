@@ -412,7 +412,7 @@ Base instproc slotInfo {option} {
 #     }
 
   ::xotcl::Class ServiceContract -superclass Base -slots {
-    Attribute description
+    Attribute description -default {}
     Attribute extends
   }
 
@@ -973,7 +973,7 @@ ad_after_server_initialization synchronise_implementations {
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
 
-  ::xotcl::Class Skeleton -set lightweight 1
+  ::xotcl::Class Skeleton -set lightweight 0
   
   Skeleton proc getContract {-lightweight:switch -name:required} {
     try { 
@@ -989,13 +989,13 @@ ad_after_server_initialization synchronise_implementations {
       Abstract instmixin delete [self]
       
       if {$lightweight} {
-	[self]::$name mixin {}
 	my clearVars [self]::$name
 	[self]::${name}::slot destroy
       }
       
       #/ / / / / / / / / / /
       # provide for cleanup
+      [self]::$name mixin {}
       [self]::$name destroy_on_cleanup
 
     } catch {error e} {
@@ -1022,13 +1022,13 @@ ad_after_server_initialization synchronise_implementations {
       Delegate instmixin delete [self]
       
       if {$lightweight} {
-	[self]::$name mixin {}
 	my clearVars [self]::$name
 	[self]::${name}::slot destroy
       }
       
       #/ / / / / / / / / / /
       # provide for cleanup
+      [self]::$name mixin {}
       [self]::$name destroy_on_cleanup
 
     } catch {Exception e} {
@@ -1045,9 +1045,13 @@ ad_after_server_initialization synchronise_implementations {
   Skeleton proc generate {{-contract ""} -impl:required} {
     try {
 
-      set implObj [my getImplementation -lightweight -name $impl]
-      my log "ser=[$implObj serialize]"
-      set contractObj [my getContract -lightweight -name [$implObj implements]]
+      #set implObj [my getImplementation -lightweight -name $impl]
+      set implObj [my getImplementation -name $impl]
+      #my log "ser=[$implObj serialize]"
+      #set contractObj [my getContract -lightweight -name [$implObj implements]]
+      set contractObj [my getContract -name [$implObj implements]]
+      my log "SER=[$contractObj serialize]"
+      
       # TODO: contract class as mixin or instmixin?
       set skeletonObj [$implObj new -mixin $contractObj] 
       
@@ -1100,7 +1104,7 @@ ad_after_server_initialization synchronise_implementations {
       lappend arguments -$arg,required
     }
    
-  
+    my log HERE
     $__skeleton__ instproc [my name] $arguments [subst {
       # / / / / / / / / / / / / / / / /
       # a generic container for storing
@@ -1411,6 +1415,17 @@ ad_after_server_initialization synchronise_implementations {
   # # # # # # # # # # # # # # # #
 
   ::xotcl::Class SkeletonCache
+  # / / / / / / / / / / / / / / / /
+  # In case of cached skeleton objects
+  # we need to avoid initialisation of
+  # slot objects so skeleton methods
+  # are not overwritten; this is not needed
+  # if we use lightweight mode, however,
+  # we avoid that mode to be able to use
+  # use cached skeleton objects for 
+  # wsdl etc. generation
+::xotcl::Class SkeletonCache::Abstract -instproc init args {}
+::xotcl::Class SkeletonCache::Delegate -instproc init args {}
 
   SkeletonCache proc remove {key} {
     #my log "Cache clearing called (key=$key)"
@@ -1434,7 +1449,18 @@ ad_after_server_initialization synchronise_implementations {
       #my log "ALREADY STORED: follow-up call"
       if {![my isobject [self]::$name]} {
 	#my log "OBJECT does not exist: eval $value"
+	# / / / / / / / / / / / / / / / /
+	# In case of cached skeleton objects
+	# we need to avoid initialisation of
+	# slot objects so skeleton methods
+	# are not overwritten; this is not needed
+	# if we use lightweight mode, however,
+	# we avoid that mode to be able to use
+	# use cached skeleton objects for 
+	# wsdl etc. generation
+	Abstract instmixin add [self class]::Abstract
 	eval $value
+	Abstract instmixin delete [self class]::Abstract
 	[self]::$name destroy_on_cleanup
       }
       return [self]::$name
@@ -1462,7 +1488,18 @@ ad_after_server_initialization synchronise_implementations {
       #my log "ALREADY STORED: follow-up call"
       if {![my isobject [self]::$name]} {
 	#my log "OBJECT does not exist: eval $value"
+	# / / / / / / / / / / / / / / / /
+	# In case of cached skeleton objects
+	# we need to avoid initialisation of
+	# slot objects so skeleton methods
+	# are not overwritten; this is not needed
+	# if we use lightweight mode, however,
+	# we avoid that mode to be able to use
+	# use cached skeleton objects for 
+	# wsdl etc. generation
+	Delegate instmixin add [self class]::Delegate
 	eval $value
+	Delegate instmixin delete [self class]::Delegate
 	[self]::$name destroy_on_cleanup
       }
       return [self]::$name
@@ -1525,9 +1562,11 @@ ad_after_server_initialization synchronise_implementations {
       # TODO: set context for actual
       # invocation
       my log "NEXT=[$skeleton procsearch $call],arguments=$arguments"
-      ::xotcl::nonposArgs mixin add ::xorb::datatypes::Anything::CheckOption+Uplift
+      ::xotcl::nonposArgs mixin add \
+	  ::xorb::datatypes::Anything::CheckOption+Uplift
       set result [eval $skeleton $call $arguments]
-      ::xotcl::nonposArgs mixin delete ::xorb::datatypes::Anything::CheckOption+Uplift
+      ::xotcl::nonposArgs mixin delete \
+	  ::xorb::datatypes::Anything::CheckOption+Uplift
       # / / / / / / / / / / / / /
       # TODO: remove context for actual
       # invocation
@@ -1536,10 +1575,11 @@ ad_after_server_initialization synchronise_implementations {
       my log "---IERROR: [$e message]"
       error $e
     } catch {error e} {
+      global errorInfo
       error [::xorb::exceptions::InvocationException new \
 		 [subst {
 		   Call '$call' on '$skeleton' ([$skeleton info class]) 
-		   with args '$arguments' failed due to '$e'}]]
+		   with args '$arguments' failed due to '$errorInfo'}]]
     }
     if {$result ne {}} {
       return $result

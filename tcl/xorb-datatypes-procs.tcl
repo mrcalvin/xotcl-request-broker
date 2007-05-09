@@ -86,7 +86,10 @@ namespace eval ::xorb::datatypes {
     #my log "+++2: [array names descendants]"
     return [array names descendants]
   }
-  
+  # / / / / / / / / / / / / / / / / / / / /
+  # TODO: turn it into per-instance method
+  # called 'expand' and therefore make it overloadable
+  # by subclasses
   Anything proc getTypeClass {key} {
     #  && [$key info superclass [self]] needed?
     if {[my isclass $key]} {
@@ -97,10 +100,6 @@ namespace eval ::xorb::datatypes {
     }
   }
 
-  # / / / / / / / / / / / / / / / / /
-  # TODO: refacture marshal und parse 
-  # (demarshal) into xotcl-soap
-  # !!!!!!
   Anything instproc marshal args {next}
 
   Anything instproc containsResultNode {} {
@@ -145,7 +144,14 @@ namespace eval ::xorb::datatypes {
     }
   }
   
+  Anything instproc expand {typeCode} {
+    
+  }
   
+  Anything instproc resolve {typeCode} {
+    
+  }
+
   Anything instproc add {-parse:switch any} {
     my lappend __ordinary_map__ $any
     if {$parse} {my set [$any name] $any} 
@@ -187,6 +193,7 @@ namespace eval ::xorb::datatypes {
       # 2) resolve typeKey
       set typeKey [expr {[info exists hook]?$hook:$typeKey}]
       set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+      set typeInfo [string trimleft $typeInfo =]
       set className [[self class] getTypeClass $typeKey]
       my log "+++3:typeKey=$typeKey,classname=$className,typeInfo=$typeInfo"
       if {$className ne {}} {
