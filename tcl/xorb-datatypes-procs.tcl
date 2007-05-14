@@ -16,6 +16,7 @@ ad_library {
 
 namespace eval ::xorb::datatypes {
   
+
   # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
   # Anything
@@ -100,6 +101,15 @@ namespace eval ::xorb::datatypes {
     }
   }
 
+  Anything proc resolve {key} {
+    if {[my isclass $key] && [$key info superclass [self]]} {
+      return $key
+    } else {
+      set key [string toupper $key 0 0]
+      return  [lsearch -inline -glob [my subClassTree] *$key]
+    }
+  }
+
   Anything instproc marshal args {next}
 
   Anything instproc containsResultNode {} {
@@ -107,36 +117,24 @@ namespace eval ::xorb::datatypes {
     return [expr {$isRoot && [llength [my info children]] == 1}]
   }
 
-  Anything instproc parseObject {class object} {
-    #c1 ::xosoap::xsd::XsString
-    #c2 soapStruct=::example::soapStruct
-   
-    #c2 hook=soapStruct,typeInfo=::example::soapStruct
-    # 2) resolve typeKey
-    
-    # set typeKey [expr {[info exists hook]?$hook:"Anything"}]
-#     set typeInfo [expr {[info exists typeInfo]?$typeInfo:$class}]
-#     set typeInfo [string trimleft $typeInfo =]
-#     set typeKey [[self class] getTypeClass $typeKey]
-    #my log PCLASS=$typeKey,typeInfo=$typeInfo
-    foreach s [$class info slots] {
+
+  Anything instproc parseObject {reader object} {
+    $reader instvar cast
+    my log ANYINPARSE=$cast
+    foreach s [$cast info slots] {
       set type [$s anyType]
-      [self class] tokenise $type
-      set typeKey [expr {[info exists hook]?$hook:$type}]
-      set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
-      set typeInfo [string trimleft $typeInfo =]
-      set typeKey [[self class] getTypeClass $typeKey]
+      set ar [AnyReader new -typecode $type]
       $s instvar tagName
       set s [namespace tail $s]
       set value [$object set $s]
-      my log CLASS=$typeKey,object=$value,isobject?[my isobject $value]
+      my log CLASS=[$ar any],object=$value,isobject?[my isobject $value]
       if {[my isobject $value]} {
-	my add -parse [$typeKey new \
+	my add -parse [[$ar any] new \
 			   -childof [self] \
 			   -name $tagName \
-			   -parseObject $typeInfo $value]
+			   -parseObject $ar $value]
       } else {
-	my add -parse [$type new \
+	my add -parse [[$ar any] new \
 			   -childof [self] \
 			   -name $tagName \
 			   -set __value__ $value]
@@ -144,14 +142,6 @@ namespace eval ::xorb::datatypes {
     }
   }
   
-  Anything instproc expand {typeCode} {
-    
-  }
-  
-  Anything instproc resolve {typeCode} {
-    
-  }
-
   Anything instproc add {-parse:switch any} {
     my lappend __ordinary_map__ $any
     if {$parse} {my set [$any name] $any} 
@@ -188,38 +178,158 @@ namespace eval ::xorb::datatypes {
     if {$typeKey eq {}} {
       return [self]
     } else {
-      # 1) apply tokeniser > yields two variables: hook + typeInfo
-      [self class] tokenise $typeKey
-      # 2) resolve typeKey
-      set typeKey [expr {[info exists hook]?$hook:$typeKey}]
-      set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
-      set typeInfo [string trimleft $typeInfo =]
-      set className [[self class] getTypeClass $typeKey]
-      my log "+++3:typeKey=$typeKey,classname=$className,typeInfo=$typeInfo"
-      if {$className ne {}} {
-	# 3) recast anything into concrete anything implementation
-	my class $className
-
-	# 4) process anything further: validation + unwrapping
-	if {[my validate $typeInfo]} {
-	  if {$object} {
-	    return [self]
-	  } else {
-	    return [my unwrap]
-	  }
-	} elseif {[info exists default]} {
-	  return $default
+      set ar [AnyReader new -typecode $typeKey]
+      my log "+++3:typeKey=[$ar any]"
+      # 3) recast anything into concrete anything implementation
+      my class [$ar any]
+      
+      # 4) process anything further: validation + unwrapping
+      if {[my validate $ar]} {
+	if {$object} {
+	  return [self]
 	} else {
-	  error "Type cast is not possible."
+	  return [my unwrap]
 	}
+      } elseif {[info exists default]} {
+	return $default
       } else {
-	error "No type handler for '$typeKey' is registered."
+	error "Type cast is not possible."
       }
     }
   }
   
- #  Anything instproc as {
+
+#    Anything instproc as {
 #     -object:switch
+#     -default
+#     typeKey
+#   } {
+#     if {$typeKey eq {}} {
+#       return [self]
+#     } else {
+#       # 1) apply tokeniser > yields two variables: hook + typeInfo
+#       [self class] tokenise $typeKey
+#       # 2) resolve typeKey
+#       set typeKey [expr {[info exists hook]?$hook:$typeKey}]
+#       set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+#       set typeInfo [string trimleft $typeInfo =]
+#       set className [[self class] getTypeClass $typeKey]
+#       my log "+++3:typeKey=$typeKey,classname=$className,typeInfo=$typeInfo"
+#       if {$className ne {}} {
+# 	# 3) recast anything into concrete anything implementation
+# 	my class $className
+
+# 	# 4) process anything further: validation + unwrapping
+# 	if {[my validate $typeInfo]} {
+# 	  if {$object} {
+# 	    return [self]
+# 	  } else {
+# 	    return [my unwrap]
+# 	  }
+# 	} elseif {[info exists default]} {
+# 	  return $default
+# 	} else {
+# 	  error "Type cast is not possible."
+# 	}
+#       } else {
+# 	error "No type handler for '$typeKey' is registered."
+#       }
+#     }
+#   }
+
+  
+
+  # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # #
+  # A small interpreter for
+  # typecodes as used to declare
+  # Anythings
+  # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # #
+
+  ::xotcl::Class AnyReader -slots {
+    Attribute typecode
+    Attribute observer
+    Attribute name
+    Attribute any
+    Attribute cast
+    Attribute suffix
+    Attribute style
+    Attribute inCompound -default 0
+  }
+  
+  AnyReader instproc init args {
+    my instvar any cast suffix
+    # a) tokenise
+    set tc [my enbrace]
+    my log tc=$tc
+    switch [llength $tc] {
+      1 { set tokens any;}
+      2 { set tokens [list any cast]}
+      3 { set tokens [list any cast suffix]}
+      default {
+	error "Invalid typecode specification."
+      }
+    }
+    foreach $tokens $tc break;
+    # b) resolve Anything
+    set any [Anything resolve $any]
+    if {$any eq {}} {
+      error "Invalid typecode specification."
+    }
+  }
+  
+  AnyReader instproc get {what} {
+    my instvar any name style
+    if {[my isclass $any]} {
+      # / / / / / / / / / / / /
+      # TODO: introduce flyweights for
+      # anythings!
+      set any [$any new]
+      if {[info exists name]} {
+	$any name $name
+      }
+    }
+    # / / / / / / / / / / / / / / /
+    # Introduce styles
+    set class [$any info class]
+    foreach h [concat $class [$class info heritage]] {
+      set hstripped [namespace tail $h]
+      my log ATTEMPT=${style}::${hstripped}
+      set mixins {}
+      if {[my isclass ${style}::${hstripped}]} {
+	append mixins ${style}::${hstripped}
+	$any mixin add ${style}::${hstripped}
+      }
+    }
+    my log MIXINS=$mixins
+    if {[$any info methods expand=$what] ne {}} {
+      set result [$any expand=$what [self]] 
+    }
+    foreach m $mixins {
+      $any mixin delete $m
+    }
+    if {[info exists result]} {
+      return $result
+    }
+  }
+  
+  AnyReader instproc enbrace {} {
+    my instvar typecode
+    return [string map {"(" " {" ")" "} "} $typecode]
+  }
+
+  AnyReader instproc unbrace {{in {}}} {
+    if {$in eq {}} { 
+      my instvar typecode
+      set in $typecode
+    }
+    return [string map {" {" "(" "} " ")"} $in]
+  }
+
+  
+  #  Anything instproc as {
+  #     -object:switch
 #     -default
 #     typeKey
 #   } {
@@ -302,6 +412,8 @@ namespace eval ::xorb::datatypes {
     }
   }
 
+
+
   # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
   # Attribute slot integration
@@ -368,46 +480,50 @@ namespace eval ::xorb::datatypes {
 
   ::xotcl::Class Anything::CheckOption+Uplift
   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
-    set anyBase [[self class] info parent]
-    $anyBase tokenise $checkoption
-    set typeKey [expr {[info exists hook]?$hook:$checkoption}]
-    set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
-    set anyImpl [$anyBase getTypeClass $typeKey]
+    # $anyBase tokenise $checkoption
+    # set typeKey [expr {[info exists hook]?$hook:$checkoption}]
+    # set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+    # set anyImpl [$anyBase getTypeClass $typeKey]
+
+
     # / / / / / / / / / / / / / / / / 
     # TODO: generalise the verification
     # should be independent from protocol
     # plugins, introduce Simple and Compound subclasses
     # for Anything!
-    set isObj [$anyImpl info superclass ::xosoap::xsd::XsCompound]
-    set class $typeInfo
     #set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
-    if {$anyImpl ne {} || $isObj} {
+    set anyBase [[self class] info parent]
+    set ar [::xorb::datatypes::AnyReader new -typecode $checkoption]
+    if {[$ar any] ne {}} {
+      my log "ARANY=[$ar any]"
       switch [llength $args] {
 	1 {
 	  foreach argName $args break
 	}
 	2 {
+	  set isObj [[$ar any] info superclass ::xosoap::xsd::XsCompound]
 	  foreach {argName argValue} $args break
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
 	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
 	  } elseif {[my isobject $argValue] && $isObj} {
-	    if {$class eq {}} {
-	      set class [$argValue info class]
-	    } else {
-	      set class [string trimleft $class =]
-	    }
+	    #if {$class eq {}} {
+	    #  set class [$argValue info class]
+	    #} else {
+	    #  set class [string trimleft $class =]
+	    #}
+	    my log "ARANY-INSIDE=[$ar any]"
 	    uplevel [list lappend returnObjs \
-			 [$anyImpl new \
+			 [[$ar any] new \
 			      -name $argName \
-			      -parseObject $class $argValue]]
+			      -parseObject $ar $argValue]]
 	    #  uplevel [list lappend returnObjs \
 		# 			 [$anyBase new \
 		# 			      -name $argName \
 		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
-	    set any [$anyImpl new -set __value__ $argValue -name $argName]
+	    set any [[$ar any] new -set __value__ $argValue -name $argName]
 	    if {[$any validate]} {
 	      uplevel [list lappend returnObjs $any]
 	    }
@@ -419,11 +535,64 @@ namespace eval ::xorb::datatypes {
     }
   }
 
+
+#   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
+#     set anyBase [[self class] info parent]
+#     $anyBase tokenise $checkoption
+#     set typeKey [expr {[info exists hook]?$hook:$checkoption}]
+#     set typeInfo [expr {[info exists typeInfo]?$typeInfo:""}]
+#     set anyImpl [$anyBase getTypeClass $typeKey]
+#     # / / / / / / / / / / / / / / / / 
+#     # TODO: generalise the verification
+#     # should be independent from protocol
+#     # plugins, introduce Simple and Compound subclasses
+#     # for Anything!
+#     set isObj [$anyImpl info superclass ::xosoap::xsd::XsCompound]
+#     set class $typeInfo
+#     #set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
+#     if {$anyImpl ne {} || $isObj} {
+#       switch [llength $args] {
+# 	1 {
+# 	  foreach argName $args break
+# 	}
+# 	2 {
+# 	  foreach {argName argValue} $args break
+# 	  if {[my isobject $argValue] && \
+# 		  [$argValue istype $anyBase]} {
+# 	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
+# 	  } elseif {[my isobject $argValue] && $isObj} {
+# 	    if {$class eq {}} {
+# 	      set class [$argValue info class]
+# 	    } else {
+# 	      set class [string trimleft $class =]
+# 	    }
+# 	    uplevel [list lappend returnObjs \
+# 			 [$anyImpl new \
+# 			      -name $argName \
+# 			      -parseObject $class $argValue]]
+# 	    #  uplevel [list lappend returnObjs \
+# 		# 			 [$anyBase new \
+# 		# 			      -name $argName \
+# 		# 			      -parseObject $class $argValue]]
+# 	  } else {
+# 	    # TODO: for return value checks -> conversion in any object?
+# 	    set any [$anyImpl new -set __value__ $argValue -name $argName]
+# 	    if {[$any validate]} {
+# 	      uplevel [list lappend returnObjs $any]
+# 	    }
+# 	  }
+#  	}
+#       }
+#     } else {
+#       next
+#     }
+#   }
+
   # / / / / / / / / / / / / / / /
   # TODO: keep it that way?
   #::xotcl::nonposArgs mixin add Anything::nonposArgs
 
 
-  namespace export Anything MetaAny
+  namespace export Anything MetaAny AnyReader
 
 }
