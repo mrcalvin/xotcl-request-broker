@@ -45,6 +45,7 @@ namespace eval ::xorb::context {
 	    -url $url
 	::xo::cc destroy_on_cleanup 
       } else {
+	#my log ::XO::CC=CONFIGURED
 	::xo::cc configure \
 	    -package_id $package_id \
 	    -url $url \

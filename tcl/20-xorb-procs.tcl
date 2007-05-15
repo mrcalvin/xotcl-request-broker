@@ -226,7 +226,7 @@ Configuration instproc setDefaults {obj} {
   Attribute interceptor
 }
 
-  # / / / / / / / / / / / / / / / / / / / / / /
+# / / / / / / / / / / / / / / / / / / / / / /
 # base configuration; only provides for (de-)
 # marshalling
 
@@ -754,8 +754,174 @@ ad_after_server_initialization synchronise_implementations {
   }
   Synchronizable instproc save args {
     set spec [my stream]
-    my id [::acs_sc::[my middle]::new_from_spec -spec $spec]
+    if {[my middle] eq "impl"} { 
+      my id [::acs_sc::[my middle]::new_from_spec -spec $spec]
+    } else {
+      # / / / / / / / / / / / / / / / /
+      # We now provide our own tcl/db wrapping
+      # for storing new contracts, as this
+      # is required by the way we use
+      # checkoptions to declare and validate
+      # an extensible set of types used
+      # in protocol plug-ins!
+      # NOTE: ::acs_sc::contract::new_from_spec 
+      # is no longer used.
+      # A point in case for the poor level of
+      # re-usability of existing package code,
+      # here in terms of extensibility!
+      
+      # OLD: my id [::acs_sc::[my middle]::new_from_spec -spec $spec]
+      my id [my saveContract $spec]
+    }
   }
+
+  Synchronizable instproc expandMessageTypeElement {
+    msgTypeName 
+    element
+    idx
+  } {
+    # / / / / / / / / / / / / / / / / /
+    # Includes the necessary changes to 
+    # support new type system.
+    # The overall code piece is more ore less copied
+    # from acs_sc::msg_type::parse_spec
+
+    # / / / / / / / / / / / / / / / / /
+    # adaptation (1): being more careful
+    # with semicolons being delimiters.
+    # Needed when using absolut 
+    # object references in type descriptors,
+    # for instance.
+    set first [string first : $element]    
+    set 1 [string range $element 0 [expr {$first-1}]]  
+    set 2 [string range $element [expr {$first+1}] end]        
+    set elementv [list $1 $2]
+    set flagsv [split [lindex $elementv 1] ","]    
+    set elementName [string trim [lindex $elementv 0]]
+    # old multiple handling
+    if { [llength $flagsv] > 1 } {               
+      set idx [lsearch $flagsv "multiple"]         
+      if { [llength $flagsv] > 2 || $idx == -1 } { 
+	error {Only one modified flag allowed, 
+	  and that's multiple as in foo:integer,multiple}               
+      }               
+      # Remove the 'multiple' flag        
+      set flagsv [lreplace $flagsv $idx $idx]               
+      set elementType "[lindex $flagsv 0]"              
+      set isset_p "t"         
+    } else {              
+      set elementType [lindex $flagsv 0]    
+      set isset_p "f"
+    }
+    # / / / / / / / / / / / / / / / / /
+    # adaptation (2): the actual split
+    # of the type descriptor into
+    # the key element and the extended
+    # type info.
+    set elementConstraints [db_null]
+    ::xorb::datatypes::Anything tokenise $elementType
+    if {$typeInfo ne {}} {set elementConstraints $typeInfo}
+    # return call script
+    return [subst {
+      select acs_sc_msg_type__new_element(
+            '$msgTypeName',
+            '$elementName',
+            '$hook',
+            '$isset_p',
+            '$idx',
+            '$elementConstraints'
+        );
+    }]
+  }
+
+  Synchronizable instproc saveContract {spec} {
+
+    array set specification $spec
+    set contractName $specification(name)
+    set contractDescription $specification(description)
+
+    db_transaction {
+      # 1) store contract object
+      set id [db_exec_plsql insert_contract {
+	select acs_sc_contract__new(
+            :contractName,
+            :contractDescription
+	    );
+      }]
+      # / / / / / / / / / / / / / / / / / / /
+      # operations: we bulk up all necessary
+      # pl/pgsql calls and execute them at once
+      # per operation.
+ 
+      foreach {operation oInfo} $specification(operations) {
+	set sql {}
+	# retrieve operation details
+	array set oDetails {
+	  description {}
+	  input {}
+	  output {}
+	  is_cachable_p "f"
+	}
+	array set oDetails $oInfo
+	# create message type: Input
+	set inputTypeName "${contractName}.${operation}.InputType"
+	append sql [subst {
+	  select acs_sc_msg_type__new(
+            '$inputTypeName',
+            ''
+	    );
+      }]
+	# create elements of message types
+	set inputIdx 0
+	foreach element $oDetails(input) {
+	  append sql [my expandMessageTypeElement \
+			  $inputTypeName \
+			  $element \
+			  $inputIdx]
+	  incr inputIdx
+	}
+	# create message type: Output
+	set outputTypeName "${contractName}.${operation}.OutputType"
+      
+	append sql [subst {
+	  select acs_sc_msg_type__new(
+            '$outputTypeName',
+            ''
+	    );
+	}]
+	# create elements of message types
+	set outputIdx 0
+	foreach element $oDetails(output) {
+	  append sql [my expandMessageTypeElement \
+			  $outputTypeName \
+			  $element \
+			  $outputIdx]
+	  incr outputIdx
+	}
+	# finally, sum up by creating the operation itself
+	set desc $oDetails(description) 
+	set icp $oDetails(is_cachable_p)
+	append sql [subst {
+	  select acs_sc_operation__new(
+            :contractName,
+            :operation, 
+            :desc,
+            :icp,
+            :inputIdx,
+            :inputTypeName, 
+            :outputTypeName
+	    );
+	}]
+	# 2) execute bulk call per operation
+	my log SQL=$sql
+	db_exec_plsql insert_operation $sql
+      }
+    }
+    # TODO: add exception handling
+    my log ID=$id
+    return $id
+  } 
+
   Synchronizable instproc delete args {
     my instvar id
     if {[info exists id] && $id ne {}} {

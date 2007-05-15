@@ -103,6 +103,7 @@ namespace eval ::xorb::deployment {
       # from db, when check is 
       # issued during server initialisation
       # Is manager thread available?
+     
       if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
 	# managing thread not available, revert
 	# to db call
@@ -111,8 +112,13 @@ namespace eval ::xorb::deployment {
 	  from   	acs_sc_operations ops
 	  where  	ops.contract_name = :contract 
 	}]
+	# TODO: handling, if there simply is 
+	# NO contract specified!!!!!!
+	if {$uqSet eq {}} {
+	  error "There is no contract '$contract' available."
+	}
       } else {
-	set c [::xorb::Skeleton getContract -lightweight -name $contract]
+	set c [::xorb::Skeleton getContract -name $contract]
 	set uqSet [$c info instprocs]
       }
     } elseif {$c eq "::xorb::Skeleton::$contract"} {
