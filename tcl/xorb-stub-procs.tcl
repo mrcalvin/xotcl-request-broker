@@ -174,7 +174,7 @@ namespace eval ::xorb::stub {
     # unmarshalledResponse is of 
     # type Anything
     set any [$contextObj unmarshalledResponse]
-    if {![$any isVoid] && $returntype eq "void"} {
+    if {![$any isVoid__] && $returntype eq "void"} {
       set value [$contextObj unmarshalledResponse]
       error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
 		 "We expected a void return value, but got: $value"]
@@ -187,8 +187,8 @@ namespace eval ::xorb::stub {
     # 1) returns -> <type> as conventional proc return
     # 2) returns -> <name>:<type> set a variable
     # in upper scope
-    my log isvoid=[$any isVoid]
-    if {![$any isVoid] && $returntype ne "void"} {
+    my log isvoid=[$any isVoid__]
+    if {![$any isVoid__] && $returntype ne "void"} {
       # / / / / / / / / / / / / /
       # clear context obj
       # before new request 

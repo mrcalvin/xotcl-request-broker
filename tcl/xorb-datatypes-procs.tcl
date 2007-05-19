@@ -68,10 +68,17 @@ namespace eval ::xorb::datatypes {
     }]
   }
 
+  # / / / / / / / / / / / / / / / / /
+  # Attributes of Anythings have to be
+  # renamed or escaped accordingly. As
+  # demarshalled values are stored as
+  # ordinary instance variables, we
+  # could otherwise expect name clashes
+  # and therefore parsing errors!
   ::xotcl::Class Anything -slots {
-    Attribute isRoot -type boolean -default false
-    Attribute isVoid -type boolean -default false
-    Attribute name
+    Attribute isRoot__ -type boolean -default false
+    Attribute isVoid__ -type boolean -default false
+    Attribute name__
   }
 
   # / / / / / / / / / / / /
@@ -113,8 +120,8 @@ namespace eval ::xorb::datatypes {
   Anything instproc marshal args {next}
 
   Anything instproc containsResultNode {} {
-    my instvar isRoot
-    return [expr {$isRoot && [llength [my info children]] == 1}]
+    my instvar isRoot__
+    return [expr {$isRoot__ && [llength [my info children]] == 1}]
   }
 
 
@@ -131,12 +138,12 @@ namespace eval ::xorb::datatypes {
       if {[my isobject $value]} {
 	my add -parse [[$ar any] new \
 			   -childof [self] \
-			   -name $tagName \
+			   -name__ $tagName \
 			   -parseObject $ar $value]
       } else {
 	my add -parse [[$ar any] new \
 			   -childof [self] \
-			   -name $tagName \
+			   -name__ $tagName \
 			   -set __value__ $value]
       }
     }
@@ -144,7 +151,8 @@ namespace eval ::xorb::datatypes {
   
   Anything instproc add {-parse:switch any} {
     my lappend __ordinary_map__ $any
-    if {$parse} {my set [$any name] $any} 
+    my log ANYPARSE=[$any serialize]
+    if {$parse} {my set [$any name__] $any} 
   }
   
   Anything instproc isPrimitive {} {
@@ -287,7 +295,7 @@ namespace eval ::xorb::datatypes {
       # anythings!
       set any [$any new]
       if {[info exists name]} {
-	$any name $name
+	$any name__ $name
       }
     }
     # / / / / / / / / / / / / / / /
@@ -515,7 +523,7 @@ namespace eval ::xorb::datatypes {
 	    my log "ARANY-INSIDE=[$ar any]"
 	    uplevel [list lappend returnObjs \
 			 [[$ar any] new \
-			      -name $argName \
+			      -name__ $argName \
 			      -parseObject $ar $argValue]]
 	    #  uplevel [list lappend returnObjs \
 		# 			 [$anyBase new \
@@ -523,7 +531,7 @@ namespace eval ::xorb::datatypes {
 		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
-	    set any [[$ar any] new -set __value__ $argValue -name $argName]
+	    set any [[$ar any] new -set __value__ $argValue -name__ $argName]
 	    if {[$any validate]} {
 	      uplevel [list lappend returnObjs $any]
 	    }

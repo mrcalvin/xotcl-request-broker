@@ -523,7 +523,7 @@ ad_after_server_initialization synchronise_contracts {
   ::xotcl::Class Abstract -superclass ::xotcl::Slot -slots {
     Attribute arguments -default {}
     Attribute returns -default {}
-    Attribute description
+    Attribute description -default {}
   }
 
   Abstract instproc get {domain slot} {
@@ -1704,7 +1704,7 @@ ad_after_server_initialization synchronise_implementations {
     # 1a) handle anythings
     
     foreach any [::xo::cc virtualArgs] {
-      lappend arguments -[$any name] $any
+      lappend arguments -[$any name__] $any
     }
     
     if {$call eq {}} {
