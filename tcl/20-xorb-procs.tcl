@@ -321,36 +321,26 @@ Configuration instproc setDefaults {obj} {
 
    RequestHandler ad_instproc handleRequest {requestObj} {} {	
     
-    namespace import -force ::xosoap::visitor::*
-    #my log "---requestObj-2:$requestObj"
-    # / / / / / / / / / / / / / / /
-    # 1) preprocessing (CoI)
-    # having request processed by 
-    # chain of interceptors
-    # - demarshalling
-    # - ...
-    my log "NEXT=[self next]"
-    set requestFlowResult [next];#InterceptorChain->handleRequest
-    #my log "---requestFlowResult=$requestFlowResult"
-    # / / / / / / / / / / / / / / /
-    # 2) invocation data extraction
-    # InvocationDataVisitor
-    # - extract invocation data
-    set visitor [InvocationDataVisitor new -volatile]
-    $visitor releaseOn $requestFlowResult
-    
-    # / / / / / / / / / / / / / / /
-    # 3) init invoker and dispatch
-    
-    set invoker [Invoker new -destroy_on_cleanup]
-    set r [$invoker invoke]
-    
-    # / / / / / / / / / / / / / / /
-    # 4) process result
-    my log AFTER-INVOKE=$r,NEXT-1=[my procsearch handleResponse]
-    my handleResponse $requestFlowResult $r
+     # / / / / / / / / / / / / / / /
+     # 1) preprocessing (CoI)
+     # having request processed by 
+     # chain of interceptors
+     # - demarshalling
+     # - ...
+     # is handled by protocol-specific
+     # mixins
+     set requestFlowResult [next];#InterceptorChain->handleRequest
+     # / / / / / / / / / / / / / / /
+     # 2) init invoker and dispatch
      
-  }
+     set invoker [Invoker new $requestFlowResult]
+     $invoker destroy_on_cleanup
+     set r [$invoker invoke]
+     
+     # / / / / / / / / / / / / / / /
+     # 3) process result
+     my handleResponse $requestFlowResult $r
+   }
   
   RequestHandler ad_instproc handleResponse {responseObj} {} {
     # / / / / / / / / / / / / / / / / / / / / /
@@ -1707,11 +1697,11 @@ ad_after_server_initialization synchronise_implementations {
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
   
-  ::xotcl::Class Invoker -parameter {
-    impl
-    call
-    {arguments {}}
-    skeleton
+  ::xotcl::Class Invoker -slots {
+    Attribute impl
+    Attribute call
+    Attribute arguments -default {}
+    Attribute skeleton
   }
 
   Invoker instproc init args {

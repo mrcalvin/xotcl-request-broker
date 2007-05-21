@@ -303,7 +303,7 @@ namespace eval ::xorb::datatypes {
     set class [$any info class]
     foreach h [concat $class [$class info heritage]] {
       set hstripped [namespace tail $h]
-      my log ATTEMPT=${style}::${hstripped}
+      #my log ATTEMPT=${style}::${hstripped}
       set mixins {}
       if {[my isclass ${style}::${hstripped}]} {
 	append mixins ${style}::${hstripped}
