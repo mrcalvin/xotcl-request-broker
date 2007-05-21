@@ -73,7 +73,7 @@ namespace eval xorb {
   # / / / / / / / / / / / / / / / / / / / / / /
   # Configuration meta-class
 
-  Class Configuration -superclass Class -parameter {
+  Class Configuration -parameter {
     {listen "all"}
     {position "1"}
     {protocol "all"}
@@ -83,25 +83,48 @@ namespace eval xorb {
   }
   
   # # # # # # # # # # # # # # # # #
-  # # recreate fix is needed if 
+  # # TODO: recreate fix is needed if 
   # # configurations are set dynamically
   # # (in the regression-test.tcl) or the
   # # like in order to preserve the
   # # structural information of the underlying
   # # ordered composite (i.e. its children)
   # #
+
   Configuration proc recreate {obj args} {
-    my log "---BEFORE:[$obj serialize]"
     if {[$obj exists __children]} {
-      set children [$obj set __children]
+      foreach c [$obj set __children] {
+	set n [namespace tail $c]
+	if {[string first "__#" $n] != -1} {
+	  set prefix "[$c info class]"
+	  set stream [$c serialize]
+	  set idx [string first "-noinit" $stream]
+	  set body [string range $stream $idx end]
+	  lappend children "$prefix $body"
+	}
+      }
     }
     next;
-    my log "---AFTER:[$obj serialize]"
-    if {![$obj exists __children] && [info exists children]} {
-      $obj set __children $children
+    if {[info exists children]} {
+      foreach c $children {
+	set o [eval $c]
+	$obj lappend  __children $o
+      }
     }
   }
-
+  
+  #   Configuration proc recreate {obj args} {
+  #     my log "---BEFORE:[$obj serialize]"
+  #     if {[$obj exists __children]} {
+  #       set children [$obj set __children]
+  #     }
+  #     next;
+  #     my log "---AFTER:[$obj serialize]"
+  #     if {![$obj exists __children] && [info exists children]} {
+  #       $obj set __children $children
+  #     }
+  #   }
+  
   Configuration proc reverse {input} {
     set temp [list]
     for {set i [ expr [ llength $input ] - 1 ] } {$i >= 0} {incr i -1} {
