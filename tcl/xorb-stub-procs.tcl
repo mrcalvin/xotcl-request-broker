@@ -150,7 +150,7 @@ namespace eval ::xorb::stub {
 	::xorb::datatypes::Anything::CheckOption+Uplift
     
     $contextObj virtualArgs $r
-
+    my log REQUEST-CTX=[$contextObj serialize]
     # / / / / / / / / / / / / /
     # set client protocol and
     # mix into requesthandler
@@ -162,7 +162,7 @@ namespace eval ::xorb::stub {
       ::xorb::client::crHandler handleRequest $contextObj
       ::xorb::client::crHandler mixin delete $plugin
     } catch {Exception e} {
-      $e write
+      error $e
     } catch {error e} {
       global errorInfo
       error $errorInfo
@@ -316,7 +316,17 @@ namespace eval ::xorb::stub {
 			 -call $methName \
 			 -signatureMask $argList \
 			 -stubObject $self $context $voidness]
-      \$requestor handle \$args
+      ::xoexception::try {
+	\$requestor handle \$args
+      } catch {Exception e} {
+	\$e write
+	error [subst {
+	  Exception caught. Please, consult the log file for details: 
+	  [\$e message]
+	}]
+      } catch {error e} {
+	error \$e
+      }
     }]
     return $body
   }

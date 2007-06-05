@@ -57,9 +57,13 @@ namespace eval xorb::client {
     # instance
     try {
       set r [$providerObj handle $invocationObject]
+    } catch {Exception e} {
+      # rethrow 
+      error $e
     } catch {error e} {
+      global errorInfo
       error [::xorb::exceptions::TransportProviderFailed new \
-		"Reason: $e"]
+		"Reason: $errorInfo"]
     }
     
     if {[info exists r]} {

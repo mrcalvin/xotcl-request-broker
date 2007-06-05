@@ -425,7 +425,22 @@ Base instproc slotInfo {option} {
 #     }
 
   ::xotcl::Class ServiceContract -superclass Base -slots {
-    Attribute description -default {}
+    # / / / / / / / / / / / / / 
+    # Currently, the db schema
+    # enforces a not-null constraint
+    # on the description attribute.
+    # Therefore, if the contract 
+    # is provided with an empty-string
+    # value, we need to set an auto-generated
+    # one.
+    # TODO: other solution or provide
+    # auto information with more useful
+    # details (which?)
+    Attribute description -default {
+      This is an auto-generated description for this contract. 
+      You can provide a more useful one by using ad_doc on the 
+      contract specification object.
+    }
     Attribute extends
   }
 
@@ -852,7 +867,6 @@ ad_after_server_initialization synchronise_implementations {
     array set specification $spec
     set contractName $specification(name)
     set contractDescription $specification(description)
-
     db_transaction {
       # 1) store contract object
       set id [db_exec_plsql insert_contract {

@@ -128,10 +128,14 @@ namespace eval xorb::exceptions {
     The call return a value of type different to the expected/ 
     required returntype
   }
+  
+  LoggableException TypeViolationException -ad_doc {
+    The value supplied violates the type constraint
+  }
 
   # LoggableException UnknownException -ad_doc {
   #   An unspecified exception was caught
   # }
   namespace export SkeletonGenerationException LoggableException\
-      InvocationException NoTransportProvider
+      InvocationException NoTransportProvider TypeViolationException
 }

@@ -503,7 +503,7 @@ namespace eval ::xorb::datatypes {
     set anyBase [[self class] info parent]
     set ar [::xorb::datatypes::AnyReader new -typecode $checkoption]
     if {[$ar any] ne {}} {
-      my log "ARANY=[$ar any]"
+      # my log "ARANY=[$ar any]"
       switch [llength $args] {
 	1 {
 	  foreach argName $args break
@@ -514,13 +514,15 @@ namespace eval ::xorb::datatypes {
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
 	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
+	    #my log ===1
 	  } elseif {[my isobject $argValue] && $isObj} {
 	    #if {$class eq {}} {
 	    #  set class [$argValue info class]
 	    #} else {
 	    #  set class [string trimleft $class =]
 	    #}
-	    my log "ARANY-INSIDE=[$ar any]"
+	    #my log "ARANY-INSIDE=[$ar any]"
+	    #my log ===2
 	    uplevel [list lappend returnObjs \
 			 [[$ar any] new \
 			      -name__ $argName \
@@ -531,9 +533,15 @@ namespace eval ::xorb::datatypes {
 		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
+	    #my log ===3,$argValue,$argName
 	    set any [[$ar any] new -set __value__ $argValue -name__ $argName]
 	    if {[$any validate]} {
 	      uplevel [list lappend returnObjs $any]
+	    } else {
+	      error [::xorb::exceptions::TypeViolationException new [subst {
+		value: $argValue,
+		type: [$any info class]
+	      }]]
 	    }
 	  }
  	}
