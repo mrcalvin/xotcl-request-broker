@@ -8,9 +8,567 @@ ad_library {
     
 }
 
-
 namespace eval ::xorb::aux {
 
+  # # # # # # # # # # # # # # 
+  # # # # # # # # # # # # # # 
+  # Class AcsObjectType
+  # A skeleton helper to
+  # handle the management of
+  # ACS Object (Types) at the
+  # XOTcl Layer. It is only capable
+  # of registering an XOTcl class
+  # as ACS Object Type. In a not
+  # so far future it will be subject
+  # of adapting more generic
+  # facilities of the xotcl-core
+  # It is a strip-down version
+  # of implementation studies
+  # of Gustaf Neumann, so all credits
+  # shall therefore go to him.
+  # # # # # # # # # # # # # # 
+  # # # # # # # # # # # # # # 
+
+  ::xotcl::Class AcsObjectType -superclass ::xotcl::Class -slots {
+    Attribute pretty_name
+    Attribute pretty_plural
+    Attribute supertype -default acs_object
+    Attribute table_name -default ""
+    Attribute id_column -default ""
+    Attribute abstract_p -default "f"
+    Attribute name_method -default ""
+    Attribute object_type -default {[self]}
+    Attribute security_inherit_p -default "t"
+    Attribute lazilyAcquireTable -default false
+    Attribute attributes -default {}
+    Attribute dbConstructor -default new
+    Attribute dbDestructor -default delete
+    Attribute dbPackage
+  }
+  AcsObjectType set procExists {
+    select exists (select 1 from pg_proc where proname = '$m');
+  }
+  AcsObjectType set numArgs {
+    select count(*) from acs_function_args where function = '$mUpper';
+  }
+  AcsObjectType instproc existsObjectType {} {
+    my instvar object_type
+    expr {$object_type eq [db_list [my qn select_object_type] {
+      select object_type from acs_object_types where 
+      object_type = :object_type
+    }]}
+  }
+  AcsObjectType instproc createObjectType {} {
+    my instvar object_type supertype pretty_name pretty_plural \
+        table_name id_column name_method abstract_p
+    
+    if {![info exists pretty_name]}   {set pretty_name [namespace tail [self]]}
+    if {![info exists pretty_plural]} {set pretty_plural $pretty_name}
+
+    ::xo::db::sql::acs_object_type create_type \
+        -object_type $object_type \
+        -supertype [$supertype object_type] \
+        -pretty_name $pretty_name \
+        -pretty_plural $pretty_plural \
+        -table_name $table_name \
+        -id_column $id_column \
+        -abstract_p $abstract_p \
+        -name_method $name_method
+
+    # provide for table creation, 
+    # similar to content_type__create_type
+    # but at the XOTcl layer ...
+    if {![my lazilyAcquireTable]} {
+      my acquireTable
+    }
+  }
+
+  AcsObjectType instproc dropObjectType {{-cascade true}} {
+    my instvar object_type table_name
+    if {[my existsObjectType]} {
+      ::xo::db::sql::acs_object_type drop_type \
+	  -object_type $object_type \
+	  -cascade_p [expr {$cascade ? "t" : "f"}]
+      # TODO: Oracle manko ...
+      db_dml [my qn drop_object_type_table] "drop table $table_name"
+      my releaseConstructor
+    }
+  }
+  
+  AcsObjectType instproc setRelationAttributes {attribute} {
+    my instvar __relation_attributes__
+    set __relation_attributes__($attribute) 1
+  }
+  
+  AcsObjectType instproc getRelationAttributes {{what plpgsql} {idx 1}} {
+    my instvar __relation_attributes__ supertype table_name id_column
+    # if __relation_attributes__ does not exist (type without attributes), 
+    # default to {}
+    if {![array exists __relation_attributes__]} {
+      array set __relation_attributes__ [list]
+    }
+    set relAttributes [array names __relation_attributes__]
+    switch -- $what {
+      plpgsql {
+	#foreach a $__relation_attributes__ {
+	#  lappend r "p_$a alias for \$$idx;"
+	#  incr idx
+	#}
+	set r $relAttributes
+      }
+      record {
+	foreach a $relAttributes {
+	  regexp {\w+} [my slot $a sqltype] type
+	  lappend r $type
+	} 
+      }
+      storedArgs {
+	foreach a $relAttributes {
+	  if {[my slot $a exists dbDefault]} {
+	    lappend r $a;[my slot $a dbDefault]
+	  } else {
+	    lappend r $a
+	  }
+	}
+      }
+      sql-load {
+	if {$table_name ne {} && $id_column ne {}} {
+	  set tmp [list]
+	  #my debug __relation_attributes__=$__relation_attributes__
+	  foreach a $relAttributes {
+	    lappend tmp $table_name.$a
+	  }
+	  set r [list $table_name.$id_column $tmp]
+	  my debug r=$r
+	}
+      }
+    }
+
+    if {![info exists r]} {set r {}}
+
+    if {[$supertype object_type] ne "acs_object"} {
+      return [concat [$supertype getRelationAttributes $what $idx] $r]
+    } else {
+      return $r
+    }
+  }
+  AcsObjectType instproc getConstructor {{style plpgsql}} {
+    my acquireConstructor
+    my log GETCONST=[my serialize]
+    my instvar dbPackage dbConstructor __relation_attributes__ supertype \
+	abstract_p
+    if {!$abstract_p} {
+      my instvar dbPackage dbConstructor __relation_attributes__
+      set m ${dbPackage}__$dbConstructor
+      switch -- $style {
+	plpgsql {
+	  return ${m}(p_[join [array names __relation_attributes__] ,p_])
+	}
+	"xo" {
+	  regexp {(.+)__(.+)} $m _ object proc
+	  return "::xo::db::sql::$object $proc"
+	}
+      }
+    } else {
+      if {[my isobject $supertype] && [$supertype istype [self class]]} {
+	return [$supertype getConstructor]
+      }
+    }
+ 
+  }
+
+  AcsObjectType instproc releaseConstructor {} {
+    # 1) clear ::xo::db::representation
+    # 2) clear db (acs_function_args & drop)
+    my instvar dbPackage dbConstructor
+    if {![info exists dbPackage]} {
+      set dbPackage [my canonise [my set object_type]]
+    }
+    set m ${dbPackage}__$dbConstructor
+    my log m=$m,exists=[db_string [my qn ""] [subst [[self class] set procExists]]]
+
+    if {[db_string [my qn ""] [subst [[self class] set procExists]]]} {
+      set types_declaration [my getRelationAttributes record]
+      db_dml [my qn delete_constructor] \
+	  "drop function ${m}([join $types_declaration ,])"
+
+      # / / / / / / / / / / / / / / / /
+      # to make sure that we don't clear acs_function_args
+      # from a constructor version with a recor set other
+      # than the fully expanded (=exposing all attributes of
+      # the type) we provide for an attribute count!
+      
+      set c [llength $types_declaration]
+      set mUpper [string toupper $m]
+
+      # TODO: unify acs_function_args calls procExists + numArgs to a s
+      # single, namely the latter to avoid db polling!!!!
+      set nargs [db_string [my qn ""] [subst [[self class] set numArgs]]]
+      my log c=$c,nargs=$nargs
+      if {$nargs eq $c} {
+	db_dml [my qn clear_from_function_tbl] \
+	    "delete from acs_function_args where function = '$mUpper'"
+	# - - -
+	# clear from ::xo::db::sql layer
+	# - - -
+	
+	if {[my isobject ::xo::db::sql::$dbPackage] &&\
+	      [::xo::db::sql::$dbPackage info methods $dbConstructor] ne {}} {
+	  # TODO: as the wrappers are defined through
+	  # ad_proc, shall we also clean the ad_*
+	  # information (is handled by server restart
+	  # anyway)???
+	  ::xo::db::sql::$dbPackage proc $dbConstructor {} {}
+	}
+      }
+    }
+    
+  }
+
+  AcsObjectType instproc acquireConstructor {} {
+    my instvar dbConstructor __relation_attributes__ id_column supertype \
+	table_name dbPackage __requireRefresh__ abstract_p
+    if {$__requireRefresh__ || !$abstract_p} {
+      if {![info exists dbPackage]} {
+	set dbPackage [my canonise [my set object_type]] 
+      }
+      
+      
+      # __relation_attributes might not be initialised for types that did not
+      # define any AcsAttributes. Default it to an empty tcl string.
+      
+      if {![array exists __relation_attributes__]} {
+	array set __relation_attributes__ [list]
+      }
+      set relAttributes [array names __relation_attributes__]
+      set m ${dbPackage}__$dbConstructor
+      
+      if {![db_string [my qn ""] [subst [[self class] set procExists]]]} {
+	#set outerInterface [concat [$supertype set __relation_attributes__] \
+	#			$__relation_attributes__]
+	set types_declaration [my getRelationAttributes record]
+	
+	set idx 1
+	foreach a [my getRelationAttributes] {
+	  lappend declaration "p_$a alias for \$$idx;"
+	  incr idx
+	}
+	set declare [subst {
+	  declare
+	  [join $declaration]
+	  v_$id_column integer;
+	}]
+	
+	# resolve constructor of supertype
+	set supertypeCall [$supertype getConstructor]
+	# TODO: default to an acs_object__new call
+	set refs [expr {$relAttributes eq {}?\
+			    "":",[join $__relation_attributes__ ,]"}]
+	set vals [expr {$relAttributes eq {}?\
+			    "":",p_[join $__relation_attributes__ ,p_]"}]
+	set body [subst {
+	  begin
+	  v_$id_column := $supertypeCall;
+	  insert into $table_name ($id_column$refs) 
+	  values (v_$id_column$vals);
+	  return v_$id_column;
+	  end;
+	}]
+	
+	set statement [subst {
+	  create or replace function ${m}([join $types_declaration ,]) 
+	  returns integer as '
+	  $declare
+	  $body
+	  ' language 'plpgsql';
+	}]
+	my log CONSTRUCTOR=$statement
+	db_dml [my qn create_constructor] $statement
+	
+	# / / / / / / / / / / / / / / / / / / / /
+	# register with acs_function_args
+	# if there is a postgresql backend
+	
+	if {[db_driverkey ""] eq "postgresql"} {
+	  set functionArgs [join [my getRelationAttributes storedArgs] ,]
+	  db_exec_plsql [my qn register_function_args] {
+	    select define_function_args(:m,:functionArgs);
+	  }
+	}
+	
+      }
+      
+      # / / / / / / / / / / / / / / / / / / / /
+      # register the constructor as a package
+      # - tcl namespace + object type as package
+      # - only needed if we use postgresql
+      # both, for newly created once and those
+      # that are already existing ...
+      set pkg ::xo::db::sql::$dbPackage
+      if {![my isobject $pkg]} { ::xo::db::sql::DbPackage create $pkg }
+      if {[$pkg info methods $dbConstructor] eq {}} {
+	$pkg dbproc_nonposargs $dbConstructor
+      }
+    }
+  }
+
+  AcsObjectType instproc acquireTable {} {
+    my instvar table_name id_column supertype abstract_p
+    if {!$abstract_p && $table_name ne {} && $id_column ne {}} {
+      # resolve supertype table
+      if {[my isobject $supertype] && [$supertype istype [self class]]} {
+	set supertable [$supertype table_name]
+	my log supertype=[$supertype serialize],supertable1=$supertable
+      } else {
+	# resolve it from the db
+	set supertable [db_string [my qn get_supertable] {
+	  select table_name
+	  from   acs_object_types
+	  where  object_type = :supertype
+	}]
+	my log supertable2=$supertable
+      }
+      # TODO: Oracle manko ...
+      ::xo::db::require table $table_name [subst {
+	$id_column integer 
+	constraint ${table_name}_pk primary key
+	constraint ${table_name}_fk references $supertable on delete cascade
+      }]
+    }
+  }
+  
+  AcsObjectType instproc load {obj} {
+    if {[my isobject $obj]} {
+      $obj instvar object_id
+      array set attrs [concat \
+			   [list acs_objects.object_id acs_objects.object_id] \
+			   [my getRelationAttributes sql-load]]
+      set tabidcol [array names attrs]
+      my debug tabidcol=$tabidcol
+      my debug atts=[array get attrs]
+      array set tables []
+      set cols $attrs([lindex $tabidcol end])
+      foreach x [lrange $tabidcol 0 end-1] y [lrange $tabidcol 1 end] {
+	lappend joins "$x = $y"
+	set tables([lindex [split $x .] 0]) 1
+	set tables([lindex [split $y .] 0]) 1
+	set cols [concat $cols $attrs($x)]
+      }
+      #$obj db_1row [my qn populate_object]
+      my debug SQL=[subst {
+	select [join $cols ","]
+	from [join [array names tables] ","]
+	where [join $joins " and "]
+	and acs_objects.object_id = $object_id 
+      }]
+    }
+  }
+
+  AcsObjectType insproc unload {obj} {
+    # to be filled
+  }
+  
+  AcsObjectType instproc instantiate {
+    -object_id:required
+    -absolute:switch
+  } {
+    if {$absolute} {
+      if {![my exists ::$object_id]} {
+	my create ::$object_id
+      } 
+      set obj ::$object_id
+    } else {
+      set obj [my new]
+    }
+    $obj object_id $object_id
+    my load $obj
+    return 
+  }
+
+  AcsObjectType instproc canonise {in} {
+    set in [string tolower $in]
+    set in [string map {:: _} $in]
+    set in [string trimleft $in _]
+    return $in
+  }
+  AcsObjectType instproc init {} {
+    my instvar object_type attributes supertype abstract_p
+
+    # / / / / / / / / / / / / / / / /
+    # Note that only single inheritance
+    # is allowed for object types !!!
+    # However, we somehow align XOTcl's
+    # multiple inheritance and ACS's single
+    # one by introducing the following
+    # heuristic: In case of multiple super
+    # classes, only the first one in the list
+    # is considered as AcsObjectType
+    my set __requireRefresh__ 0
+    set sc [lindex [my info superclass] 0]
+    if {$supertype eq "acs_object" && \
+	    $sc ne "::xotcl::Object" && \
+	    [$sc istype ::xorb::aux::AcsObjectType]} {
+      set supertype $sc
+    }
+
+    if {$supertype eq "acs_object"} {
+      set supertype ::xorb::aux::AcsObject
+    }
+    
+    if {![my existsObjectType]} {
+      my createObjectType
+    }
+    # set slots after object_type
+    # has been intialised
+    # will be updated incrementally
+    my slots $attributes
+    
+    # / / / / / / / / / / / / / / /
+    # demand a constructor function
+    if {!$abstract_p} {
+      my acquireConstructor
+    }
+    next
+  }
+
+  # / / / / / / / / / / / / / / / /
+  # Inspired by DbAttribute, again
+  # credits to Gustaf Neumann
+  # Only amended in so far as attributes
+  # are reflected into the attributes
+  # in the attribute table of the object
+  # type in a dynamic manner.
+  # / / / / / / / / / / / / / / / /
+  # There is one major issue with 
+  # ::xotcl::Attribute and subclasses thereof:
+  # In fact, they are serialised (by the xotcl
+  # Serializer without the -noinit flag
+  # as the Domain/Slot initialisation is more
+  # or less handled in the init call on the
+  # Attribute object. This, however, requires
+  # special caution when using attributes
+  # to aggregate state on the domain object,
+  # e.g. setting variables or similar, especially
+  # in the context of the blueprint mechanism
+  # in aolserver. This aggregated states are
+  # then introduced dupes etc. (if not taken
+  # care of).
+  # This is relevant for ::xorb::AcsAttribute 
+  # and ::xorb::datatypes::AnyAttribute (and
+  # similar).
+
+  ::xotcl::Class AcsAttribute -superclass ::xotcl::Attribute -slots {
+    Attribute pretty_name 
+    Attribute datatype -default "text"
+    Attribute sqltype -default "text"
+    Attribute min_n_values -default 1 
+    Attribute max_n_values -default 1
+    Attribute dbDefault
+  }
+
+  # TODO: Oracle manko ...
+  # TODO: move to xotcl-core db-procs as an amendment
+  AcsAttribute set attributeExists {
+    select 1 from pg_attribute attrs, pg_class tables 
+    where tables.oid = attrs.attrelid 
+    and tables.relname = '$table_name' 
+    and attrs.attname = '$name'
+  }
+  AcsAttribute instproc init args {
+    next;
+    my instvar name datatype pretty_name min_n_values max_n_values \
+	sqltype
+    [my domain] instvar __requireRefresh__
+    set object_type [[my domain] object_type]
+    #[my domain] lappend __relation_attributes__ $name
+    my log ---2,ot=$object_type
+    if {![db_0or1row [my qn check_att] {
+      select 1 from acs_attributes 
+      where attribute_name = :name 
+      and object_type = :object_type
+    }]} {
+      #if {![$object_type existsObjectType]} {
+      #$object_type createObjectType
+      #}
+      if {![info exists pretty_name]} {
+	set pretty_name $name
+      }
+      ::xo::db::sql::acs_attribute create_attribute \
+          -object_type $object_type \
+          -attribute_name $name \
+          -datatype $datatype \
+          -pretty_name $pretty_name \
+          -min_n_values $min_n_values \
+          -max_n_values $max_n_values
+       my log ---4
+      # materialise attribute also as attribute
+      # to the object type specific relation!
+      if {[[my domain] lazilyAcquireTable]} {
+	[my domain] acquireTable
+      }
+
+      [my domain] instvar table_name
+      if {![db_0or1row [my qn ""] [subst [[self class] set attributeExists]]]} {
+	# TODO: Oracle manko ...
+	# Propose as an amendment to the xotcl-db core ..
+	db_dml [my qn add_attribute] [subst {
+	  alter table $table_name add $name $sqltype
+	}]
+	# - - - 
+	# It also requires a re-acquisition of the
+	# constructor plpgsql procedure, therefore
+	# we provide for a call sequence of release 
+	# and acquire
+	# - - -
+	[my domain] releaseConstructor
+	set __requireRefresh__ 1
+      }
+    }
+    
+    [my domain] setRelationAttributes $name
+    my debug CALLED-FROM=[self callingproc]
+    my debug RELATTRS([llength [[my domain] array get __relation_attributes__]],[[my domain] array get __relation_attributes__])
+    #if {$requireRefresh} {
+    #	[my domain] acquireConstructor
+    # }
+  }
+
+
+  # / / / / / / / / / / / / / / / / / /
+  # AcsObject ...
+  
+  AcsObjectType AcsObject -attributes {
+    ::xorb::aux::AcsAttribute object_id \
+	-datatype integer \
+	-sqltype integer
+  } -table_name acs_objects -id_column object_id \
+      -pretty_name Object -pretty_plural Objects \
+      -object_type acs_object
+
+  AcsObject instproc delete {} {
+    my instvar object_id
+    if {[info exists object_id]} {
+      ::xo::db::sql::acs_object delete -object_id $object_id
+    }
+  }
+  AcsObject instproc save {} {
+    if {[[my info class] istype ::xorb::aux::AcsObjectType]} {
+      my instvar object_id dbPackage dbConstructor
+      set attrs [[my info class] getRelationAttributes] 
+      foreach a $attrs {
+	if {[my exists $a]} {
+	  lappend arguments "-$a [my $a]"
+	}
+      }
+      set object_id [::xo::db::sql::$dbPackage $dbConstructor $arguments]
+    }
+  }
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  
 
   # # # # # # # # # # # # # # 
   # # # # # # # # # # # # # # 
@@ -269,6 +827,7 @@ namespace eval ::xorb::aux {
   }
   
   namespace export Traversal PreOrderTraversal OrderedComposite \
-      TypedOrderedComposite AggregationClass
+      TypedOrderedComposite AggregationClass AcsObjectType AcsAttribute \
+      AcsObject
   
 }

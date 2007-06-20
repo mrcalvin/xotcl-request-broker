@@ -8,14 +8,14 @@
     <singleton-p>t</singleton-p>
     <auto-mount>request-broker</auto-mount>
 
-    <version name="0.3" url="http://media.wu-wien.ac.at/download/xotcl-request-broker-0.3.apm">
+    <version name="0.4" url="http://media.wu-wien.ac.at/download/xotcl-request-broker-0.4.apm">
         <owner url="mailto:stefan.sobernig@wu-wien.ac.at">stefan sobernig</owner>
-        <release-date>2007-03-19</release-date>
+        <release-date>2007-06-07</release-date>
         <maturity>0</maturity>
 
-        <provides url="xotcl-request-broker" version="0.3"/>
-        <requires url="acs-service-contract" version="5.2.3b2"/>
-        <requires url="xotcl-core" version="0.47"/>
+        <provides url="xotcl-request-broker" version="0.4"/>
+        <requires url="acs-service-contract" version="5.3.1"/>
+        <requires url="xotcl-core" version="0.51"/>
 
         <callbacks>
         </callbacks>

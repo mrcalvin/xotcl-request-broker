@@ -34,7 +34,7 @@ namespace eval ::xorb::datatypes {
     }
     if {![my isStored]} {
       db_transaction {
-	db_exec_plsql insert_new_datatype \
+	db_exec_plsql [my qn insert_new_datatype] \
             "select acs_sc_msg_type__new(:checkoption,'');"
       }
     }
@@ -48,7 +48,7 @@ namespace eval ::xorb::datatypes {
     my instvar checkoption
     if {[my isStored]} {
       db_transaction {
-	db_exec_plsql delete_datatype \
+	db_exec_plsql [my qn delete_datatype] \
 	    "select acs_sc_msg_type__delete(:checkoption);"
       }
     }
@@ -63,7 +63,7 @@ namespace eval ::xorb::datatypes {
   }
   MetaAny instproc isStored {} {
     my instvar checkoption
-    return [db_0or1row is_datatype_stored {
+    return [db_0or1row [my qn is_datatype_stored] {
       select * from acs_sc_msg_types where msg_type_name = :checkoption
     }]
   }

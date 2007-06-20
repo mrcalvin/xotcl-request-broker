@@ -80,7 +80,7 @@ ad_library {
       namespace import ::xorb::manager::*
       set cMiddle "contract"
       set iMiddle "impl"
-      my log "[self proc] called"
+      my debug "[self proc] called"
       # 1.
       if {[info exists $cMiddle] && [subst $$cMiddle] ne {}} {
 	eval set cName $$cMiddle
@@ -91,10 +91,10 @@ ad_library {
       }
       # / / / / / / / / / / / / 
       if {[info exists cName] && $cName ne {}} {
-	my log cName=$cName
+	my debug  cName=$cName
 	set grep($cMiddle) [CRepository resolve -name $cName]
       }
-      my log next=[self next]
+      my debug next=[self next]
       next 
     }
 
@@ -102,13 +102,13 @@ ad_library {
       my instvar grep
       namespace import ::xorb::manager::*
       set iMiddle "impl"
-      my log "[self proc] called"
+      my debug "[self proc] called"
       if {[info exists $iMiddle]} {
 	# 3.
-	eval my log iName=$$iMiddle
+	eval my debug iName=$$iMiddle
 	set grep($iMiddle) [eval IRepository resolve -name $$iMiddle]
       }
-      my log next=[self next]
+      my debug next=[self next]
       next
     }
 
@@ -118,29 +118,29 @@ ad_library {
     ::xotcl::Class Boundness -instproc grep args {
       my instvar grep bindings
       set verified false
-      my log grep=[array get grep]
+      my debug grep=[array get grep]
       # only contract requested
       if {[array size grep] == 1 && [info exists grep(contract)]} {
-	set id [$grep(contract) id]
+	set object_id [$grep(contract) object_id]
 	set verified [info exists bindings($id)]
       } elseif {[array size grep] == 1 && [info exists grep(impl)]} {
-	set iid [$grep(impl) id]
+	set iid [$grep(impl) object_id]
 	set contract [$grep(impl) implements]
 	set cObj [CRepository resolve -name $contract]
-	my log "STREAM-CHECK: cid=[$cObj id],iid=$iid,binds=[array get bindings]"
+	my debug "STREAM-CHECK: cid=[$cObj object_id],iid=$iid,binds=[array get bindings]"
 	set verified [expr {
-			    [info exists bindings([$cObj id])] 
-			    && [lsearch $bindings([$cObj id]) $iid] != -1
+			    [info exists bindings([$cObj object_id])] 
+			    && [lsearch $bindings([$cObj object_id]) $iid] != -1
 			  }]
       } elseif {[array size grep] == 2} {
-	set iid [$grep(impl) id]
-	set cid [$grep(contract) id]
+	set iid [$grep(impl) object_id]
+	set cid [$grep(contract) object_id]
 	set verified [expr {
 			    [info exists bindings($cid)] 
 			    && [lsearch $bindings($cid) $iid] != -1
 			  }]
       }
-      my log verified=$verified
+      my debug verified=$verified
       if {$verified} {
 	next
       }
@@ -152,16 +152,16 @@ ad_library {
       my instvar grep
       if {[info exists grep]} {
 	set r [array get grep]
-	my log +++GREP-RETURN=$r
+	my debug +++GREP-RETURN=$r
 	array unset grep
 	return $r
       }
     }
     Broker proc lookup {-what:required {-conditions ""} args} {
       set mixinList [list $what $conditions]
-      my log mixinList=[join $mixinList]
+      my debug mixinList=[join $mixinList]
       my mixin [join $mixinList]
-      # my log mixinList=$mixinList
+      # my debug mixinList=$mixinList
       set r [eval my grep $args]
       my mixin {}
       return $r
@@ -174,13 +174,13 @@ ad_library {
 	set stream($item) [eval Serializer deepSerialize $retrieval($item) \
 			       [list -map [list $retrieval($item) "\[self\]::[$retrieval($item) name]"]]]
       }
-      my log "+++STREAM-RETURN:[array get stream]"
+      my debug "+++STREAM-RETURN:[array get stream]"
       return [array get stream]
     } 
     Broker proc event {call args} {
       set c [my info class]
       if {[lsearch -exact [$c info instprocs] $call] != -1} {
-	my log "==calling==> $call $args"
+	my debug "==calling==> $call $args"
 	eval my $call $args
       }
     }
@@ -201,27 +201,38 @@ ad_library {
 	# get bindings
 	# iterate over bindings > conformance check
 	# insert valid once
-	my log old=$oldId,newId=$newId,bindings=([array get bindings])
+	my debug old=$oldId,newId=$newId,bindings=([array get bindings])
 	if {[info exists bindings($oldId)]} {
 	  set binds $bindings($oldId)
-	  my log "binds=$binds"
+	  my debug "binds=$binds"
 	  foreach iid $binds {
 	    # TODO:introduce conformance check here
-	    set insert {select acs_sc_binding__new($newId,$iid);}
-	    lappend sql [subst $insert]
+	    set i [IRepository resolve -id $iid]
+	    if {[$i check]} {
+	      ::xo::db::sql::acs_sc_binding new \
+		  -contract_name [$i implements]\
+		  -impl_name [$i name]
+	    } else {
+	      my debug [subst {
+		WARNING: Implementation '[$i name]' does not conform 
+		to the referenced contract '[$i implements]' anymore
+		after the contract's update.
+	      }]
+	        # set insert {select acs_sc_binding__new($newId,$iid);}
 	  }
-	  if {[info exists sql] && $sql ne {}} {
-	    my log inserts=[join $sql]
-	    db_exec_plsql update_binds [join $sql]
-	  }
+	  #if {[info exists sql] && $sql ne {}} {
+	  #  my log inserts=[join $sql]
+	  #  db_exec_plsql update_binds [join $sql]
+	  #}
 	}
       }
       my init
+      }
     }
     
     # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # #
-    # Base Class: Respository
+    # Base Class: Repository
     # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # #
     
@@ -238,9 +249,9 @@ ad_library {
       
       set c [my info superclass]
       set target [my which $type]
-      my log "ENTER_MANAGER=>call=$call, type=$type, args=$args, target=$target, c=$c"
+      my debug "ENTER_MANAGER=>call=$call, type=$type, args=$args, target=$target, c=$c"
       if {$target ne {} && [lsearch -exact [$c info instprocs] $call] != -1} {
-	my log "==calling==> $target $call $args"
+	my debug "==calling==> $target $call $args"
 	eval $target $call $args
       }
     }
@@ -261,14 +272,14 @@ ad_library {
       }
       set item [array get items $name,$id]
       if {$item ne {}} {
-	my log "==item==> $item"
+	my debug "==item==> $item"
 	return [lindex $item 1]
       }  
     }
     Repository instproc update {oldId newId} {
       # recreate existing one
       set recreatee [my resolve -id $oldId]
-      my log recreatee=$recreatee,oldId=$oldId,newId=$newId
+      my debug recreatee=$recreatee,oldId=$oldId,newId=$newId
       if {$recreatee ne {}} {
 	[$recreatee info class] mixin add ::xorb::Persistent::Recreate
 	[$recreatee info class] $recreatee $newId
@@ -276,7 +287,7 @@ ad_library {
       }
     }
     Repository instproc save {id} {
-      my log "SAVE=>id=$id"
+      my debug "SAVE=>id=$id"
       if {$id ne {}} {
 	[my itemType] fetch -container [self] -id $id
       }
@@ -286,7 +297,7 @@ ad_library {
     Repository instproc delete {id} { 
       my instvar items
       set victim [my resolve -id $id] 
-      my log "DELETE=>id=$id,victim=$victim"
+      my debug "DELETE=>id=$id,victim=$victim"
       if {$victim ne {}} {
 	set name [$victim name]
 	$victim destroy
@@ -297,22 +308,22 @@ ad_library {
     }
     Repository instproc getAction {name sig} {
       set o [my resolve -name $name]
-      my log "o=$o, name=$name, orig-sig: $sig"
+      my debug "o=$o, name=$name, orig-sig: $sig"
       array set status [list]
       # 1> does not exist?
       if {$o eq {}} {
 	set status(action) save
 	# 2> exists and modified?
       } elseif {$o ne {} && [$o getSignature] ne $sig} {
-	my log "==comp-stream==> [$o stream], comp-sig: [$o getSignature]"
+	my debug "==comp-stream==> [$o stream], comp-sig: [$o getSignature]"
 	set status(action) update
-	set status(id) [$o id]
+	set status(object_id) [$o object_id]
 	#3> exists and unmodified?
       } elseif {$o ne {} && [$o getSignature] eq $sig} {
 	set status(action) ""
-	set status(id) [$o id]
+	set status(object_id) [$o object_id]
       }
-      my log "==status==> [array get status]"
+      my debug "==status==> [array get status]"
       return [array get status]
     }
     
@@ -339,6 +350,6 @@ ad_library {
     
     namespace export CRepository IRepository Broker
     
-  }
+    }
 
 } -persistent 1

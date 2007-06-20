@@ -21,6 +21,8 @@ namespace eval ::xorb {
       -superclass ServiceImplementation \
       -slots {
 	Attribute adapts
+      } -instproc init args {
+	next
       }
 
   Adapter instproc adapterFilter args {
