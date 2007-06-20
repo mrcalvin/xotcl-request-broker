@@ -1,0 +1,56 @@
+2007-06-20  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-deployment-procs.tcl: Added a more robust/ generic
+          deployment variant for contracts and implementations. Now,
+          both contracts and implementations have to be explicitly
+          deployed (calling 'deploy' on their specification
+          objects). Behind the scene, it will, depending on the
+          runtime context (intialisation, running instance) either be
+          lazily or instantly synchronised etc. This changes allows to
+          inject contracts and implementations from different
+          contexts, i.e. the developer shell or a web-ui script.
+
+	* tcl/20-xorb-procs.tcl: Started rewriting the the
+          request-broker kernel to make use of the generic OpenACS
+          Object System support that comes with
+          0.4. ::xorb::ServiceContract and
+          ::xorb::ServiceImplementation are partly completed.
+
+	* sql/postgresql/xotcl-request-broker-create.sql: There is a
+          new constructor procedure and extension table for elements
+          to message types in service contracts (constructor:
+          xorb_msg_type_element__new, table:
+          xorb_msg_type_elements_ext). They allow for extending the
+          information model of message type elements independently
+          from the basic message type elements
+          (e.g. element_constraints). As message type elements are not
+          designed as acs_objects, it is somehow hacky. We plan to TIP
+          the amendment of acs-service-contract schema in this manner.
+
+	* sql/postgresql/acs-object-model-function-args.sql: Adding
+          generic upgrade script to register a set of plpgsql stored
+          procedures related to the ACS Object System with with
+          xotcl-core's DB abstraction layer (::xo::db::sql::*). This
+          has, at this point in time, not committed to any version in
+          the OpenACS code base. The upgrade therefore applies to all
+          supported OpenACS versions.
+
+	* sql/postgresql/acs-service-contract-function-args.sql:
+          Adding generic upgrade script to register a set of pgplsql
+          stored procedures with xotcl-core's DB abstraction layer
+          (::xo::db::sql::*). In acs-service-contract => 5.4.0d1, they
+          are integrated with the released package.
+
+	* tcl/xorb-callback-procs.tcl: Added initial callback support
+	  for XORB. It will handle upgrade and install refinements
+	  starting with release version 0.4.
+
+	* tcl/15-xorb-aux-procs.tcl: Completed the basic set of a XORB
+	  framework support for the OpenACS Object System:
+	  ::xorb::AcsObjectType and ::xorb::AcsAttribute allows for
+	  the management of acs_object_types, ::xorb::AcsObject is the
+	  base class for XOTcl representations of acs_objects. The
+	  facilities are integrated with the xotcl-core DB abstraction
+	  layer (::xo::db::sql::*).
+	
+	* ChangeLog: Added this ChangeLog to the repository.
