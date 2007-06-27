@@ -173,6 +173,10 @@ ad_library {
       array set stream [list]
       # provide for streaming
       foreach item [array names retrieval] {
+	# / / / / / / / / / / / / / / / / / / / /
+	# free the item for the persistent mixin
+	# for the purpose of streaming
+	#$retrieval($item) mixin delete ::xorb::Persistent
 	set stream($item) [eval Serializer deepSerialize $retrieval($item) \
 			       [list -map [list $retrieval($item) "\[self\]::[$retrieval($item) canonicalName]"]]]
       }

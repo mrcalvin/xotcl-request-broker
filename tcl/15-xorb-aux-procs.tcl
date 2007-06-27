@@ -722,7 +722,7 @@ namespace eval ::xorb::aux {
     set heritors [concat [my info class] [[my info class] info heritage]] 
     set found 0
     foreach h $heritors {
-      if {[$h istype ::xorb::aux::AcsObjectType]} set found 1; break;
+      if {[$h istype ::xorb::aux::AcsObjectType]} {set found 1; break;}
     }
     if {$found} {
       return $h

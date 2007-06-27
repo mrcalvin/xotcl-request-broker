@@ -387,6 +387,7 @@ myContract mixin ::xorb::Synchronizable
 # / / / / / / / / / / / / / / / / / / /
 ? {catch {array set status [myContract action]}} 0 "Synchronising contract with backend: retrieve status (getAction-1)."
 ? {set status(action)} "save" "Synchronising contract with backend: action is 'save' (getAction-2)."
+#myContract sync
 ? {catch {myContract sync}} 0 "Synchronising contract with backend: new contract (save)."
 ? { db_0or1row contract_saved \
   [myContract subst { select * 
@@ -695,7 +696,7 @@ ns_write bindings_before=[XorbManager do ::xorb::manager::Broker array get bindi
 
 # / / / / / / / / / / / / /
 myTreaty mixin add ::xorb::Synchronizable
-myTreaty slot m4 destroy
+myTreaty slot m4 delete
 ? {catch {myTreaty sync}} 0 "Synchronising contract with backend: updated contract / clearing cache from skeleton representation (update)."
 myTreaty mixin delete ::xorb::Synchronizable
 

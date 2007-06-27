@@ -503,6 +503,19 @@ namespace eval xorb {
     }
   }
 
+  # / / / / / / / / / / / / / / / / /
+  # Attribute base class
+
+  ::xotcl::Class Attribute -superclass ::xotcl::Slot
+  Attribute instproc delete args {
+    my set __flagged_for_delete__ 1
+  }
+  Attribute instproc isDeleted {} {
+    if {[my exists __flagged_for_delete__]} {return 1;}
+    return 0
+  }
+
+
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
   # Type declaration for the original
@@ -579,7 +592,7 @@ namespace eval xorb {
     set ops [list]
     foreach {n s} [my slotInfo ordered] {
       my debug "+++s=$s,n=$n"
-      if {[$s istype ::xorb::Abstract]} {
+      if {[$s istype ::xorb::Abstract] && ![$s isDeleted]} {
 	#lappend ops [$obj $n]
 	lappend ops [$s stream]
       } 
@@ -714,6 +727,9 @@ namespace eval xorb {
 	      -msg_type_name [my contract_name].[$a name].InputType
 	  ::xo::db::sql::acs_sc_msg_type delete \
 	      -msg_type_name [my contract_name].[$a name].OutputType
+	  if {[$a isDeleted]} {
+	    $a destroy
+	  }
 	}
       }
     }
@@ -923,6 +939,7 @@ ad_after_server_initialization synchronise_contracts {
 			      -recreate:switch
 			    } {
     set isRecreation [expr {$id ne {} && $recreate}]
+    my debug FETCH-STACK=[my stackTrace]
     set sql {
       select distinct ctrs.contract_name,
                       ctrs.contract_id, 
@@ -957,7 +974,7 @@ ad_after_server_initialization synchronise_contracts {
 
   }
 
-  ::xotcl::Class Abstract -superclass ::xotcl::Slot -slots {
+  ::xotcl::Class Abstract -superclass ::xorb::Attribute -slots {
     Attribute arguments -default {}
     Attribute returns -default {}
     Attribute description -default {}
@@ -985,7 +1002,7 @@ ad_after_server_initialization synchronise_contracts {
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
   
-  ::xotcl::Class Delegate -superclass ::xotcl::Slot -slots {
+  ::xotcl::Class Delegate -superclass ::xorb::Attribute -slots {
     Attribute proxies -type "my qref" -proc qref {value} {
       if {$value eq {}} {
 	return 0
@@ -1006,7 +1023,15 @@ ad_after_server_initialization synchronise_contracts {
   # Delegate instproc get {domain slot} {
 #     return "[my name] [my proxies]"
 #   }
-  
+  Delegate instproc delete {} {
+    # / / / / / / / / / / / /
+    # We override the ::xorb::Attribute
+    # delete method which matches the
+    # semantic of Abstracts/ACS Operations
+    # for incremental deletion.
+    # This is not needed for Delegates / Aliases.
+    my destroy
+  }
   Delegate instproc stream {} {
     return "[my name] [my proxies]"
   }
@@ -1085,7 +1110,7 @@ ad_after_server_initialization synchronise_contracts {
     #my deleteCmd {acs_sc::${middle}::delete -contract_name $implements -impl_name $name}
     next
   }
-  
+
   ServiceImplementation instproc expandAlias {
     contractName
     implName
@@ -1901,7 +1926,11 @@ ad_after_server_initialization synchronise_contracts {
       }
       my set lightweight $lightweight
       set name [::xorb::Object canonicalName $name]
-      my debug cname=$name
+      # / / / / / / / / / / / / / / / / /
+      # clear the floor ...
+      if {[my isobject [self]::$name]} {
+	[self]::$name destroy
+      }
       # contract obj
       Abstract instmixin add [self]
       eval $stream(contract)
@@ -1955,8 +1984,13 @@ ad_after_server_initialization synchronise_contracts {
       #my log "stream=[array get stream]"
       my set lightweight $lightweight
       set name [::xorb::Object canonicalName $name]
+      # / / / / / / / / / / / / / / / / /
+      # clear the floor ...
+      if {[my isobject [self]::$name]} {
+	[self]::$name destroy
+      }
       my debug iname=$name
-      # contract obj
+      # impl obj
       Delegate instmixin add [self]
       eval $stream(impl)
       Delegate instmixin delete [self]

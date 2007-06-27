@@ -94,54 +94,91 @@ namespace eval ::xorb::deployment {
   
   ::xotcl::Object Checkable::Containment -proc check {obj} {
     set contract [$obj implements]
-    set c [lsearch -glob -inline \
-	       [::xorb::ServiceContract allinstances] \
-	       *$contract]
-    if {$c eq {}} {
-      # # # # # # # # # # # # # #
-      # retrieve contract info
-      # from db, when check is 
-      # issued during server initialisation
-      # Is manager thread available?
-     
-      if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
-	# managing thread not available, revert
-	# to db call
-	set uqSet [db_list ops_for_contract_name {
-	  select	ops.operation_name  
-	  from   	acs_sc_operations ops
-	  where  	ops.contract_name = :contract 
-	}]
-	# TODO: handling, if there simply is 
-	# NO contract specified!!!!!!
-	if {$uqSet eq {}} {
-	  error "There is no contract '$contract' available."
-	}
-      } else {
-	set c [::xorb::Skeleton getContract \
-		   -name $contract \
-		   -unbound]
-	set uqSet [$c info instprocs]
+    
+    if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
+      # managing thread not available, revert
+      # to db call
+      set uqSet [db_list ops_for_contract_name {
+	select	ops.operation_name  
+	from   	acs_sc_operations ops
+	where  	ops.contract_name = :contract 
+      }]
+      # TODO: handling, if there simply is 
+      # NO contract specified!!!!!!
+      if {$uqSet eq {}} {
+	error "There is no contract '$contract' available."
       }
-    } elseif {$c eq "::xorb::Skeleton::$contract"} {
-      set uqSet [$c info instprocs]
     } else {
-      foreach a [$c info slots] {
-	lappend uqSet [namespace tail $a]
-      }
+      set c [::xorb::Skeleton getContract \
+		 -name $contract \
+		 -unbound]
+      set uqSet [$c info instprocs]
     }
+
     set aliases [list] 
     foreach a [$obj info slots] {lappend aliases [$a name]}
-    my log "++c=$c,uqSet=$uqSet,aliases=$aliases"
+    my debug "++c=$contract,uqSet=$uqSet,aliases=$aliases"
     foreach uq $uqSet {
       if {[lsearch -exact $aliases $uq] == -1} {
-	  error [::xorb::exceptions::NonConformanceException new [subst {
-	    Contract '$contract' is not fully contained by Implementation 
-	    '[$obj name]': An alias (delegate) for operation '$contract->$uq' 
-	    is missing.}]]
-	}
+	error [::xorb::exceptions::NonConformanceException new [subst {
+	  Contract '$contract' is not fully contained by Implementation 
+	  '[$obj name]': An alias (delegate) for operation '$contract->$uq' 
+	  is missing.}]]
+      }
     }
   }
+  
+
+#   ::xotcl::Object Checkable::Containment -proc check {obj} {
+#     set contract [$obj implements]
+#     set c [lsearch -glob -inline \
+# 	       [::xorb::ServiceContract allinstances] \
+# 	       *$contract]
+#     if {$c eq {}} {
+#       # # # # # # # # # # # # # #
+#       # retrieve contract info
+#       # from db, when check is 
+#       # issued during server initialisation
+#       # Is manager thread available?
+     
+#       if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
+# 	# managing thread not available, revert
+# 	# to db call
+# 	set uqSet [db_list ops_for_contract_name {
+# 	  select	ops.operation_name  
+# 	  from   	acs_sc_operations ops
+# 	  where  	ops.contract_name = :contract 
+# 	}]
+# 	# TODO: handling, if there simply is 
+# 	# NO contract specified!!!!!!
+# 	if {$uqSet eq {}} {
+# 	  error "There is no contract '$contract' available."
+# 	}
+#       } else {
+# 	set c [::xorb::Skeleton getContract \
+# 		   -name $contract \
+# 		   -unbound]
+# 	set uqSet [$c info instprocs]
+#       }
+#     } elseif {$c eq "::xorb::Skeleton::$contract"} {
+#       set uqSet [$c info instprocs]
+#     } else {
+#       foreach a [$c info slots] {
+# 	lappend uqSet [namespace tail $a]
+#       }
+#     }
+#     set aliases [list] 
+#     foreach a [$obj info slots] {lappend aliases [$a name]}
+#     my log "++c=$c,uqSet=$uqSet,aliases=$aliases"
+#     foreach uq $uqSet {
+#       if {[lsearch -exact $aliases $uq] == -1} {
+# 	  error [::xorb::exceptions::NonConformanceException new [subst {
+# 	    Contract '$contract' is not fully contained by Implementation 
+# 	    '[$obj name]': An alias (delegate) for operation '$contract->$uq' 
+# 	    is missing.}]]
+# 	}
+#     }
+#   }
   
   
   ServiceImplementation instmixin add Checkable

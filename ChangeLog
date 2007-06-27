@@ -1,5 +1,35 @@
 2007-06-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
+	* tcl/xorb-deployment-procs.tcl: Revised and simplified the
+          contract retrieval for conformance checking of
+          implementations. Context awareness at this level is now
+          limited to whether the managing thread exists or not. A
+          indirection (for either inside or outside calls to
+          ::xorb::Skeleton->getContract) is now decided within the
+          Skeleton class. Moreover, the non-cached version of Skeleton
+          explicitly removes already initialised skeleton objects
+          residing in its namespace (this was necessary to avoid
+          unwanted recreation). 
+
+	* tcl/20-xorb-procs.tcl: Fixed for the incremental deletion of
+          contracts and implementations. It is not a highly prominent
+          feature but occurred in a test setting. Incremental deletion
+          at the XOTcl layer refers to removing (destroying) a
+          Abstract or Delegate (Method) slot object from a contract or
+          implementation. However, an updating synchronisation in case
+          of contracts requires (for the initial deletion in the
+          update process) all slot objects to be present. By introducing
+          an uniform delete method on Abstracts and Delegates we avoid
+          this issue: In case of contracts, this simply marks slots
+          for destruction for a moment after the deletion of the
+          contract from the db. At the same time they are marked for
+          exclusion from the signature generation in order to set for
+          an update situation. In case of implementations, this work
+          around is not strictly needed as the db schema of
+          acs-service-contract enforces the cascading deletion of
+          Aliases / Delegates. Therefore, a delete simply delegates to
+          destroy.
+
 	* tcl/xorb-datatypes-procs.tcl: Fixed the resolution of
           Anything subtypes to fully qualified paths to be able to
           distinguish more accurately between Anything classes based
