@@ -142,6 +142,18 @@ namespace eval ::xorb::aux {
 	  my debug r=$r
 	}
       }
+      sql-insert {
+	if {$table_name ne {} && $id_column ne {}} {
+	  set cols [expr {$relAttributes ne {}?\
+			      ",[join $relAttributes ,]":""}]
+	  set vars [expr {$relAttributes ne {}?\
+			      ",p_[join $relAttributes ,p_]":""}]
+	  set r [subst {
+	    insert into $table_name ($id_column$cols) 
+	    values (v_object_id$vars);
+	  }]
+	}
+      }
     }
 
     if {![info exists r]} {set r {}}
@@ -225,6 +237,94 @@ namespace eval ::xorb::aux {
     
   }
 
+#   AcsObjectType instproc acquireConstructor {} {
+#     my instvar dbConstructor __relation_attributes__ id_column supertype \
+# 	table_name dbPackage __requireRefresh__ abstract_p
+#     if {$__requireRefresh__ || !$abstract_p} {
+#       if {![info exists dbPackage]} {
+# 	set dbPackage [my canonise [my set object_type]] 
+#       }
+      
+      
+#       # __relation_attributes might not be initialised for types that did not
+#       # define any AcsAttributes. Default it to an empty tcl string.
+      
+#       if {![array exists __relation_attributes__]} {
+# 	array set __relation_attributes__ [list]
+#       }
+#       set relAttributes [array names __relation_attributes__]
+#       set m ${dbPackage}__$dbConstructor
+      
+#       if {![db_string [my qn ""] [subst [[self class] set procExists]]]} {
+# 	#set outerInterface [concat [$supertype set __relation_attributes__] \
+# 	#			$__relation_attributes__]
+# 	set types_declaration [my getRelationAttributes record]
+	
+# 	set idx 1
+# 	foreach a [my getRelationAttributes] {
+# 	  lappend declaration "p_$a alias for \$$idx;"
+# 	  incr idx
+# 	}
+# 	set declare [subst {
+# 	  declare
+# 	  [join $declaration]
+# 	  v_$id_column integer;
+# 	}]
+	
+# 	# resolve constructor of supertype
+# 	set supertypeCall [$supertype getConstructor]
+# 	# TODO: default to an acs_object__new call
+# 	set refs [expr {$relAttributes eq {}?\
+# 			    "":",[join $__relation_attributes__ ,]"}]
+# 	set vals [expr {$relAttributes eq {}?\
+# 			    "":",p_[join $__relation_attributes__ ,p_]"}]
+# 	set body [subst {
+# 	  begin
+# 	  v_$id_column := $supertypeCall;
+# 	  insert into $table_name ($id_column$refs) 
+# 	  values (v_$id_column$vals);
+# 	  return v_$id_column;
+# 	  end;
+# 	}]
+	
+# 	set statement [subst {
+# 	  create or replace function ${m}([join $types_declaration ,]) 
+# 	  returns integer as '
+# 	  $declare
+# 	  $body
+# 	  ' language 'plpgsql';
+# 	}]
+# 	my log CONSTRUCTOR=$statement
+# 	db_dml [my qn create_constructor] $statement
+	
+# 	# / / / / / / / / / / / / / / / / / / / /
+# 	# register with acs_function_args
+# 	# if there is a postgresql backend
+	
+# 	if {[db_driverkey ""] eq "postgresql"} {
+# 	  set functionArgs [join [my getRelationAttributes storedArgs] ,]
+# 	  db_exec_plsql [my qn register_function_args] {
+# 	    select define_function_args(:m,:functionArgs);
+# 	  }
+# 	}
+	
+#       }
+      
+#       # / / / / / / / / / / / / / / / / / / / /
+#       # register the constructor as a package
+#       # - tcl namespace + object type as package
+#       # - only needed if we use postgresql
+#       # both, for newly created once and those
+#       # that are already existing ...
+#       set pkg ::xo::db::sql::$dbPackage
+#       if {![my isobject $pkg]} { ::xo::db::sql::DbPackage create $pkg }
+#       if {[$pkg info methods $dbConstructor] eq {}} {
+# 	$pkg dbproc_nonposargs $dbConstructor
+#       }
+#     }
+#   }
+
+
   AcsObjectType instproc acquireConstructor {} {
     my instvar dbConstructor __relation_attributes__ id_column supertype \
 	table_name dbPackage __requireRefresh__ abstract_p
@@ -256,22 +356,37 @@ namespace eval ::xorb::aux {
 	set declare [subst {
 	  declare
 	  [join $declaration]
-	  v_$id_column integer;
+	  v_object_id integer;
 	}]
 	
 	# resolve constructor of supertype
-	set supertypeCall [$supertype getConstructor]
+	# set supertypeCall [$supertype getConstructor]
+	# / / / / / / / / / / / / / / / / /
+	# 1) call acs_object__new directly 
+	set supertypeCall [subst {
+	  acs_object__new(
+			  null,
+			  ''[my object_type]'',
+			  now(),
+			  null,
+			  null,
+			  null,
+			  ''t'',
+			  null,
+			  null
+			  );
+	}]
+
 	# TODO: default to an acs_object__new call
-	set refs [expr {$relAttributes eq {}?\
-			    "":",[join $__relation_attributes__ ,]"}]
-	set vals [expr {$relAttributes eq {}?\
-			    "":",p_[join $__relation_attributes__ ,p_]"}]
+	#set refs [expr {$relAttributes eq {}?\
+	#		    "":",[join $__relation_attributes__ ,]"}]
+	#set vals [expr {$relAttributes eq {}?\
+	#		    "":",p_[join $__relation_attributes__ ,p_]"}]
 	set body [subst {
 	  begin
-	  v_$id_column := $supertypeCall;
-	  insert into $table_name ($id_column$refs) 
-	  values (v_$id_column$vals);
-	  return v_$id_column;
+	  v_object_id := $supertypeCall
+	  [my getRelationAttributes sql-insert]
+	  return v_object_id;
 	  end;
 	}]
 	
@@ -466,6 +581,23 @@ namespace eval ::xorb::aux {
     Attribute dbDefault
   }
 
+  AcsAttribute instproc xorb=qname {value} {
+    # / / / / / / / / / / / /
+    # 1) The name may not be set
+    # to a autogenerated value,
+    # pointing to the xotcl namespace,
+    # i.e. spec objects must not be
+    # declared by calling 'new'
+    # without specifying an explicit 
+    # name
+    my debug VALUE=$value
+    if {[string first ::xotcl:: $value] != -1} {
+      return 0
+    } else {
+      return 1
+    }
+  }
+
   # TODO: Oracle manko ...
   # TODO: move to xotcl-core db-procs as an amendment
   AcsAttribute set attributeExists {
@@ -545,31 +677,63 @@ namespace eval ::xorb::aux {
       -pretty_name Object -pretty_plural Objects \
       -object_type acs_object
 
+  AcsObject instproc init args {next}
+
   AcsObject instproc delete {} {
     my instvar object_id
     if {[info exists object_id]} {
       ::xo::db::sql::acs_object delete -object_id $object_id
     }
   }
+
+  # AcsObject instproc save {} {
+#     if {[[my info class] istype ::xorb::aux::AcsObjectType]} {
+#       my instvar object_id
+#       [my info class] instvar dbPackage dbConstructor
+#       set attrs [[my info class] getRelationAttributes] 
+#       foreach a $attrs {
+# 	if {[my exists $a]} {
+# 	  lappend arguments [list -$a [my $a]]
+# 	}
+#       }
+#       set object_id [eval ::xo::db::sql::$dbPackage \
+# 			 $dbConstructor [join $arguments]]
+#     }
+#   }
+
   AcsObject instproc save {} {
-    if {[[my info class] istype ::xorb::aux::AcsObjectType]} {
-      my instvar object_id dbPackage dbConstructor
-      set attrs [[my info class] getRelationAttributes] 
+    my instvar object_id
+    set t [my getType]
+    my debug TYPE=$t
+    if {$t ne {}} {
+      $t instvar dbPackage dbConstructor
+      set attrs [$t getRelationAttributes] 
       foreach a $attrs {
 	if {[my exists $a]} {
-	  lappend arguments "-$a [my $a]"
+	  lappend arguments [list -$a [my $a]]
 	}
       }
-      set object_id [::xo::db::sql::$dbPackage $dbConstructor $arguments]
+      set object_id [eval ::xo::db::sql::$dbPackage \
+			 $dbConstructor [join $arguments]]
     }
   }
 
+  AcsObject instproc getType {} {
+    set heritors [concat [my info class] [[my info class] info heritage]] 
+    set found 0
+    foreach h $heritors {
+      if {[$h istype ::xorb::aux::AcsObjectType]} set found 1; break;
+    }
+    if {$found} {
+      return $h
+    }
+  }
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   
-
+  
   # # # # # # # # # # # # # # 
   # # # # # # # # # # # # # # 
   # Class OrderedComposite

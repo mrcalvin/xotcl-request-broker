@@ -357,10 +357,19 @@ test subsection "Skeleton: Contract specification"
     arg1:string 
     arg3:integer
   } -returns "returnValue:string" -description "m3's description"
-} -ad_doc {myContract's description}
+} -ad_doc {myContract's description} 
 
-set eStream {operations {m2 {description {m2's description} input {arg1:string arg3:integer} output returnValue:string} m3 {description {m3's description} input {arg1:string arg3:integer} output returnValue:string}} description {myContract's description} name myContract}
-set eSignature 6F4E8AD391FF51FFADA9462ED41A56282483324F
+# / / / / / / / / / / / / / /
+# init has to be called/ processed
+# before the deployment, so
+# 1) either call .. -init -deploy
+# as flags to ::xotcl::Object configure
+# 2) or make it a separate call (see
+# below)
+# myContract deploy
+
+set eStream {operations {m2 {description {m2's description} input {arg1:string arg3:integer} output returnValue:string} m3 {description {m3's description} input {arg1:string arg3:integer} output returnValue:string}} description {myContract's description} name ::template::myContract}
+set eSignature [ns_sha1 $eStream]
 
 ? {catch {set spec [myContract stream]}} 0 "Streaming contract into array list."
 ? {expr {$eStream eq $spec}} 1 "Streaming produces valid contract spec."
@@ -379,12 +388,11 @@ myContract mixin ::xorb::Synchronizable
 ? {catch {array set status [myContract action]}} 0 "Synchronising contract with backend: retrieve status (getAction-1)."
 ? {set status(action)} "save" "Synchronising contract with backend: action is 'save' (getAction-2)."
 ? {catch {myContract sync}} 0 "Synchronising contract with backend: new contract (save)."
-
 ? { db_0or1row contract_saved \
   [myContract subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
- } 1 "Synchronising contract with backend: new contract (id:[myContract id]) successfully stored."
+    where contract_id = $object_id }]
+ } 1 "Synchronising contract with backend: new contract (id:[myContract object_id]) successfully stored."
 # / / / / / / / / / / / / / / / / / / /
 myContract defines {
   ::xorb::Abstract m4 -arguments {
@@ -392,12 +400,13 @@ myContract defines {
 }
 ? {catch {array set status [myContract action]}} 0 "Synchronising contract with backend: retrieve status (getAction-3)."
 ? {set status(action)} "update" "Synchronising contract with backend: action is 'update' (getAction-4)."
+#myContract sync
 ? {catch {myContract sync}} 0 "Synchronising contract with backend: updated contract (update)."
 ? { db_0or1row contract_updated \
   [myContract subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
-} 1 "Synchronising contract with backend: existing contract (id:[myContract getState oldId]) successfully updated (id:[myContract id])."
+    where contract_id = $object_id }]
+} 1 "Synchronising contract with backend: existing contract (id:[myContract getState oldId]) successfully updated (id:[myContract object_id])."
 # / / / / / / / / / / / / / / / / / / /
 ? {catch {array set status [myContract action]}} 0 "Synchronising contract with backend: retrieve status (getAction-5)."
 #? {set status(action)} "update" "Synchronising contract with backend: action is 'update' (before delete) (getAction-6)."
@@ -406,8 +415,8 @@ myContract defines {
 ? { db_0or1row contract_deleted \
   [myContract subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
-} 0 "Synchronising contract with backend: existing contract (id:[myContract id]) successfully deleted."
+    where contract_id = $object_id }]
+} 0 "Synchronising contract with backend: existing contract (id:[myContract object_id]) successfully deleted."
 myContract mixin delete ::xorb::Synchronizable
 # / / / / / / / / / / / / / / / / / / /
 ? {expr {[::xotcl::Object isobject XorbManager] && [thread::exists [XorbManager get_tid]]}} 1 "xorb's managing thread exists."
@@ -445,8 +454,8 @@ myTreaty sync
 ? { db_0or1row contract_saved \
   [myTreaty subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
- } 1 "Staging: test contract (id:[myTreaty id]) is available."
+    where contract_id = $object_id }]
+ } 1 "Staging: test contract (id:[myTreaty object_id]) is available."
 
 myTreaty mixin delete ::xorb::Synchronizable
 # # # # # # # # # # # # # #
@@ -457,7 +466,9 @@ myTreaty mixin delete ::xorb::Synchronizable
 
 test subsection "Skeleton: Implementation specification"
 
-::xorb::ServiceImplementation myImplementation -implements myTreaty -using {
+::xorb::ServiceImplementation myImplementation \
+    -implements ::template::myTreaty \
+    -using {
     ::xorb::Delegate m2 -proxies ::myproc
     ::xorb::Method m3 {
       arg1:required 
@@ -467,8 +478,8 @@ test subsection "Skeleton: Implementation specification"
     }  
 }
 
-set eStream {pretty_name myImplementation name myImplementation aliases {m2 ::myproc m3 ::template::myImplementation::__m3__} contract_name myTreaty owner {}}
-set eSignature 36B4D5E83768F7C2C0CEF0DEC3BCEF78796EEB89
+set eStream {pretty_name ::template::myImplementation name ::template::myImplementation aliases {m2 ::myproc m3 ::template::myImplementation::__m3__} contract_name ::template::myTreaty owner {}}
+set eSignature [ns_sha1 $eStream]
 
 ? {catch {set spec [myImplementation stream]}} 0 "Streaming implementation into array list."
 ? {expr {$eStream eq $spec}} 1 "Streaming produces valid implementation spec."
@@ -492,15 +503,15 @@ myImplementation mixin add ::xorb::Synchronizable
 ? { db_0or1row impl_saved \
   [myImplementation subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 1 "Synchronising implementation with backend: new implementation (id:[myImplementation id]) successfully stored."
+    where impl_id = $object_id }]
+ } 1 "Synchronising implementation with backend: new implementation (id:[myImplementation object_id]) successfully stored."
 # / / / / / / / / / / / / / / / / / / /
 ? {catch {myImplementation sync -delete}} 0 "Synchronising implementation with backend: remove implementation (delete)."
 ? { db_0or1row impl_deleted \
   [myImplementation subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
-} 0 "Synchronising implementation with backend: existing implementation (id:[myImplementation id]) successfully deleted."
+    where impl_id = $object_id }]
+} 0 "Synchronising implementation with backend: existing implementation (id:[myImplementation object_id]) successfully deleted."
 
 test subsection "Update on implementations: recreation => conformance, binding" 
 
@@ -523,8 +534,8 @@ myImplementation using {
 ? { db_0or1row impl_updated \
   [myImplementation subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
-} 1 "Implementation update (impl as super-set of contract): existing implementation (id:[myImplementation getState oldId]) successfully updated (id:[myImplementation id])."
+    where impl_id = $object_id }]
+} 1 "Implementation update (impl as super-set of contract): existing implementation (id:[myImplementation getState oldId]) successfully updated (id:[myImplementation object_id])."
 # / / / / / / / / / / / / / / / / / / /
 
 test subsection "Update on contract having a binding: recreation => binding"
@@ -535,18 +546,19 @@ myTreaty defines {
   } -returns "resultValue:integer" -description "m4's description"
 }
 
-set bindings_before [XorbManager do ::xorb::manager::Broker array get bindings [myTreaty id]]
+set bindings_before [XorbManager do ::xorb::manager::Broker array get bindings [myTreaty object_id]]
 
 ? {catch {array set status [myTreaty action]}} 0 "Synchronising contract with backend: retrieve status (getAction-1)."
 ? {set status(action)} "update" "Synchronising contract with backend: action is 'update' (getAction-2)."
+#myTreaty sync
 ? {catch {myTreaty sync}} 0 "Synchronising contract with backend: updated contract (update)."
 ? { db_0or1row contract_updated \
   [myTreaty subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
-} 1 "Synchronising contract with backend: existing contract (id:[myTreaty getState oldId]) successfully updated (id:[myTreaty id])."
+    where contract_id = $object_id }]
+} 1 "Synchronising contract with backend: existing contract (id:[myTreaty getState oldId]) successfully updated (id:[myTreaty object_id])."
 
-set bindings_after [XorbManager do ::xorb::manager::Broker array get bindings [myTreaty id]]
+set bindings_after [XorbManager do ::xorb::manager::Broker array get bindings [myTreaty object_id]]
 
 ? {expr {[lindex $bindings_after 1] eq [lindex $bindings_before 1]}} 1 "Recreation of bindings successful --- before=($bindings_before),after=($bindings_after) ---"
 myTreaty mixin delete ::xorb::Synchronizable
@@ -555,20 +567,29 @@ myTreaty mixin delete ::xorb::Synchronizable
 test subsection "Conformance checking (Containment)"
 
 ServiceContract CallerInterface -defines {
-  ::xorb::Abstract abstractCallOne
-  ::xorb::Abstract abstractCallTwo
+  ::xorb::Abstract abstractCallOne -description "abstractCallOne desc"
+  ::xorb::Abstract abstractCallTwo -description "abstractCallTwo desc"
 }
 
-ServiceImplementation CalleeInterface -implements CallerInterface -using {
-  ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
-  ::xorb::Delegate abstractCallOne -proxies ::template::servantProc
+CallerInterface deploy
+
+ServiceImplementation CalleeInterface \
+    -implements ::template::CallerInterface \
+    -using {
+      ::xorb::Delegate abstractCallTwo \
+	  -proxies ::template::ServantClass::servantMethod
+      ::xorb::Delegate abstractCallOne \
+	  -proxies ::template::servantProc
 }
 
 ? {CalleeInterface check} 1 "Verifying conformance of implementation ('check', implementation is fully containing contract)"
 CalleeInterface destroy
 
-ServiceImplementation CalleeInterface -implements CallerInterface -using {
-  ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
+ServiceImplementation CalleeInterface \
+    -implements ::template::CallerInterface \
+    -using {
+      ::xorb::Delegate abstractCallTwo \
+	  -proxies ::template::ServantClass::servantMethod
 }
 
 ? {CalleeInterface check} 0 \
@@ -582,9 +603,13 @@ test subsection "Deployment"
 
 Interceptor GeneralInterceptor
 Interceptor SoapInterceptor
-ServiceImplementation CalleeInterface -implements CallerInterface -using {
-  ::xorb::Delegate abstractCallTwo -proxies ::template::ServantClass::servantMethod
-  ::xorb::Delegate abstractCallOne -proxies ::template::servantProc
+ServiceImplementation CalleeInterface \
+    -implements ::template::CallerInterface \
+    -using {
+      ::xorb::Delegate abstractCallTwo \
+	  -proxies ::template::ServantClass::servantMethod
+      ::xorb::Delegate abstractCallOne \
+	  -proxies ::template::servantProc
 }
 
 ?+ {CalleeInterface deploy \
@@ -600,10 +625,10 @@ ServiceImplementation CalleeInterface -implements CallerInterface -using {
 } "Deploying ServiceImplementation (per-implementation interceptors, access policy"
 
 set p [parameter::get -parameter "per_instance_policy"]
-? {::xotcl::Object isobject ${p}::CalleeInterface} 1 \
+? {::xotcl::Object isobject ${p}::[CalleeInterface canonicalName]} 1 \
     "Verifying existance of per-implementation policy object"
 
-?+ {${p}::CalleeInterface destroy} "Cleanup policy object"
+?+ {${p}::[CalleeInterface canonicalName] destroy} "Cleanup policy object"
 
 
 # / / / / / / / / / / / / / / / / / / /
@@ -612,7 +637,7 @@ set p [parameter::get -parameter "per_instance_policy"]
 ?+ {
   ServiceImplementation FtsContentProviderImpl \
 	     -name ::xowiki::ExamplePage \
-	     -implements FtsContentProvider \
+	     -implements ::template::FtsContentProvider \
 	     -using {
 	       ::xorb::Delegate datasource -proxies ::xowiki::datasource
 	       ::xorb::Method url {
@@ -650,18 +675,23 @@ if {[::xorb::Skeleton info instmixin *ReturnValueChecker] ne {}} {
 
 # / / / / / / / / / / / / /
 test section "Skeleton: Generation / Broker Interaction"
+ns_log notice "----------Generation--------------"
+::xorb::Skeleton mixin add ::xorb::SkeletonCache
 
 ? {expr {[lsearch -glob [::xorb::Skeleton info mixin] \
 	      ::xorb::SkeletonCache] ne "-1"}} 1 \
     "Availability of caching optimisation for skeletons"
+ns_write bindings_before=[XorbManager do ::xorb::manager::Broker array get bindings]
 
-?++ {expr {[[[::xorb::Skeleton generate -contract myTreaty -impl myImplementation] info class] info class] eq "::xorb::ServiceImplementation"}} 1 "Skeleton: Generating skeleton object (contract + impl passed as arguments)" 
+?++ {expr {[[[::xorb::Skeleton generate \
+		  -contract ::template::myTreaty \
+		  -impl ::template::myImplementation] info class] info class] eq "::xorb::ServiceImplementation"}} 1 "Skeleton: Generating skeleton object (contract + impl passed as arguments)" 
 
 ? {llength [ns_cache names xorb_skeleton_cache *myTreaty]} 1 "Caching of contract skeleton"
 
 ? {llength [ns_cache names xorb_skeleton_cache *myImplementation]} 1 "Caching of implementation skeleton"
 
-?++ {expr {[[[::xorb::Skeleton generate -impl myImplementation] info class] info class] eq "::xorb::ServiceImplementation"}} 1 "Skeleton: Generating skeleton object (only impl passed as argument)" 
+?++ {expr {[[[::xorb::Skeleton generate -impl ::template::myImplementation] info class] info class] eq "::xorb::ServiceImplementation"}} 1 "Skeleton: Generating skeleton object (only impl passed as argument)" 
 
 # / / / / / / / / / / / / /
 myTreaty mixin add ::xorb::Synchronizable
@@ -678,6 +708,12 @@ myImplementation slot m4 destroy
 #myImplementation mixin delete ::xorb::Synchronizable
 
 ? {llength [ns_cache names xorb_skeleton_cache *myImplementation]} 0 "Clearing cache when updating implementation"
+
+::xorb::Skeleton mixin delete ::xorb::SkeletonCache
+
+? {expr {[lsearch -glob [::xorb::Skeleton info mixin] \
+	      ::xorb::SkeletonCache] eq "-1"}} 1 \
+    "Removed caching optimisation for skeletons"
 
 test subsection "Adapting for positional arguments (::xorb::ServantAdapter)"
 
@@ -752,11 +788,13 @@ ServantClass instproc servantMethod {-arg1 -arg2 -arg3} {}
 } -ad_doc {myTreaty's description}
 
 
-::xorb::ServiceImplementation AAImplementation -implements AATreaty -using {
-  ::xorb::Delegate m1 -proxies ::template::servantProc
-  ::xorb::Delegate m2 -proxies {::template::ServantObj servantMethod} 
-  ::xorb::Delegate m3 -proxies ::template::ServantClass::servantMethod
-}
+::xorb::ServiceImplementation AAImplementation \
+    -implements ::template::AATreaty \
+    -using {
+      ::xorb::Delegate m1 -proxies ::template::servantProc
+      ::xorb::Delegate m2 -proxies {::template::ServantObj servantMethod} 
+      ::xorb::Delegate m3 -proxies ::template::ServantClass::servantMethod
+    }
 
 AATreaty mixin add ::xorb::Synchronizable
 ? {catch {AATreaty sync}} 0 \
@@ -768,7 +806,7 @@ AAImplementation mixin add ::xorb::Synchronizable
     "Synchronising implementation with backend: arguments adapter (save)."
 AAImplementation mixin delete ::xorb::Synchronizable
 
-?+ {set s [::xorb::Skeleton generate -impl AAImplementation]} \
+?+ {set s [::xorb::Skeleton generate -impl ::template::AAImplementation]} \
     "Generating skeleton object for adapter test (I)" 
 
 ?++ {expr {[[$s info class] info class] eq "::xorb::ServiceImplementation"}} 1 \
@@ -793,12 +831,44 @@ test subsection "Invoker: Dispatching invocation calls"
 
 ?+ {InvocationContext ::xo::cc -user_id 0} "Requiring invocation context object"
 
+# / / / / / / / / / / / / / 
+# a little helper to translate
+# arguments to anythings
+
+
+::xotcl::Class AnythingUs -parameter {
+  signature
+  arguments
+}
+AnythingUs instproc now {} {
+  my instvar signature arguments
+  my proc __parse__ [lindex $signature 0] {
+    #foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
+    if {[info exists returnObjs]} {
+      return $returnObjs
+    }
+  }
+  my debug sig=[lindex $signature 0],args_decl=[my info nonposargs __parse__]
+  # call parser
+  my debug args=[lindex $arguments 0]
+  ::xotcl::nonposArgs mixin add \
+      ::xorb::datatypes::Anything::CheckOption+Uplift
+  set r [eval my __parse__ [lindex $arguments 0]]
+  ::xotcl::nonposArgs mixin delete \
+      ::xorb::datatypes::Anything::CheckOption+Uplift
+  my debug ANYS=$r
+  return $r
+}
+
 # / / / / / / / / / / / / /
 # preparing call to 
 # AAImplementation -> m1
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m1
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
 
 ?+ {set i [Invoker new]} "Creating invoker instance (1st call)"
 
@@ -832,7 +902,8 @@ ServantObj proc servantMethod {arg1 arg2 arg3} {
 }
 
 ?+ {set i [Invoker new]} "Creating invoker instance (2nd call)"
-?++ {$i invoke} 1 [subst {
+#ns_write 2nd-call-invoke=[$i invoke]
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -856,7 +927,7 @@ ServantClass instproc servantMethod {
 }
 
 ?+ {set i [Invoker new]} "Creating invoker instance (3rd call)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -875,7 +946,7 @@ ServantClass instproc servantMethod {
 }
 
 ?+ {set i [Invoker new]} "Creating invoker instance (ReturnValueTypeMismatch)"
-?-- {$i invoke} "::xorb::exceptions::ReturnValueTypeMismatch" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::ReturnValueTypeMismatch" [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]), non-conforming return value
 }]
@@ -885,13 +956,16 @@ ServantClass instproc servantMethod {
 # preparing call to non-existant
 # method on Implementation
 # AAImplementation -> m4
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m4
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
 
 ?+ {set i [Invoker new]} \
     "Creating invoker instance (non-existant servant (method))"
-?-- {$i invoke} "::xorb::exceptions::InvocationException" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::InvocationException" [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]), non-existant servant (method)
 }]
@@ -902,13 +976,17 @@ ServantClass instproc servantMethod {
 # no adhereing to contracted
 # signature
 # AAImplementation -> m4
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
 
 ?+ {set i [Invoker new]} \
     "Creating invoker instance (record mismatch (contract))"
-?-- {$i invoke} "::xorb::exceptions::InvocationException" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::InvocationException" [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]), contract mismatch (contract)
 }]
@@ -967,27 +1045,27 @@ test subsection "Adapters"
 # the legacy piece
 ::xotcl::Class LegacyClass
 LegacyClass ad_instproc legacyM3 {
-  -arg1:string
+  -arg1
   -arg2:integer
 } {doc} {
   ns_write "<pre>[self]-:[self proc] invoked</pre>"
 }
 LegacyClass ad_instproc legacyM2 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} { ns_write "[self]-:[self proc] invoked" }
 LegacyClass ad_instproc legacyM1 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} { ns_write "[self]-:[self proc] invoked" }
 
 # relate it/ make it compatible
 # to AATreaty->m3
 
 ClassAdapter AA-2-LC-Adapter \
-    -implements AATreaty \
+    -implements ::template::AATreaty \
     -adapts {
       m3	{::template::LegacyClass legacyM3}
       m2	{::template::LegacyClass legacyM2}
@@ -995,26 +1073,31 @@ ClassAdapter AA-2-LC-Adapter \
     }
 
 ?+ {
-  AA-2-LC-Adapter deploy -now
+  AA-2-LC-Adapter deploy
 } "Use deployment mechanism to sync 'adaptor implementation'"
 
 # setting the call environment
 # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-::xo::cc virtualObject AA-2-LC-Adapter
+::xo::cc virtualObject ::template::AA-2-LC-Adapter
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - class)"
-?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
   Dispatching invocation call (negative class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
 
 # adapter method (handle signature mismatches)
 AA-2-LC-Adapter ad_instproc legacyM3 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} {
   if {![string is integer $arg2]} {set arg2 123}
   next -arg1 $arg3 -arg2 $arg2;#LegacyClass->legacyClass
@@ -1022,7 +1105,7 @@ AA-2-LC-Adapter ad_instproc legacyM3 {
 
 # 2) POSITIVE test
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - class)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -1032,27 +1115,27 @@ AA-2-LC-Adapter ad_instproc legacyM3 {
 # the legacy piece
 ::xotcl::Object LegacyObject
 LegacyObject ad_proc legacyM3 {
-  -arg1:string
+  -arg1
   -arg2:integer
 } {doc} {
   ns_write "<pre>[self]-:[self proc] invoked</pre>"
 }
 LegacyObject ad_proc legacyM2 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} { ns_write "<pre>[self]-:[self proc] invoked</pre>" }
 LegacyObject ad_proc legacyM1 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} { ns_write "<pre>[self]-:[self proc] invoked</pre>" }
 
 # relate it/ make it compatible
 # to AATreaty->m3
 
 ObjectAdapter AA-2-LO-Adapter \
-    -implements AATreaty \
+    -implements ::template::AATreaty \
     -adapts {
       m3	{::template::LegacyObject legacyM3}
       m2	{::template::LegacyObject legacyM2}
@@ -1060,26 +1143,30 @@ ObjectAdapter AA-2-LO-Adapter \
     }
 
 ?+ {
-  AA-2-LO-Adapter deploy -now
+  AA-2-LO-Adapter deploy
 } "Use deployment mechanism to sync 'adaptor implementation'"
 
 # setting the call environment
 # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-::xo::cc virtualObject AA-2-LO-Adapter
+::xo::cc virtualObject ::template::AA-2-LO-Adapter
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - object)"
-?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
   Dispatching invocation call (negative class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
 
 # adapter method (handle signature mismatches)
 AA-2-LO-Adapter ad_instproc legacyM3 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} {
   if {![string is integer $arg2]} {set arg2 123}
   next -arg1 $arg3 -arg2 $arg2;#LegacyClass->legacyClass
@@ -1087,7 +1174,7 @@ AA-2-LO-Adapter ad_instproc legacyM3 {
 
 # 2) POSITIVE test
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - object)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive class adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -1115,7 +1202,7 @@ ad_proc legacyM1 {
 # to AATreaty->m3
 
 ProcAdapter AA-2-LP-Adapter \
-    -implements AATreaty \
+    -implements ::template::AATreaty \
     -adapts {
       m3	::template::legacyM3
       m2	::template::legacyM2
@@ -1128,21 +1215,25 @@ ProcAdapter AA-2-LP-Adapter \
 
 # setting the call environment
 # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-::xo::cc virtualObject AA-2-LP-Adapter
+::xo::cc virtualObject ::template::AA-2-LP-Adapter
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - proc)"
-?-- {$i invoke} "::xorb::exceptions::ServantDispatchException" [subst {
+?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
   Dispatching invocation call (negative proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
 
 # adapter method (handle signature mismatches)
 AA-2-LP-Adapter ad_instproc legacyM3 {
-  -arg1:string
-  -arg2:string
-  -arg3:string
+  -arg1
+  -arg2
+  -arg3
 } {doc} {
   if {![string is integer $arg2]} {set arg2 123}
   next -arg1 $arg3 -arg2 $arg2;#legacyM3 proc
@@ -1150,7 +1241,7 @@ AA-2-LP-Adapter ad_instproc legacyM3 {
 
 # 2) POSITIVE test
 ?+ {set i [Invoker new]} "Creating invoker instance ('adaptor implementation' - proc)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -1170,6 +1261,7 @@ namespace eval ::mSearch {
     -key
     -offset
   } {doSearch's doc} {
+    # ns_write returns 1 
     ns_write "<pre>[info vars] invoked</pre>"
   }
 } 
@@ -1177,20 +1269,22 @@ namespace eval ::mSearch {
 # 2) adapter
 
 ?+ { ProcAdapter AATreaty-2-mSearch-Adapter \
-	 -implements AATreaty \
+	 -implements ::template::AATreaty \
 	 -using {
 	   ::xorb::Method m2 {
-	     arg1:string
-	     arg2:string
-	     arg3:string
+	     arg1
+	     arg2
+	     arg3
 	   } {m2's doc} {
+	     # ns_write returns 1 
 	     ns_write "<pre>[info vars] invoked</pre>"
 	   }
 	   ::xorb::Method m3 {
-	     arg1:string
-	     arg2:string
-	     arg3:string
+	     arg1
+	     arg2
+	     arg3
 	   } {m3's doc} {
+	     # ns_write returns 1 
 	     ns_write "<pre>[info vars] invoked</pre>"
 	   }
 	 } -adapts {
@@ -1198,47 +1292,63 @@ namespace eval ::mSearch {
 	 }
  
  AATreaty-2-mSearch-Adapter instproc doSearch {
-    -arg1:string
-    -arg2:string
-    -arg3:string
+    -arg1
+    -arg2
+    -arg3
   } {
     next -key $arg1 -keywords $arg2 -offset $arg3 ;# -> ::mSearch::doSearch
   }
 } "Declaring ProcAdapter plus implementation elements ('methods')"
 
-?+ {AATreaty-2-mSearch-Adapter deploy -now} "Deploying 'AATreaty-2-mSearch-Adapter'"
+?+ {AATreaty-2-mSearch-Adapter deploy} "Deploying 'AATreaty-2-mSearch-Adapter'"
 
 # 3) POSITIVE test -> m1
 
-::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualObject ::template::AATreaty-2-mSearch-Adapter
 ::xo::cc virtualCall m1
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive MIXED proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
 
 # 3a) POSITIVE test -> m2
-::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualObject ::template::AATreaty-2-mSearch-Adapter
 ::xo::cc virtualCall m2
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
-?++ {$i invoke} 1 [subst {
+#ns_write SER=[[$i invoke] serialize]
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive MIXED proc adaptor test, calling m2): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
 
 # 3b) POSITIVE test -> m3
 
-::xo::cc virtualObject AATreaty-2-mSearch-Adapter
+::xo::cc virtualObject ::template::AATreaty-2-mSearch-Adapter
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
-?++ {$i invoke} 1 [subst {
+?++ {[$i invoke] set __value__} 1 [subst {
   Dispatching invocation call (positive MIXED proc adaptor test, calling m3): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -1260,9 +1370,13 @@ test subsection "Invocation access policies"
 # Policy test 1:
 # - per-implementation defaults
 # - private (modifier) primitive
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ServantClass instproc servantMethod {
   -arg1:required 
@@ -1306,9 +1420,13 @@ catch { nsv_unset api_proc_doc $index } msg
 # - per-implementation, per-call rules
 # - deny primitive
 
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ServantClass instproc servantMethod {
   -arg1:required 
@@ -1342,9 +1460,13 @@ ServantClass instproc servantMethod {
 # - per-implementation, per-call rules
 # - login primitive
 
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} \
     "Creating invoker instance (Policy test 3)"
@@ -1377,15 +1499,19 @@ ServantClass instproc servantMethod {
 # - isImplementation condition
 # - none, login primitives
 
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} \
     "Creating invoker instance (Policy test 4)"
 
 ::xorb::deployment::Default default_permission \
-    {{{{isImplementation AAImplementation} login} none}}
+    {{{{isImplementation ::template::AAImplementation} login} none}}
 
 # negative test
 ::xo::cc user_id 0
@@ -1410,9 +1536,13 @@ ServantClass instproc servantMethod {
 # - isProtocol condition
 # - none, login primitives
 
-::xo::cc virtualObject AAImplementation
+::xo::cc virtualObject ::template::AAImplementation
 ::xo::cc virtualCall m3
-::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+#::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 ::xo::cc protocol ::xosoap::Soap
 
 ?+ {set i [Invoker new]} \
@@ -1458,8 +1588,8 @@ myImplementation sync -delete
 ? { db_0or1row impl_deleted \
   [myImplementation subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: test implementation (id:[myImplementation id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: test implementation (id:[myImplementation object_id]) was removed."
 
 # !!!!!!!!!!!!
 myImplementation mixin delete ::xorb::Synchronizable
@@ -1471,8 +1601,8 @@ myTreaty sync -delete
 ? { db_0or1row contract_deleted \
   [myTreaty subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
- } 0 "Staging: test contract (id:[myTreaty id]) was removed."
+    where contract_id = $object_id }]
+ } 0 "Staging: test contract (id:[myTreaty object_id]) was removed."
 
 myTreaty mixin delete ::xorb::Synchronizable
 
@@ -1482,8 +1612,8 @@ AAImplementation sync -delete
 ? { db_0or1row impl_deleted \
   [AAImplementation subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: AAImplementation (id:[AAImplementation id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: AAImplementation (id:[AAImplementation object_id]) was removed."
 
 AAImplementation mixin delete ::xorb::Synchronizable
 
@@ -1493,8 +1623,8 @@ AA-2-LC-Adapter sync -delete
 ? { db_0or1row impl_deleted \
   [AA-2-LC-Adapter subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: AA-2-LC-Adapter (id:[AA-2-LC-Adapter id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: AA-2-LC-Adapter (id:[AA-2-LC-Adapter object_id]) was removed."
 
 AA-2-LC-Adapter mixin delete ::xorb::Synchronizable
 
@@ -1504,8 +1634,8 @@ AA-2-LO-Adapter sync -delete
 ? { db_0or1row impl_deleted \
   [AA-2-LO-Adapter subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: AA-2-LO-Adapter (id:[AA-2-LO-Adapter id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: AA-2-LO-Adapter (id:[AA-2-LO-Adapter object_id]) was removed."
 
 AA-2-LO-Adapter mixin delete ::xorb::Synchronizable
 
@@ -1515,8 +1645,8 @@ AA-2-LP-Adapter sync -delete
 ? { db_0or1row impl_deleted \
   [AA-2-LP-Adapter subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: AA-2-LP-Adapter (id:[AA-2-LP-Adapter id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: AA-2-LP-Adapter (id:[AA-2-LP-Adapter object_id]) was removed."
 
 AA-2-LP-Adapter mixin delete ::xorb::Synchronizable
 
@@ -1526,8 +1656,8 @@ AATreaty-2-mSearch-Adapter sync -delete
 ? { db_0or1row impl_deleted \
   [AATreaty-2-mSearch-Adapter subst { select * 
   from acs_sc_impls
-    where impl_id = $id }]
- } 0 "Staging: AA-2-LP-Adapter (id:[AATreaty-2-mSearch-Adapter id]) was removed."
+    where impl_id = $object_id }]
+ } 0 "Staging: AA-2-LP-Adapter (id:[AATreaty-2-mSearch-Adapter object_id]) was removed."
 
 AATreaty-2-mSearch-Adapter mixin delete ::xorb::Synchronizable
 
@@ -1537,8 +1667,8 @@ AATreaty sync -delete
 ? { db_0or1row contract_deleted \
   [AATreaty subst { select * 
   from acs_sc_contracts
-    where contract_id = $id }]
- } 0 "Staging: AATreaty (id:[AATreaty id]) was removed."
+    where contract_id = $object_id }]
+ } 0 "Staging: AATreaty (id:[AATreaty object_id]) was removed."
 
 AATreaty mixin delete ::xorb::Synchronizable
 

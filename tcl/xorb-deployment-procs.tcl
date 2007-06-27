@@ -118,7 +118,9 @@ namespace eval ::xorb::deployment {
 	  error "There is no contract '$contract' available."
 	}
       } else {
-	set c [::xorb::Skeleton getContract -name $contract]
+	set c [::xorb::Skeleton getContract \
+		   -name $contract \
+		   -unbound]
 	set uqSet [$c info instprocs]
       }
     } elseif {$c eq "::xorb::Skeleton::$contract"} {
@@ -208,7 +210,9 @@ namespace eval ::xorb::deployment {
       lappend flags "-set default_permission {$defaultPermission}"
     }
     if {[llength $flags] > 0} {
-      set cmd [concat "::xotcl::Object [my name]" [join $flags]]
+      set cmd \
+	  [concat "::xotcl::Object [my canonicalName]" \
+	       [join $flags]]
       $rulingPolicy contains $cmd
     }
     # finally, add impl to list of synchronizable

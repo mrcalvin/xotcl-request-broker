@@ -9,7 +9,15 @@ ad_library {
 
 namespace eval ::xorb {
 
-   ad_proc upgrade {
+  proc before-uninstall {} {
+    # / / / / / / / / / / / / / / / / /
+    # Starting with v0.4 (r49) remove
+    # basic object types:
+    ::xorb::ServiceContract dropObjectType
+    ::xorb::ServiceImplementation dropObjectType
+  }
+
+  proc after-upgrade {
     {-from_version_name:required}
     {-to_version_name:required}
    } {

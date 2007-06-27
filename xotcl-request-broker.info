@@ -18,6 +18,8 @@
         <requires url="xotcl-core" version="0.51"/>
 
         <callbacks>
+            <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
+            <callback type="before-uninstall"  proc="::xorb::before-uninstall"/>
         </callbacks>
         <parameters>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="per_instance_policy"  default="::xorb::deployment::Default" description="The request broker allows to use access policies to control and enforce restrictions upon invocations. It is possible to specify your own default per-instance policy. By default, ::xorb::deployment::Default applies." section_name="Access policy"/>

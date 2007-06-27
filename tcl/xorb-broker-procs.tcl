@@ -33,6 +33,7 @@ ad_library {
     IDepository Broker -proc init args {
       # clear state
       if {[my exists bindings]} {
+	my debug BEFORE-REFRESH-BINDINGS=[my array get bindings]
 	my unset bindings
       }
       # current state of bindings
@@ -47,6 +48,7 @@ ad_library {
 	}
 	set bindings($contract_id) [lappend l $impl_id] 
       }
+      my debug AFTER-REFRESH-BINDINGS=[array get bindings]
     }
     
     # # # # # # # # # # # # # # # #
@@ -122,7 +124,7 @@ ad_library {
       # only contract requested
       if {[array size grep] == 1 && [info exists grep(contract)]} {
 	set object_id [$grep(contract) object_id]
-	set verified [info exists bindings($id)]
+	set verified [info exists bindings($object_id)]
       } elseif {[array size grep] == 1 && [info exists grep(impl)]} {
 	set iid [$grep(impl) object_id]
 	set contract [$grep(impl) implements]
@@ -159,7 +161,7 @@ ad_library {
     }
     Broker proc lookup {-what:required {-conditions ""} args} {
       set mixinList [list $what $conditions]
-      my debug mixinList=[join $mixinList]
+      my debug LOOKUP=mixinList=[join $mixinList],args=$args
       my mixin [join $mixinList]
       # my debug mixinList=$mixinList
       set r [eval my grep $args]
@@ -172,7 +174,7 @@ ad_library {
       # provide for streaming
       foreach item [array names retrieval] {
 	set stream($item) [eval Serializer deepSerialize $retrieval($item) \
-			       [list -map [list $retrieval($item) "\[self\]::[$retrieval($item) name]"]]]
+			       [list -map [list $retrieval($item) "\[self\]::[$retrieval($item) canonicalName]"]]]
       }
       my debug "+++STREAM-RETURN:[array get stream]"
       return [array get stream]
@@ -189,10 +191,12 @@ ad_library {
 
     Broker proc save {type id} {
       if {$type eq "::xorb::ServiceImplementation"} {
+	my debug INIT=2
 	my init
       }
     }
     Broker proc delete {type id} {
+      my debug INIT=3
       my init
     }
     Broker proc update {type oldId newId} {
@@ -205,28 +209,33 @@ ad_library {
 	if {[info exists bindings($oldId)]} {
 	  set binds $bindings($oldId)
 	  my debug "binds=$binds"
+	  set refresh 0
 	  foreach iid $binds {
 	    # TODO:introduce conformance check here
 	    set i [IRepository resolve -id $iid]
-	    if {[$i check]} {
+	    set ok [$i check]
+	    my debug OK($iid)=$ok
+	    if {$ok} {
 	      ::xo::db::sql::acs_sc_binding new \
 		  -contract_name [$i implements]\
-		  -impl_name [$i name]
+		  -impl_name [$i impl_name]
+	      set refresh 1
 	    } else {
 	      my debug [subst {
-		WARNING: Implementation '[$i name]' does not conform 
+		WARNING: Implementation '[$i impl_name]' does not conform 
 		to the referenced contract '[$i implements]' anymore
-		after the contract's update.
+		after its contract's update.
 	      }]
-	        # set insert {select acs_sc_binding__new($newId,$iid);}
+	    }
 	  }
-	  #if {[info exists sql] && $sql ne {}} {
-	  #  my log inserts=[join $sql]
-	  #  db_exec_plsql update_binds [join $sql]
-	  #}
+	  if {$refresh} {
+	      my debug INIT=1c
+	      my init
+	  }
 	}
-      }
-      my init
+      } elseif {$type eq "::xorb::ServiceImplementation"} {
+	my debug INIT=1i
+	my init
       }
     }
     
@@ -271,6 +280,7 @@ ad_library {
 	error "One accessor element, either 'name' or 'id', must be given."
       }
       set item [array get items $name,$id]
+      my debug IRepository_items=[array get items]
       if {$item ne {}} {
 	my debug "==item==> $item"
 	return [lindex $item 1]

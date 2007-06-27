@@ -1,4 +1,73 @@
+2007-06-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-datatypes-procs.tcl: Fixed the resolution of
+          Anything subtypes to fully qualified paths to be able to
+          distinguish more accurately between Anything classes based
+          upon the typecode. Started adding a set of xorb native
+          types, i.e. ::xorb::datatypes::String and
+          ::xorb::datatypes::Integer. The list has to be completed 
+          (following the entries in acs_sc_msg_types).
+
+	* tcl/xorb-broker-procs.tcl: Completed another step through a
+          more sound lifecycling of contracts / implementations. on
+          each update on a contract, all previously bound impls are
+          checked for the ex-post conformance and the bindings are
+          reviewed int this respect.
+
+	* tcl/20-xorb-procs.tcl: We introduced, as part of the
+          upcoming revised object reference / addressing scheme some
+          helpers that ascertain canonical reference generations for
+          xorb objects, i.e. service contracts and implementations,
+          for the internal usage (see "canonicalName" as method on
+          ::xorb::Object, ::xorb::ServiceContract,
+          ::xorb::ServiceImplementation). They simply take care of
+          mapping fully qualified tcl references (incl. namespaces)
+          into a underscored notation. 
+	  Deletion of service contracts is now fixed for explicitly
+          removing the operations to the contract. 
+	  Updated the skeleton generation to behave differently inside
+          or outside the managing thread
+          (::xorb::Skeleton->getContract,
+          ::xorb::Skeleton->getImplementation).
+	  Cleaned up the injection of CheckOption+Uplift, i.e. the
+          translation back and forth to Anythings of arguments and
+          return values through the checkoption mechanism: It is now
+          more closely tailored to calling scope of XORB core
+          functions and is cleared when the XORB scope is left
+          (i.e. the actual servant code is called). This avoids to
+          mix-in phantom variables in servant call scopes etc. 
+	  The caching of skeletons is now restricted, by default, to
+       	  generation requests through ::xorb::Invoker, this allows to
+          use the Skeleton generator in cases where caching should be
+          avoided (generating = caching unbound implementations etc.).
+
+	* tcl/15-xorb-aux-procs.tcl: The AcsObject* framework has been
+          partly rewritten. Type constructors are know created for
+          each object type "on foot", e.g. we provide for a stored
+          procedure taking care of populating all supertypes
+          etc. instead of referring to supertype's constructors. 
+	  ::xorb::aux::AcsObject now takes care of resolving the closest
+          object type class in reach of a given type instance (see
+          ::xorb::aux::AcsObject->getType). This allows for subtyping class
+          objects of type AcsObjectType without necessarily declaring
+          these subtypes AcsObjectType themselves. 
+	  ::xorb::aux::AcsAttribute know allows for value checks on
+          object-scoped variables ('instance variables') through the
+          slot mechanism. This will be part in the revised object id /
+          addressing scheme in 0.4 (see
+          ::xorb::aux::AcsAttribute->xorb=quname). 
+
+	* www/doc/regression-test.tcl: Fixed the request broker FOR
+          most (except for 7) and, most importantly, all critical of
+          the regression tests that come with the request broker. The
+          now reflect the newly introduced features and fixes
+          introduced in version 0.4.
+
 2007-06-20  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-callback-procs.tcl: Added a before-uninstall
+          callback that unregisters acs_object_types defined for the
+          request broker.
 
 	* tcl/xorb-deployment-procs.tcl: Added a more robust/ generic
           deployment variant for contracts and implementations. Now,

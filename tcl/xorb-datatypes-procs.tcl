@@ -104,7 +104,7 @@ namespace eval ::xorb::datatypes {
       return $key
     } else {
       set key [string toupper $key 0 0]
-      return  [lsearch -inline -glob [my subClassTree] *$key]
+      return  [lsearch -inline -glob [my subClassTree] *::$key]
     }
   }
 
@@ -113,7 +113,7 @@ namespace eval ::xorb::datatypes {
       return $key
     } else {
       set key [string toupper $key 0 0]
-      return  [lsearch -inline -glob [my subClassTree] *$key]
+      return  [lsearch -inline -glob [my subClassTree] *::$key]
     }
   }
 
@@ -487,6 +487,18 @@ namespace eval ::xorb::datatypes {
   }
 
   ::xotcl::Class Anything::CheckOption+Uplift
+  # / / / / / / / / / / / / / /
+  # xotcl-core already comes with
+  # a equally named proc on ::xotcl::nonposArgs
+  # which bypasses the checkoption+uplift mechanism
+  # we therefore have to redirect the call the
+  # default unknown mechanism
+  Anything::CheckOption+Uplift instproc integer args {
+    eval my unknown [self proc] $args
+    if {[info exists returnObjs]} {
+      uplevel [list set returnObjs $returnObjs]
+    }
+  }
   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
     # $anyBase tokenise $checkoption
     # set typeKey [expr {[info exists hook]?$hook:$checkoption}]
@@ -502,6 +514,7 @@ namespace eval ::xorb::datatypes {
     #set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
     set anyBase [[self class] info parent]
     set ar [::xorb::datatypes::AnyReader new -typecode $checkoption]
+    my debug "CHECKOPTION:$checkoption,ARGS=$args,ANY=[$ar any]"
     if {[$ar any] ne {}} {
       # my log "ARANY=[$ar any]"
       switch [llength $args] {
@@ -514,7 +527,7 @@ namespace eval ::xorb::datatypes {
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
 	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
-	    #my log ===1
+	    my debug ===1
 	  } elseif {[my isobject $argValue] && $isObj} {
 	    #if {$class eq {}} {
 	    #  set class [$argValue info class]
@@ -522,7 +535,7 @@ namespace eval ::xorb::datatypes {
 	    #  set class [string trimleft $class =]
 	    #}
 	    #my log "ARANY-INSIDE=[$ar any]"
-	    #my log ===2
+	    my debug ===2
 	    uplevel [list lappend returnObjs \
 			 [[$ar any] new \
 			      -name__ $argName \
@@ -533,9 +546,10 @@ namespace eval ::xorb::datatypes {
 		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
-	    #my log ===3,$argValue,$argName
+	    my debug ===3,$argValue,$argName
 	    set any [[$ar any] new -set __value__ $argValue -name__ $argName]
 	    if {[$any validate]} {
+	      my debug ===3a,ANY=$any,cp=[self callingproc],stack=[my stackTrace]
 	      uplevel [list lappend returnObjs $any]
 	    } else {
 	      error [::xorb::exceptions::TypeViolationException new [subst {
@@ -608,7 +622,33 @@ namespace eval ::xorb::datatypes {
   # TODO: keep it that way?
   #::xotcl::nonposArgs mixin add Anything::nonposArgs
 
+  # / / / / / / / / / / / / / / /
+  # TODO: Provide Anything definitions
+  # for the following atomic types as
+  # declared/ used by ACS Service Contracts
+  # (see acs_sc_msg_types).
+  # integer
+  # string
+  # boolean
+  # timestamp
+  # uri
+  # version
+  # float
+  # bytearray
+  
+  MetaAny String -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [string is print $__value__]
+      }
+  
+  MetaAny Integer -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [string is integer $__value__]
+      }
 
-  namespace export Anything MetaAny AnyReader
+  namespace export Anything MetaAny AnyReader String \
+      Integer
 
 }
