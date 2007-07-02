@@ -2511,6 +2511,27 @@ ad_after_server_initialization synchronise_contracts {
     Attribute skeleton
   }
 
+  # / / / / / / / / / / / / / / /
+  # The invoker is assigned the
+  # role of an the main addressing
+  # prinicipal: As the invoker is
+  # responsible to dispatch the actual
+  # call to the skeleton object (or
+  # remote object as called in literature)
+  # it is the place to resolve a
+  # shared object id (object reference)
+  # to the corresponding internal
+  # name of the service implementation.
+  # This resolved name is then used
+  # to generate the actual skeleton.
+  # Currently, we only need a single
+  # resolution strategy, from URL components
+  # to the internal namespace notation.
+
+  Invoker instproc resolve {objectId} {
+    
+  }
+
   Invoker instproc init args {
     my instvar impl call arguments \
 	skeleton

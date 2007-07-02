@@ -1,3 +1,24 @@
+2007-07-02  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Re-organised directory structure in www/, added serializer
+          patch for 0.4 which handles the observed issue of
+          re-evaluating variable traces and the streaming ordering
+          applied by the current version of xotcl serializer when
+          streaming slot objects to the blueprint. Note, however, that
+          a more generic solution to this issue is pending, for the
+          moment, the patch allows for running 0.4 and its new features.   
+
+2007-06-28  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: We introduce the new naming /
+          addressing scheme. Concept-wise, it is the ::xorb::Invoker
+          that acts as main naming/addressing/resolution
+          principal. The invoker is provided with a new method
+          "resolve" that currently implements a single resolution
+          strategy: As we currently only have plug-ins that employ URL
+          based identifiers, we provide for resolving URL components/
+          fragments to 
+
 2007-06-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-deployment-procs.tcl: Revised and simplified the

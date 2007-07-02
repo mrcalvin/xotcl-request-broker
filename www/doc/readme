@@ -13,24 +13,14 @@ $Id $
 	the standard OpenACS APM procedures.
 
 2)------------------------------------------
-	In its current version, it is necessary to patch the
+	In its current version (0.4), it is necessary to patch the
 	xotcl-core package. You find the set of patches in
-	www/doc/patches. There are currently two, simply
-	apply them by executing:
+	www/doc/patches/<version>. For 0.4, there is currently 
+	one single patch necessary:
 
 	(xotcl-core-blueprint.patch --- CRITICAL)
-	# cd <your_instance>/packages/xotcl-core
-	# patch -p0 < xotcl-core-blueprint.patch
-
-	(xotcl-core-http-chunked.patch --- MEDIUM)
-	# cd <your_aolserver>/lib/<your_xotcl>
-	# patch -p0 < xotcl-core-http-chunked.patch
-
-	(xotcl-core-serializer.patch --- CRITICAL for xotcl <1.5)
-	# cd <your_aolserver>/lib/<your_xotcl>
-	# patch -p0 < xotcl-core-serializer.patch
+	# cd <your_aolserver_installation>/lib/xotcl1.5.<x>
+	# patch -p0 < xotcl-serializer-slots.patch
 
 3)------------------------------------------
-	At this point, you have successfully installed xorb.
-	No need for further efforts ...
-
+	c'est tout ... (pour l'instant)
