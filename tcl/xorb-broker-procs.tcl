@@ -283,8 +283,9 @@ ad_library {
       if {$name eq "*" && $id eq "*"} {
 	error "One accessor element, either 'name' or 'id', must be given."
       }
+      
       set item [array get items $name,$id]
-      my debug IRepository_items=[array get items]
+      my debug query=$name,$id/ITEM=$item/ITEMS=[array get items]
       if {$item ne {}} {
 	my debug "==item==> $item"
 	return [lindex $item 1]

@@ -480,7 +480,9 @@ namespace eval xorb {
       # synchronise in a batch + lazy manner
       # in fact, only upon server startup!
       my debug "DEPLOYMENT: lazy"
-      [my info class] lappend __syncees__ [self] 
+      [my info class] lappend __syncees__(names) [my name]
+      [my info class] lappend __syncees__(objects) [self]
+      
     }
   }
   Object abstract instproc stream {}
@@ -527,7 +529,7 @@ namespace eval xorb {
     ::xorb::aux::AcsAttribute contract_name \
 	-datatype text \
 	-sqltype varchar(1000) \
-	-type "my xorb=qname"
+	-type "my qname"
     # / / / / / / / / / / / / / 
     # Currently, the db schema
     # enforces a not-null constraint
@@ -585,6 +587,42 @@ namespace eval xorb {
     }
     next
   }
+
+  # / / / / / / / / / / / / / / / / / /
+  # Currently, removing the object type
+  # of service contracts does not provide
+  # provide for the cleanup of msg types
+  # associated with the contracts deleted.
+  # we, therefore, have to provide this
+  # 'on foot'.
+  # This is necessary due to the current 
+  # state of the implementation:
+  # 1-) a legacy issue as the current acs sc
+  # schema does not link msg types and contracts
+  # 2-) in version 0.4, operations and aliases
+  # are not covered by the acs object extension
+  # to xorb. This might change in future releases
+  # if needed.
+  ServiceContract proc dropObjectType {{-cascade true}} {
+    my instvar table_name id_column
+    # 1-) preserve state
+    set msgTypes [db_list [my qn ""] [subst {
+      select msg_type_name 
+      from $table_name ctrs,
+      acs_sc_operations ops,
+      acs_sc_msg_types types
+      where ctrs.$id_column = ops.contract_id 
+      and (ops.operation_inputtype_id = types.msg_type_id
+	   or ops.operation_outputtype_id = types.msg_type_id);
+    }]]
+    next;# AcsObjectType->dropObjectType
+    # 2-) 
+    foreach t $msgTypes {
+      ::xo::db::sql::acs_sc_msg_type delete \
+	  -msg_type_name $t
+    }
+  }
+
   ServiceContract instproc stream {} {
     my instvar homologues
     set arr(name) [my contract_name]
@@ -602,13 +640,16 @@ namespace eval xorb {
   }
 
   ServiceContract proc sync {} {
-    my instvar __syncees__
-    if {[info exists __syncees__] && [llength $__syncees__] > 0} {
-      foreach s $__syncees__ {
-	my debug "SYNC'ING: $s"
-	$s mixin add ::xorb::Synchronizable
-	$s [self proc]
-	$s mixin delete ::xorb::Synchronizable
+    foreach sub [concat [self] [my getAllSubClasses]] {
+      $sub instvar __syncees__
+      if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
+	foreach object $__syncees__(objects) {
+	  my debug "SYNC'ING: $object (ofType: $sub)"
+	  $object mixin add ::xorb::Synchronizable
+	  $object [self proc]
+	  $object mixin delete ::xorb::Synchronizable
+	}
+	$sub array unset __syncees__
       }
     }
   }
@@ -1061,7 +1102,7 @@ ad_after_server_initialization synchronise_contracts {
     ::xorb::aux::AcsAttribute impl_name \
 	-datatype text \
 	-sqltype varchar(100) \
- 	-type "my xorb=qname"
+ 	-type "my qname"
     ::xorb::aux::AcsAttribute impl_pretty_name \
 	-datatype text \
 	-sqltype varchar(200) \
@@ -1072,7 +1113,8 @@ ad_after_server_initialization synchronise_contracts {
 	-default {}
     ::xorb::aux::AcsAttribute impl_contract_name \
 	-datatype text \
-	-sqltype varchar(1000)
+	-sqltype varchar(1000) \
+	-type "my resolve-to-qname"
   } -object_type acs_sc_implementation \
     -id_column impl_id \
     -table_name acs_sc_impls \
@@ -1217,17 +1259,19 @@ ad_after_server_initialization synchronise_contracts {
 
   # only to be called in manager thread (upon init)
   ServiceImplementation proc sync {} {
-    my instvar __syncees__
-    if {[info exists __syncees__] && [llength $__syncees__] > 0} {
-      foreach s $__syncees__ {
-	my debug "SYNC'ING: $s"
-	$s mixin add ::xorb::Synchronizable
-	$s [self proc]
-	$s mixin delete ::xorb::Synchronizable
+    foreach sub [concat [self] [my getAllSubClasses]] {
+      $sub instvar __syncees__
+      if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
+	foreach s $__syncees__(objects) {
+	  my debug "SYNC'ING: $s"
+	  $s mixin add ::xorb::Synchronizable
+	  $s [self proc]
+	  $s mixin delete ::xorb::Synchronizable
+	}
+	$sub array unset __syncees__
       }
     }
   }
-
   # / / / / / / / / / / / / / / / / /
   # provide after_init hook 
   ad_after_server_initialization synchronise_implementations {
@@ -2511,25 +2555,8 @@ ad_after_server_initialization synchronise_contracts {
     Attribute skeleton
   }
 
-  # / / / / / / / / / / / / / / /
-  # The invoker is assigned the
-  # role of an the main addressing
-  # prinicipal: As the invoker is
-  # responsible to dispatch the actual
-  # call to the skeleton object (or
-  # remote object as called in literature)
-  # it is the place to resolve a
-  # shared object id (object reference)
-  # to the corresponding internal
-  # name of the service implementation.
-  # This resolved name is then used
-  # to generate the actual skeleton.
-  # Currently, we only need a single
-  # resolution strategy, from URL components
-  # to the internal namespace notation.
-
   Invoker instproc resolve {objectId} {
-    
+    return $objectId
   }
 
   Invoker instproc init args {
@@ -2537,7 +2564,7 @@ ad_after_server_initialization synchronise_contracts {
 	skeleton
     # / / / / / / / / / / / / / / / / / /
     # 1) invocation data
-    set impl [::xo::cc virtualObject]
+    set impl [my resolve [::xo::cc virtualObject]]
     set call [::xo::cc virtualCall]
     set arguments [list]
 

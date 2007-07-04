@@ -22,25 +22,6 @@ unique (msg_type_id,element_name);
 
 -- / / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-create table xorb_contracts (
-       contract_id integer primary key,
-       foreign key (contract_id) 
-       	       references acs_sc_contracts (contract_id)
-	       on delete cascade
-);
-
-create or replace function xorb_servicecontract__new (varchar,varchar) {
-       select acs_sc_contract__new();
-       insert into xorb_servicecontract
-}
-
-create table xorb_implementations (
-       impl_id integer primary key,
-       foreign key (impl_id) 
-       	       references acs_sc_impls (impl_id)
-	       on delete cascade
-);
-
 create table xorb_msg_type_elements_ext (
        msg_type_id integer,
        element_name varchar(100),
@@ -50,9 +31,6 @@ create table xorb_msg_type_elements_ext (
        	       references acs_sc_msg_type_elements (msg_type_id, element_name) 
        	       on delete cascade
 );
-
--- TODO xorb_contract__new|delete
--- TODO xorb_implementation__new|delete
 
 -- register function record
 select define_function_args ('xorb_msg_type_element__new','msg_type_name,element_name,element_msg_type_name,element_msg_type_isset_p,element_pos,element_constraints');

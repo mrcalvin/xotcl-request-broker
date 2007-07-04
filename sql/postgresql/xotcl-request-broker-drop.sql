@@ -9,8 +9,6 @@ alter table acs_sc_msg_type_elements drop constraint "acs_sc_msg_type_elements_u
 
 -- / / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-drop table xorb_contracts;
-drop table xorb_implementations;
 drop table xorb_msg_type_elements_ext;
 drop function xorb_msg_type_element__new(
      varchar,

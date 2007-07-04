@@ -23,11 +23,11 @@ namespace eval ::xorb::datatypes {
   # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # #
   
-  ::xotcl::Class MetaAny -slots {
+  ::xotcl::Class MetaPrimitive -slots {
     Attribute checkoption
   } -superclass ::xotcl::Class
 
-  MetaAny instproc init args {
+  MetaPrimitive instproc init args {
     my instvar checkoption
     if {![info exists checkoption]} {
       set checkoption [string tolower [namespace tail [self]] 0 0] 
@@ -40,11 +40,11 @@ namespace eval ::xorb::datatypes {
     }
     next
   }
-  MetaAny instproc validate {value} {
+  MetaPrimitive instproc validate {value} {
     set any [my new -volatile -set __value__ $value]
     return [$any validate]
   }
-  MetaAny instproc delete {} {
+  MetaPrimitive instproc delete {} {
     my instvar checkoption
     if {[my isStored]} {
       db_transaction {
@@ -53,7 +53,7 @@ namespace eval ::xorb::datatypes {
       }
     }
   }
-  MetaAny proc deleteAll {} {
+  MetaPrimitive proc deleteAll {} {
     # / / / / / / / / / / / / /
     # to be called by before-uninstall
     # hook
@@ -61,12 +61,20 @@ namespace eval ::xorb::datatypes {
       $i delete
     }
   }
-  MetaAny instproc isStored {} {
+  MetaPrimitive instproc isStored {} {
     my instvar checkoption
     return [db_0or1row [my qn is_datatype_stored] {
       select * from acs_sc_msg_types where msg_type_name = :checkoption
     }]
   }
+
+  # / / / / / / / / / / / / / / / / / 
+  # In the current realisation of 
+  # Anythings merely used for distinguising
+  # Anything types that prescribe a 
+  # composite structure. Might change
+  # in future and revised versions.
+  ::xotcl::Class MetaComposite -superclass MetaPrimitive
 
   # / / / / / / / / / / / / / / / / /
   # Attributes of Anythings have to be
@@ -522,7 +530,8 @@ namespace eval ::xorb::datatypes {
 	  foreach argName $args break
 	}
 	2 {
-	  set isObj [[$ar any] info superclass ::xosoap::xsd::XsCompound]
+	  #set isObj [[$ar any] info superclass ::xosoap::xsd::XsCompound]
+	  set isObj [[$ar any] istype ::xorb::datatypes::MetaComposite]
 	  foreach {argName argValue} $args break
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
@@ -636,19 +645,19 @@ namespace eval ::xorb::datatypes {
   # float
   # bytearray
   
-  MetaAny String -superclass Anything \
+  MetaPrimitive String -superclass Anything \
       -instproc validate args {
 	my instvar __value__
 	return [string is print $__value__]
       }
   
-  MetaAny Integer -superclass Anything \
+  MetaPrimitive Integer -superclass Anything \
       -instproc validate args {
 	my instvar __value__
 	return [string is integer $__value__]
       }
 
-  namespace export Anything MetaAny AnyReader String \
+  namespace export Anything MetaPrimitive AnyReader String \
       Integer
 
 }

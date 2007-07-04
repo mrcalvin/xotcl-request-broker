@@ -94,15 +94,52 @@ namespace eval ::xorb::deployment {
   
   ::xotcl::Object Checkable::Containment -proc check {obj} {
     set contract [$obj implements]
-    
     if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
-      # managing thread not available, revert
-      # to db call
+      # managing thread not available
+      # In this bootstrapping phase, we have two
+      # concurrent scenarios to tackle:
+      # / / / / / / / / / / / / / / / / / / / / / / / / /
+      # 1) as for previously (in other instance runs etc.)
+      # intialised and stored contracts and legacy contracts
+      # that are stored during installation time, these are
+      # available through db calls.
       set uqSet [db_list ops_for_contract_name {
 	select	ops.operation_name  
 	from   	acs_sc_operations ops
 	where  	ops.contract_name = :contract 
       }]
+
+      # / / / / / / / / / / / / / / / / / / / / / / / / /
+      # 2) the requested contract might be queued for
+      # synchronisation in the same start-up run as the
+      # requesting implementation! Therefore, we have to
+      # revert to the list of 'lazily' deployed contracts currently
+      # set on ::xorb::Skeleton! In this list, we look for the 
+      # specification object defined at the latest point, allowing
+      # for multiple competing specification objects to be queued.
+      # Limitations: This approach (or rather its current realisation)
+      # has some remedies: In particular, it might be thinkable that 
+      # implementations are validate against contract that will never
+      # appear to be persistent (for some formal reason, or failure during
+      # streaming. In fact, it would be needed to counter check at
+      # synchronisation time.
+      
+      if {$uqSet eq {} && [::xorb::ServiceContract array exists __syncees__]} {
+	::xorb::ServiceContract instvar __syncees__
+	my debug ===1=[array get __syncees__]
+	set idx [lindex [lsearch -exact -all $__syncees__(names) $contract] end]
+	my debug ===2=idx=$idx
+	if {$idx ne "-1"} {
+	  set cObj [lindex $__syncees__(objects) $idx]
+	  my debug ===3=cObj=$cObj
+	  foreach s [$cObj info slots] {
+	    if {[$s istype ::xorb::Abstract]} {
+	      lappend uqSet [$s name]
+	    }
+	  } 
+	}
+      }
+
       # TODO: handling, if there simply is 
       # NO contract specified!!!!!!
       if {$uqSet eq {}} {

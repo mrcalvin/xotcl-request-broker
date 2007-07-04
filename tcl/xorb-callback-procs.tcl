@@ -15,6 +15,15 @@ namespace eval ::xorb {
     # basic object types:
     ::xorb::ServiceContract dropObjectType
     ::xorb::ServiceImplementation dropObjectType
+    ::xorb::Object dropObjectType
+  }
+
+  proc after-install {} {
+    if {[db_driverkey ""] eq "postgresql"} {
+      set packageRoot [acs_package_root_dir xotcl-request-broker]
+      set path $packageRoot/sql/postgresql/acs-object-model-function-args.sql
+      db_source_sql_file $path
+    }
   }
 
   proc after-upgrade {
@@ -59,7 +68,7 @@ namespace eval ::xorb {
        # conditions:
        # db_driver == postgres
 
-       if {[[db_driverkey ""] eq "postgresql"]} {
+       if {[db_driverkey ""] eq "postgresql"} {
 	 set packageRoot [acs_package_root_dir xotcl-request-broker]
 	 set path $packageRoot/sql/postgresql/acs-object-model-function-args.sql
 	 db_source_sql_file $path

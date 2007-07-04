@@ -27,8 +27,8 @@ namespace eval ::xorb {
 
   Adapter instproc adapterFilter args {
     set r [self calledproc]
-    if {![catch { array set tmp [[my info class] adapts]
-    }msg] && [info exists tmp($r)]} {
+    if {![catch { array set tmp [[my info class] adapts]} msg] && \
+	    [info exists tmp($r)]} {
       set adaptee [lindex $tmp($r) 0]
       if {![::xotcl::Object isobject $adaptee]} {
 	#TODO:-destroy_on_cleanup

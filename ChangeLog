@@ -1,3 +1,73 @@
+2007-07-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-deployment-procs.tcl: Added a new aspect to the
+          lazy deployment part of
+          ::xorb::deployment::Checkable::Containment->check to handle
+          situations when an implementation is supposed to be checked
+          against a contract that has just happened to be queued for
+          deployment in the same start-up run!
+
+	* tcl/xorb-datatypes-procs.tcl: Changed ::xorb::MetaAny to
+          ::xorb::MetaPrimitive, added a ::xorb::MetaComposite to
+          identify Typecodes and their anythings that declare
+          themselves to serve as composite structures. The latter is
+          used to remove the last nasty dependency (see
+          CheckOption+Uplift) to the soap protocol plug-in introduced
+          unreflectedly when realising the anything support as such.
+
+	* tcl/xorb-callback-procs.tcl: Added a callback after-install,
+          tested for expected behaviour during
+          installation/de-installation. Fixed typo in boolean expression. 
+
+	* tcl/xorb-adapters-procs.tcl: Fixed typo in if expression.
+
+	* tcl/20-xorb-procs.tcl: Revised the logic for lazy deployment
+          of contracts and implementations. The after-init blocks now
+          take care of processing candidates of all existing
+          subclasses of ServiceContract and ServiceImplementation
+          (Adapters ...). We now store the
+          information of deployment candidates in two separate lists,
+          one containing the suggested names of the specified items,
+          one listing the object references. The former is used in the
+          revised conformance checking scheme of implementations upon
+          server start-up, especially for the case of implementing
+          contracts queued for deployment in the same run!
+	  Put the slot-based type validator qname and resolve-to-qname
+          in place on ServiceContract->contract_name,
+          ServiceImplementation->impl_name and
+          ServiceImplementation->impl_contract_name aka implements. 
+	  Fixed dropObjectType for contracts: As there is no
+          propagation of contract removals provided either by the ACS
+          SC db scheme, nor the AcsObject* Framework (simply, because
+          Operations and Message Types are not covered by it for now),
+          we need some extra, message type removing logic here. Tested.
+	  Added an ::xorb::Invoker->resolve that is simply a hook for
+          protocol plug-ins to provide their own name/object id resolution.
+
+	* tcl/15-xorb-aux-procs.tcl: Fixed
+          ::xorb::aux::AcsObjectType->dropObjectType to handle the
+          deletion of "abstract" object types, those that don't have
+          an attribute table and constructor/destructor.
+	  As part of the revised naming/addressing scheme (object ids
+          as used by the protocol plugins and as resolved by the
+          Invoker to internal references), two type validators were
+          added to AcsAttribute: qname and resolve-to-qname. Both
+          verify that names of contracts and implementations do not
+          resolve to protected/ reserved namespaces (xotcl::*,
+          acs::*), the latter being used to provide backward
+          compatibility to legacy contracts and implementations that
+          do not map to tcl namespaces. resolve-to-qname does the some
+          plus resolving values handled by the slot object as
+          namespace which would do relative to the slot object (used
+          for implements of ServiceImplementation).
+	  Added a helper method on ::xotcl::Class to expand the
+          subclass tree to a given class (getAllSubClasses).
+
+	* sql/postgresql/...-{create|drop}.sql: Fixed and tested for
+          installation and deinstallation. Major parts are are now
+          handled by the AcsObject* Framework and have been removed
+          from these files. 
+
 2007-07-02  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Re-organised directory structure in www/, added serializer
