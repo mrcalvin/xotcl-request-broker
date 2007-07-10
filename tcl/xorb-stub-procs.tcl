@@ -39,10 +39,6 @@ namespace eval ::xorb::stub {
     Attribute virtualObject
     Attribute virtualCall
     Attribute virtualArgs
-    Attribute marshalledRequest
-    Attribute marshalledResponse
-    Attribute unmarshalledRequest
-    Attribute unmarshalledResponse
   }
 
 #   ContextObject instproc reset {} {
@@ -106,11 +102,26 @@ namespace eval ::xorb::stub {
     # early bound context available?
     # lately bound context?
     # any ?
+    # / / / / / / / / / / / / / / / / /
+    # Order of precedence in resolution 
+    # of a glue or context object:
+    # 1-) early bound (at declaration time
+    # of a method through ad_glue)
+    # 2-) lately bound (at call time),
+    # the stub object being the context
+    # object itself! 
+    # 3-) lately bound (at call time of
+    # proxy method, assigned to the proxy
+    # object through 'glueobject')
+    my debug stub-class=[$stubObject info class],co?[$stubObject istype ::xorb::stub::ContextObject]
+
     if {$earlyBoundContext ne {}} {
       set contextObj $earlyBoundContext
-    } elseif {[$stubObject info methods glueobject] ne {}} {
-      set contextObj [$stubObject glueobject]
-    } else {
+    } elseif {[$stubObject istype ::xorb::stub::ContextObject]} {
+      set contextObj $stubObject
+    } elseif {[catch {set contextObj [$stubObject glueobject]}] || \
+		  ![info exists contextObj] || \
+		  $contextObj eq {}} {
       error "Requestor cannot resolve any context ('glue') object."
     }
     
@@ -138,11 +149,13 @@ namespace eval ::xorb::stub {
     my log signatureMask=$signatureMask
     my proc __parse__ [lindex $signatureMask 0] {
       #foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
+      my debug INNER-PARSE=[info vars]
       if {[info exists returnObjs]} {
 	return $returnObjs
       }
     }
     # call parser
+    my debug ARGS-TO-PARSE=[lindex $args 0]
     ::xotcl::nonposArgs mixin add \
 	::xorb::datatypes::Anything::CheckOption+Uplift
     set r [eval my __parse__ [lindex $args 0]]
@@ -279,12 +292,12 @@ namespace eval ::xorb::stub {
 #     return $body
 #   }
   
-  Object instproc __makeStubBody__ args {
+  Object instproc __makeStubBody__ {{-filter false}} {
     # / / / / / / / / / / / / / / / / / / /
     # stub builder is only meant
     # to be called from within the
-    # proc scope of stub, ad_stub,
-    # StubClass->instproc, StubObject->proc
+    # proc scope of glue, ad_glue,
+    # ProxyClass->instproc and ProxyObject->proc
     upvar glueobject glueobject \
 	returns returns \
 	methName methName \
@@ -294,29 +307,124 @@ namespace eval ::xorb::stub {
     set voidness [expr {[info exists returns]?\
 			    "-returntype $returns":""}]
     set self [self]
-    # / / / / / / / / / / / /
-    # The nasty embedding in
-    # double brackets is necessary
-    # due to 'list' not enclosing
-    # non-whitespaced strings!!!!
-    # TODO: escape in empty
-    # arglist case, otherwise
-    # MakeProc / nonposArgs
-    # parser in xotcl.c segfaults
+    set innerSignature $argList
     if {$argList ne {}} {
-      set argList "{{$argList}}"
+      # / / / / / / / / / / / / / /
+      # parse argument list to seperate
+      # between elements of the proxy
+      # signature and the local method
+      # signature
+      if {$filter} {
+	# / / / / / / / / / / / / / /
+	# create a temporary proc
+	# used for initial arg parsing
+	my proc __tmpArgParser__ $argList {;}
+	set npArgs [my info nonposargs __tmpArgParser__]
+	set pArgs [my info args __tmpArgParser__]
+	# / / / / / / / / / / / / / /
+	# create a temporary proc
+	# used for initial arg parsing
+	set output(innerRecord) [list]
+	set output(outerRecord) [list]
+	foreach a $npArgs {
+	  if {[regexp  {^-(.*):.*,?glue,?.*$} $a _ argName]} {
+	    # / / / / / / / / / / / / / / / / / / /
+	    # Elements annotated with virtual 
+	    # check option 'glue' are
+	    # 1-) added to the innerRecord (proxy method)
+	    # 2-) added to the outerRecord (template method)
+	    # as required elements but cleared from 
+	    # xorb-specific check options not valid in
+	    # non-xorb scopes.
+	    lappend output(outerRecord) -$argName:required
+	    lappend output(innerRecord) $a
+	  } elseif {[regexp {^-([^:]+)(:(.+))?$} \
+			 $a _ argName __ checkoptions]} {
+	    # / / / / / / / / / / / / / / / / / / /
+	    # Non-'glue'ed elements are filtered
+	    # for the inner record:
+	    # 1-) dupes are removed
+	    # 2-) required check options are
+	    # removed. this leaves just 'glue'ed
+	    # elements required in the scope of
+	    # inner record (= proxy method).
+	    lappend output(outerRecord) $a
+	    if {$checkoptions ne {}} {
+	      set tmp [string map {, ,,} $checkoptions]
+	      array set unique [split $tmp, ,]
+	      if {[info exists unique(required)]} {unset unique(required)}
+	      set checkoptions [join [array names unique] ,]
+	      if {$checkoptions ne {}} {set checkoptions :$checkoptions} 
+	    }
+	    lappend output(innerRecord) -$argName$checkoptions
+	  }
+	}
+	
+	# / / / / / / / / / / / / / / / / / /
+	# re-assemble the outer record
+	# by adding the positional arguments
+	# (if there were any)
+	set output(outerRecord) [concat $output(outerRecord) $pArgs]
+	# / / / / / / / / / / / / / / / / / /
+	# re-assemble the inner record
+	# by adding args as generic
+	# container of all pos args
+	# that might be passed through
+	# from the outer record
+	# TODO: append args only if
+	# pos args are given?
+	lappend output(innerRecord) args
+	# / / / / / / / / / / / / / /
+	# clear 
+	my proc __tmpArgParser__ {} {}
+
+	set innerSignature $output(innerRecord)
+	set argList $output(outerRecord)
+	# 	set glueArgs [lsearch \
+	    # 			  -all \
+	    # 			  -inline \
+	    # 			  -regexp $argList {^-.*:(.*,)?glue(,.*)?$}]
+	# 	set argList [lsearch \
+	    # 			 -all \
+	    # 			 -inline \
+	    # 			 -not \
+	    # 			 -regexp $argList {^-.*:(.*,)?glue(,.*)?$}]
+	# 	my debug BEFORE-ARGS=$argList,glueArgs=$glueArgs
+	# 	foreach targ $ar {
+	
+	# 	}
+	
+	# 	foreach garg $glueArgs {
+	# 	  regexp {^-(.+):(.+)$} $garg _ argName checkoptions
+	# 	  set argList [concat -$argName:required $argList]
+	# 	}
+      }
+      # / / / / / / / / / / / /
+      # The nasty embedding in
+      # double brackets is necessary
+      # due to 'list' not enclosing
+      # non-whitespaced strings!!!!
+      # TODO: escape in empty
+      # arglist case, otherwise
+      # MakeProc / nonposArgs
+      # parser in xotcl.c segfaults
+      #     set glueArgs "{{$glueArgs}}"
+      set innerSignature "{{$innerSignature}}"
     } else {
-      set argList "{$argList}"
+      #set glueArgs "{$glueArgs}"
+      set innerSignature "{$innerSignature}"
     }
     #set argList [expr {[llength $argList] == 1?"{{$argList}}":[list $argList]}]
     #set argList [list [list $argList]]
     my log "argList=argList"
+
     set body [subst -nocommands {
       set requestor [::xorb::stub::Requestor require \
 			 -call $methName \
-			 -signatureMask $argList \
+			 -signatureMask $innerSignature \
 			 -stubObject $self $context $voidness]
       ::xoexception::try {
+	my debug INNER-ARGS=\$args
 	\$requestor handle \$args
       } catch {Exception e} {
 	\$e write
@@ -341,6 +449,10 @@ namespace eval ::xorb::stub {
     if {$methType ne "proc" && $methType ne "instproc"} {
       error "Invalid method type '$methType' (required: 'proc' or 'instproc')"
     }
+    if {[my isclass [self]::__indirector__] && \
+	    [[self]::__indirector__ info instprocs $methName] ne {}} {
+      [self]::__indirector__ instproc $methName {} {}
+    }
     set body [my __makeStubBody__]
     uplevel [list [self] $methType $methName args $body]
   }
@@ -360,9 +472,19 @@ namespace eval ::xorb::stub {
     if {$methType ne "proc" && $methType ne "instproc"} {
       error "Invalid method type '$methType' (required: 'proc' or 'instproc')"
     }
+    set inst [expr {$methType eq "instproc"?"inst":""}]
+    # / / / / / / / / / / / /
+    # clear indirector method
+    # when glue overwrites
+    # previously defined proxy method
+    # + indirector equivalent.
+    if {[my isclass [self]::__indirector__] && \
+	    [[self]::__indirector__ info instprocs $methName] ne {}} {
+      [self]::__indirector__ instproc $methName {} {}
+    }
     set body [my __makeStubBody__]
     uplevel [list [self] $methType $methName args $body]
-    my __api_make_doc "" $methName
+    my __api_make_forward_doc $inst $methName
   }
   
 
@@ -403,9 +525,9 @@ namespace eval ::xorb::stub {
   # / / / / / / / / / / / / / / /
   # Some simplistic facades
 
-  ::xotcl::Class GObject -superclass ::xotcl::Object
-  #GObject instforward with %self glueobject
-  GObject instproc ad_proc {
+  ::xotcl::Class ProxyObject -superclass ::xotcl::Object
+  #ProxyObject instforward with %self glueobject
+  ProxyObject instproc ad_proc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
@@ -417,21 +539,32 @@ namespace eval ::xorb::stub {
     doc
     body
   } {
+    set stubBody [my __makeStubBody__ -filter true]
+    uplevel [list [self] proc $methName args $stubBody]
+    my __api_make_doc "" $methName
     # / / / / / / / / / / / / /
     # TODO: Neophtos' 'next'
     # extension -> body
-    set stubBody [my __makeStubBody__]
-    uplevel [list [self] proc $methName args $stubBody]
-    my __api_make_doc "" $methName
+    if {![my isclass [self]::__indirector__]} {
+      ::xotcl::Class create [self]::__indirector__
+      my mixin add [self]::__indirector__
+    }
+    if {$body ne {}} {
+      my debug INDIRECTOR-ARGLIST=$argList
+      [self]::__indirector__ instproc $methName $argList $body
+    }
   }
 
-  ::xotcl::Class GClass -superclass ::xotcl::Class
-  #GClass instforward with %self glueobject
-  GClass instproc init args {
-    my superclass GObject
+  ::xotcl::Class ProxyClass -superclass {
+    ::xorb::stub::ProxyObject
+    ::xotcl::Class
+  }
+  #ProxyClass instforward with %self glueobject
+  ProxyClass instproc init args {
+    my superclass add ProxyObject
     next
   }
-  GClass instproc ad_instproc {
+  ProxyClass instproc ad_instproc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
@@ -446,11 +579,18 @@ namespace eval ::xorb::stub {
     # / / / / / / / / / / / / /
     # TODO: Neophytos' 'next'
     # extension -> body
-    set stubBody [my __makeStubBody__]
+    set stubBody [my __makeStubBody__ -filter true]
     uplevel [list [self] instproc $methName args $stubBody]
-    my __api_make_doc "" $methName
+    my __api_make_doc inst $methName
+    if {![my isclass [self]::__indirector__]} {
+      ::xotcl::Class create [self]::__indirector__
+      my instmixin add [self]::__indirector__
+    }
+    if {$body ne {}} {
+      [self]::__indirector__ instproc $methName $argList $body
+    }
   }
   
-  namespace export ContextObject Requestor GObject GClass \
+  namespace export ContextObject Requestor ProxyObject ProxyClass \
       ContextObjectClass
 }

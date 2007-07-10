@@ -1,0 +1,292 @@
+% ------------------------------------------------------------------------
+% Latex - Einstellungen ***************************************************
+% ------------------------------------------------------------------------
+% von: Stefan Sobernig
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% ========================================================================
+
+%% Dokumenten Klasse ===========================================================================
+%
+% --[ KOMA ] -----------------------------------------------------------------------------------
+% Klassen: scrartcl, scrreprt, scrbook, scrletter
+%  
+\documentclass[%
+ 10pt,%           Schriftgröße
+ a4paper,%	      Papier
+ %DIV12,%           Seitengröße (siehe Koma Skript Dokumentation !)
+ %BCOR5mm,%        Zusätzlicher Rand auf der Innenseite 
+ english,%		      Sprache
+ %twoside,%	      Seitenränder werden an doppelseitig angepasst
+ %fleqn,%          Formeln werden linksbündig (und nicht zentriert) angezeigt 
+ %openleft,%       (openright) Ein neues Kapitel beginnt immer auf einer rechten/linken Seite
+ %titlepage,%      Titel wird in einer 'titlepage' Umgebung gesetzt
+ %bigheadings,%    Große Überschriften (normal, small- headings)
+ %halfparskip-%   Absatz wird nicht eingerückt, dafür aber um eine halbe Zeile nach unten gerückt
+ %liststotoc,%     Tabellen & Abbildungsverzeichnis ins Inhaltsverzeichnis
+ %bibtotoc,%       LitVerzeichnis ins Inhaltsverzeichnis
+ %tablecaptionsbelow, %	Caption wird bei table unter die Tabelle gesetzt
+ %headinclude,
+ %nochapterprefix% Kein 'Kapitel' vor einem neuen Kapitel
+ ]{scrartcl}%     Klassen: scrartcl, scrreprt, scrbook, scrletter 
+% ----------------------------------------------------------------------------------------------
+
+%% Alles was vor alles andere gehört.... =======================================================
+%
+%
+\usepackage{calc} % Zum Rechnen innerhalb von Latex
+%
+% ----------------------------------------------------------------------------------------------
+
+%% Schriften ===================================================================================
+%
+% -- Andere Schriftpakete -----
+%
+% - Times, Helvetica, Courier (Word Standard...)
+%\usepackage{mathptmx}
+%\usepackage[scaled=.90]{helvet}
+%\usepackage{courier} 
+% statt courier man kann auch die Standardschrift cmtt beibehalten
+% -------------------
+%
+% - Palantino , Helvetica, Courier 
+%\usepackage{mathpazo}
+\usepackage[scaled=.92]{helvet}
+%\usepackage{courier} 
+% -------------------
+
+% Weitere Times Schriften
+%\usepackage{utopia}
+%\usepackage{charter}
+% Serifenlose Schrift
+%\usepackage{avant}
+% -----------------------------
+%
+% -- Koma Schriften --
+%\renewcommand*{\headfont}{\small\sffamily\slshape}        % Kopfzeile
+%\renewcommand*{\pnumfont}{\bfseries\sffamily}             % Seitenzahl
+%\setkomafont{chapter}{\sffamily\Huge}                     % Chapter
+%\renewcommand*{\sectfont}{\sffamily} %\rmfamily\bfseries  % Titelzeilen
+%\renewcommand*{\capfont}{\small}                          % Schrift für Caption
+%\renewcommand*{\caplabelfont}{\sffamily\bfseries\small}   % Schrift für 'Abbildung' usw.
+%
+% -- Schriften für Caption's von _nicht_- Koma kompatiblen Paketen
+%
+% Bei verwendung von Caption2 treten Komplikationen mit Koma auf. 
+% Diese Korrekturren sind hier noch nicht implementiert !
+%
+%\usepackage{caption2}
+%\renewcommand{\captionfont}{\small}
+%\renewcommand{\captionlabelfont}{\sffamily\bfseries\small}
+%\captionstyle{flushleft}
+%
+% -- Setzen der Titelzeile --
+%\renewcommand*{\raggedsection}{\raggedright} % linksbündig, hängend
+%\renewcommand*{\raggedsection}{} % Blocksatz (Latex-Standart)
+%
+% ----------------------------------------------------------------------------------------------
+% *** Sprache *****************************
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+%------------------------------------------
+% Bibliographie-Stil ===========================================================================
+%\usepackage{natbib}
+%\bibliographystyle{dinat}
+%% Seitenlayout ================================================================================
+%
+% Layout laden um im Dokument den Befehl \layout nutzen zu können
+%\usepackage[verbose]{layout} 
+%
+% Optischer Randausgleich (geht nur mit pdflatex, ansonsten hat es keine Auswirkung)
+%\usepackage[activate=normal]{pdfcprot} 
+
+% 1. Layout mit 'typearea'
+% hier werden die Optionen aus \documentclass[] angewandt !
+%\usepackage{typearea}
+
+% 2. Alternative: Layout mit 'geometry'
+%\usepackage{geometry}
+%\geometry{a4paper}
+%\geometry{twoside}
+%\geometry{marginparwidth=85pt}
+%\geometry{textheight=55\baselineskip}
+%\geometry{textwidth=418pt} % Standard
+%\geometry{bindingoffset=5mm}
+%
+% - Anzeigen des Layouts -
+%\geometry{showframe}
+
+% -- Zeilenabstand --
+%\usepackage{setspace}
+%\doublespace	        % 2-facher Abstand
+%\onehalfspace        % 1,5-facher Abstand
+
+% -- Kopfzeilen ---
+\usepackage[automark, nouppercase]{scrpage2}
+% Seite mit Headern
+\pagestyle{scrheadings}
+%
+% löscht voreingestellte Stile
+%\clearscrheadings 
+%\clearscrplain
+%
+% Was steht wo...
+%\ohead{\pagemark} % Oben außen: Seitenzahlen
+%\ihead{\headmark} % Oben innen: Setzt Kapitel und Section automatisch
+%\rehead{\leftmark} %Oben links: Kapitel
+%\lohead{\rightmark} %Oben rechts: Section
+%\cfoot[\pagemark]{} % Mitte unten: Seitenzahlen bei plain
+\ofoot[]{\pagemark} % Mitte unten: Seitenzahlen bei headings
+% Angezeigte Abschnitte im Header
+%\automark[section]{chapter} %[rechts]{links}
+%\automark[subsection]{section} %[rechts]{links}
+% 
+% Linien
+%\setheadsepline{.4pt} % Linie unter dem Head
+%setheadtopline{2pt} % Ganzoben
+%\setfootbotline{.4pt} % Ganzunten
+%
+% Wie weit geht die Kopfzeile...
+%\setheadwidth[0pt]{textwithmarginpar}
+%\setheadwidth[0pt]{text} % standard
+%
+% Schriftformatierung der Kopfzeile
+%\setkomafont{pagehead}{\normalfont\normalcolour\small}
+%\setkomafont{pagenumber}{\normalfont\normalcolour\small}
+% -- Fußnoten ---
+%\deffootnote{1.5em}{1em}{
+%\textsuperscript{\thefootnotemark}
+%------------------------------------------
+%
+% ----------------------------------------------------------------------------------------------
+
+%% sonstige Einstellungen ======================================================================
+%
+%-- Alternativer Absatz --
+%\setlength{\parindent}{0pt} % Einzug = 0
+% Siehe auch KOMA Skript zu den dortigen M�glichkeiten !!
+
+% -- Setzen von Abbildungsbeschreibungen --
+%\setcapindent*{1em} % siehe Komadokumentation Abschnitt 3.5
+\setcapindent{1em} 
+\addtokomafont{caption}{\scriptsize}
+%
+% *** Inhaltsverzeichnis ******************
+\setcounter{secnumdepth}{2}  % Abbildungsnummerierung mit größerer Tiefe
+\setcounter{tocdepth}{3}		 % Inhaltsverzeichnis mit größerer Tiefe
+%------------------------------------------
+%
+% -- Ändern von Titeln --
+%\usepackage{titlesec}
+%\titlelabel{\thetitle.\quad} % Einen Punkt an alle Nummerierungen anfügen
+%
+% ----------------------------------------------------------------------------------------------
+
+%% Bilder und Graphiken ======================================================================
+
+% *** Bilder ******************************
+% Grundlegendes
+\usepackage[final]{graphicx}  % enth�lt \includegraphics !!
+%\usepackage[draft]{graphicx} % Option: 'draft' für das _nicht_ Einbinden von Bildern
+%\usepackage{subfigure}        % Bilder nebeneinander 
+%
+% Erweiterungen
+%\usepackage{picinpar}         % Befehl: 'window' zum Setzen von Bildern neben Text
+%
+\usepackage{float}            % Stellt die Option [H] für Floats zur Verf�gung 
+%\usepackage[rflt]{floatflt}   % Stellt Befehlt 'floatingfigure' zur Verf�gung
+                              % [rflt] - Standard float auf der rechten Seite
+%-------------------------------------------
+%
+% - Color Paket für farbigen Text --> _VOR_ pstricks/pst-plot !! ---
+\usepackage{color} 
+% Beispiel für neue Farbe: \definecolor{meingrau}{gray}{0.90}
+% ------------------------------------------------------------------
+
+% *** Graphen ******************************
+\usepackage{pst-plot}
+%\usepackage{psfrag}
+%-------------------------------------------
+%
+% ----------------------------------------------------------------------------------------------
+
+
+%% Mathe =======================================================================================
+
+% *** Mathematik **************************************
+%
+% Neue Mathebefehle 
+%\usepackage{amsmath} % der QUASI-STANDARD 
+% den Befehl: eqnarray hiernach _nicht_ mehr verwenden
+%------------------------------------------------------
+
+% -- Symbole ---------
+%\usepackage{amssymb}
+\usepackage{latexsym} 
+%\usepackage{wasysym} % (für \varangle)
+%---------------------
+%
+% ----------------------------------------------------------------------------------------------
+
+%% sonstige Pakete =============================================================================
+%
+\usepackage{makeidx}		% Index
+%\usepackage{minitoc}    % Mini TOC's vor jedem Kapitel
+%
+\usepackage{enumerate}  % Optionen [a)], [i)] usw. 
+%
+\usepackage{array}
+\usepackage{tabularx}   % Erweiterte Tabellen Optionen
+\usepackage{multirow} 
+%
+%\usepackage{fancybox}   % für shadowbox, ovalbox
+\usepackage{ulem}       % Zum Unterstreichen (z.B. Tensor)
+\usepackage{textcomp}
+\renewcommand{\familydefault}{\sfdefault}  % Symbole - z.B. \copyright
+\usepackage{xspace}
+% ----------------------------------------------------------------------------------------------
+
+%% Eigene Definitionen =========================================================================
+%
+
+% tex4ht settings
+%\usepackage[xhtml]{tex4ht} 
+\usepackage{hyperref} % generates in-document hyper references from \ref and \label
+\definecolor{darkblue}{rgb}{0,0,.5}
+\hypersetup{pdftex=true, colorlinks=true, breaklinks=true, linkcolor=darkblue, menucolor=darkblue, pagecolor=darkblue, urlcolor=darkblue, citecolor=darkblue}
+\usepackage{listings} % allows for including code listings similar to \verbatim and \verb
+
+
+%
+% ----------------------------------------------------------------------------------------------
+
+% -- Auszuführende Befehle (vor Dokument Beginn) ----
+%\makeindex
+%\dominitoc
+% ---------------------------------------------------
+
+\usepackage[numbers]{natbib}
+\bibliographystyle{plainnat}
+
+% display svn info
+\usepackage[nofancy]{svninfo}
+\cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}
+
+
+\newenvironment{hints}{\begin{itemize}\renewcommand\labelitemi{$\hookrightarrow$}\footnotesize}{\end{itemize}}
+%\newcommand{\apilink}[3]{\href{{http://localhost:8000/api-doc/proc-view?proc=}#1+#2+#3}{#1\rightarrow#3}}
+\newcommand{\apibrowser}{http://openacs-dotlrn.wu-wien.ac.at/api-doc}
+\newcommand{\xotcl}{http://media.wu-wien.ac.at/langRef-xotcl.html}
+\newcommand{\apilink}[3]{\href{\apibrowser/proc-view?proc=#1+#2+#3}{\begin{math}#1 \rightarrow #3\end{math}}}
+\newcommand{\xotclref}[2]{\href{\xotcl\##1}{#2}}
+
+
+
+
+
+
+
+
+
+

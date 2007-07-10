@@ -1,3 +1,24 @@
+2007-07-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Initial commit of xorb manual tex source (see www/doc/manual).
+
+	* tcl/xorb-stub-procs.tcl: Removed attribute slot declarations
+          concerning marshalled/ unmarshalled messages
+          from ContextObject and assigned them at the level of
+          xosoap. Revised the resolution order for glue objects by the
+          Requestor: 1- glue objects specified by ad_proc /
+          ad_instproc, 2- proxy object as glue object itself, 3-
+          glueobject instance variable or anything returned by a
+          method glueobject availabe at the level of the proxy object. 
+	  Realised "proxy template" feature and distinct handling of
+          outer and inner record in __makeStubBody__. Renamed GObject
+          and GClass to ProxyObject and ProxyClass, respectively.
+
+	* tcl/xorb-datatypes-procs.tcl: Added a new check option to
+          the Checkoption+Uplift mixin that maps 'glue' check options
+          to 'required'. This is used for the 'proxy template' feature
+          as introduced in 0.4.
+
 2007-07-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-deployment-procs.tcl: Added a new aspect to the

@@ -284,14 +284,14 @@ namespace eval ::xorb::datatypes {
       2 { set tokens [list any cast]}
       3 { set tokens [list any cast suffix]}
       default {
-	error "Invalid typecode specification."
+	error "Invalid typecode specification: $tc"
       }
     }
     foreach $tokens $tc break;
     # b) resolve Anything
     set any [Anything resolve $any]
     if {$any eq {}} {
-      error "Invalid typecode specification."
+      error "Invalid typecode specification: $tc"
     }
   }
   
@@ -496,6 +496,11 @@ namespace eval ::xorb::datatypes {
 
   ::xotcl::Class Anything::CheckOption+Uplift
   # / / / / / / / / / / / / / /
+  # 'glue' is a simple delegate for 
+  # 'required' in the scope of nonposArgs when
+  # decorated by CheckOption+Uplift!
+  Anything::CheckOption+Uplift instforward glue %self required
+  # / / / / / / / / / / / / / /
   # xotcl-core already comes with
   # a equally named proc on ::xotcl::nonposArgs
   # which bypasses the checkoption+uplift mechanism
@@ -658,6 +663,6 @@ namespace eval ::xorb::datatypes {
       }
 
   namespace export Anything MetaPrimitive AnyReader String \
-      Integer
+      Integer MetaComposite
 
 }
