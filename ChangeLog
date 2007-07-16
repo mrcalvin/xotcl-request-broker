@@ -1,3 +1,31 @@
+2007-07-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: While polishing
+          the interface, introduced some namespace import fiddling to
+          allow for pretty-looking contract and implementation
+          declarations: It is know possible to leave out namespace
+          qualifiers when declaring Abstracts, Delegates and Methods.
+	  As for Methods, I realised a basic allowance of
+          full-featured, instproc/proc like record declarations
+          (including dashes, checkoptions ...), even in an unescaped
+          manner (without protecting braces). One can now write
+          something like
+	  [...]
+	  -using {
+	  	 Method myMethod {-arg1:required -arg2} {doc} {;}
+	  }
+	  [...]
+	  There are three major reserved names regarding argument
+          for non-pos arguments: 'mixin', 'set', and 'array' are
+          interpreted by configure and therefore at the object level.
+	  As for Delegates, the attribute formerly named 'proxies' is
+          know called 'for', which yields something like
+	  [...]
+	  -using {
+	  	 Delegate myDelegate -for ::ns::myProc
+	  }
+	  [...]
+
 2007-07-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Initial commit of xorb manual tex source (see www/doc/manual).

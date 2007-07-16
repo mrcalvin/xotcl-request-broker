@@ -4,7 +4,7 @@ ad_library {
   Client Proxy pattern. The current state of the concept 
   owes its origin to contributions by Gustaf Neumann.
 
-  @author stefan.sobernig@wu-wien.ac.at
+  @author stefan.sobernig@wu-wien+.ac.at
   @author gustaf.neumann@wu-wien.ac.at
   @creation-date April, 12 2007
   @cvs-id $Id$

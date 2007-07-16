@@ -60,7 +60,7 @@ namespace eval ::xorb {
 	set superclass($adaptee) 1
 	append slots [subst {::xorb::Delegate new \
 				 -name $call \
-				 -proxies [self]::$adapteeCall\n}]
+				 -for [self]::$adapteeCall\n}]
       }
       my superclass [array names superclass]
       if {[info exists slots]} {my slots $slots}
@@ -85,7 +85,7 @@ namespace eval ::xorb {
       set adapteeCall [namespace tail $adapteeCall]
       append slots [subst {::xorb::Delegate new \
 			       -name $call \
-			       -proxies [self]::$adapteeCall\n}]
+			       -for [self]::$adapteeCall\n}]
       set reversed($adapteeCall) $adaptee
     }
     if {[array exists reversed]} {my adapts [array get reversed]}
@@ -110,7 +110,7 @@ namespace eval ::xorb {
       set adapteeCall [namespace tail $adapteeCall]
       append slots [subst {::xorb::Delegate new \
 			       -name $call \
-			       -proxies [self]::$adapteeCall\n}]
+			       -for [self]::$adapteeCall\n}]
       set reversed($adapteeCall) $adaptee
     }
     if {[array exists reversed]} {

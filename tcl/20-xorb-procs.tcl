@@ -559,6 +559,45 @@ namespace eval xorb {
 
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
+  # Namespace handler  
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # The namespace handler helps to
+  # to polish the interface of ServiceContracts
+  # and ServiceImplementations a little bit.
+  # Currently, slot objects (i.e. their
+  # declarations) are evaluated in the 
+  # realm of their domain's slot container
+  # (which corresponds to an equally named
+  # tcl namespace). So far, there is no
+  # way to force a namespace import on this
+  # slot container. This is, however, achieved
+  # by means of this clearily scoped 
+  # mixin class.
+  # The overall policy is:
+  # 1-) import from the namespace 
+  # shared by this helper class and
+  # ServiceContract & Implementation
+  # (i.e. ::xorb::)
+  # 2-) import requires the items to
+  # be exported.
+  # 3-) the global namespace is not
+  # imported.
+  Class NamespaceHandler \
+    -instproc requireNamespace args {
+      next
+      set ns [namespace qualifiers [self class]]
+      my debug NamespaceHandler(ns)=$ns,[self],exists=[namespace exists [self]]
+      if {[namespace exists [self]] && $ns ne {} && [self] ne $ns} {
+	namespace eval [self] \
+	    "namespace import -force ${ns}::*"
+	my debug PASST
+      }
+    }
+
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
   # Xorb's Service Contract class  
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
@@ -586,6 +625,11 @@ namespace eval xorb {
       my contract_name [self]
     }
     next
+  }
+  ServiceContract instproc slots args {
+    ::xotcl::Object instmixin add ::xorb::NamespaceHandler
+    next;#Class->slots
+    ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
   }
 
   # / / / / / / / / / / / / / / / / / /
@@ -1044,7 +1088,7 @@ ad_after_server_initialization synchronise_contracts {
   # # # # # # # # # # # # # # # #
   
   ::xotcl::Class Delegate -superclass ::xorb::Attribute -slots {
-    Attribute proxies -type "my qref" -proc qref {value} {
+    Attribute for -type "my qref" -proc qref {value} {
       if {$value eq {}} {
 	return 0
       } else {
@@ -1057,12 +1101,12 @@ ad_after_server_initialization synchronise_contracts {
   Delegate instproc init {-selfproxy:switch} {
     if {$selfproxy} {
       my instvar domain
-      my proxies "${domain}::__[namespace tail [self]]__" 
+      my for "${domain}::__[namespace tail [self]]__" 
     }
     next --noArgs
   }
   # Delegate instproc get {domain slot} {
-#     return "[my name] [my proxies]"
+#     return "[my name] [my for]"
 #   }
   Delegate instproc delete {} {
     # / / / / / / / / / / / /
@@ -1074,20 +1118,38 @@ ad_after_server_initialization synchronise_contracts {
     my destroy
   }
   Delegate instproc stream {} {
-    return "[my name] [my proxies]"
+    return "[my name] [my for]"
   }
   
-  ::xotcl::Class Method -superclass Delegate 
-  
-  Method instproc init {{arguments {}} {doc {}} {body {}} args} {
-    my instvar domain
-    set dashedArgs [list]
-    foreach a $arguments {
-      lappend dashedArgs -$a
+  ::xotcl::Class Method -superclass Delegate
+  # / / / / / / / / / / / / / / / 
+  # Overwriting Object->configure
+  # allows to write non-pos Args 
+  # in a dashed and unescaped manner.
+  # Credits go to G. Neumann and
+  # his method slot implementation
+  # study.
+  Method instproc configure args {
+    my debug CONFIGURE=$args
+    foreach {flag value} $args {
+      switch -- $flag {
+	-mixin	{my mixin $value}
+	-set	{my set $value}
+	-array	{my array $value}
+	default break
+      }
     }
+  }
+  Method instproc init {arguments doc body args} {
+    my instvar domain
+    #set dashedArgs [list]
+    #foreach a $arguments {
+    #  lappend dashedArgs -$a
+    #}
+    my debug METHOD=$arguments
     set name [namespace tail [self]]
     if {$body ne {}} {
-      $domain ad_instproc __${name}__ $dashedArgs $doc $body 
+      $domain ad_instproc __${name}__ $arguments $doc $body 
     }
     next -selfproxy
   }
@@ -1148,9 +1210,14 @@ ad_after_server_initialization synchronise_contracts {
     if {![my exists pretty_name] || [my pretty_name] eq {}} {
       my impl_pretty_name [my impl_name]
     }
-    #my middle "impl"
-    #my deleteCmd {acs_sc::${middle}::delete -contract_name $implements -impl_name $name}
     next
+  }
+
+  ServiceImplementation instproc slots args {
+    ::xotcl::Object instmixin add ::xorb::NamespaceHandler
+    next;#Class->slots
+    ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
+    
   }
 
   ServiceImplementation instproc expandAlias {
@@ -1881,7 +1948,7 @@ ad_after_server_initialization synchronise_contracts {
     } {
       my slots [subst {
 	::xorb::Delegate new \
-	    -name $impl_operation_name -proxies $impl_alias}]
+	    -name $impl_operation_name -for $impl_alias}]
     }
   }
 
@@ -2150,7 +2217,7 @@ ad_after_server_initialization synchronise_contracts {
   }
   Skeleton instproc Delegate args {
     my instvar __skeleton__
-    eval $__skeleton__ instforward [my name] [my proxies]
+    eval $__skeleton__ instforward [my name] [my for]
   }
 
   # # # # # # # # # # # # # # # #
@@ -2217,7 +2284,7 @@ ad_after_server_initialization synchronise_contracts {
   ::xotcl::Class ServantAdapter \
       -instproc Delegate args {
 	my instvar __skeleton__ 
-	set servant [my proxies]
+	set servant [my for]
 	set declaration [[self class] getDeclaration $servant]
 	
 	# / / / / / / / / / / / /
@@ -2236,9 +2303,9 @@ ad_after_server_initialization synchronise_contracts {
 	  set s [namespace qualifiers $qservant]
 	  set m [namespace tail $qservant]
 	  set isLifecycled 1
-	  [my info class] slot proxies mixin add ::xotcl::Slot::Nocheck
-	  my proxies [concat $s $m]
-	  [my info class] slot proxies mixin delete ::xotcl::Slot::Nocheck
+	  [my info class] slot for mixin add ::xotcl::Slot::Nocheck
+	  my for [concat $s $m]
+	  [my info class] slot for mixin delete ::xotcl::Slot::Nocheck
 	 }
 
 	$__skeleton__ instproc [my name] args [subst {

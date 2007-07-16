@@ -1,3 +1,5 @@
+
+
 % ------------------------------------------------------------------------
 % Latex - Einstellungen ***************************************************
 % ------------------------------------------------------------------------
@@ -269,6 +271,9 @@
 \usepackage[numbers]{natbib}
 \bibliographystyle{plainnat}
 
+% support for embedded xmp
+\usepackage{xmpincl}
+
 % display svn info
 \usepackage[nofancy]{svninfo}
 \cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}
@@ -278,7 +283,7 @@
 %\newcommand{\apilink}[3]{\href{{http://localhost:8000/api-doc/proc-view?proc=}#1+#2+#3}{#1\rightarrow#3}}
 \newcommand{\apibrowser}{http://openacs-dotlrn.wu-wien.ac.at/api-doc}
 \newcommand{\xotcl}{http://media.wu-wien.ac.at/langRef-xotcl.html}
-\newcommand{\apilink}[3]{\href{\apibrowser/proc-view?proc=#1+#2+#3}{\begin{math}#1 \rightarrow #3\end{math}}}
+\newcommand{\apilink}[3]{\href{\apibrowser/proc-view?proc=#1+#2+#3}{#1\begin{math}\rightarrow\end{math}#3}}
 \newcommand{\xotclref}[2]{\href{\xotcl\##1}{#2}}
 
 

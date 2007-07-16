@@ -3,7 +3,9 @@
 \input{header.tex}
 % MAIN 
 %body
-
+% embed by-sa metadata file
+\includexmp{by-sa-2.0}
+\makeindex
   \begin{document}
   \svnInfo $Id$
 %titlepage
@@ -31,7 +33,7 @@ Beyond this manual, the following materials are currently available.
 \end{itemize}
 Please, note that these resources reflect and document various stages of development and don't necessarily reflect the current state. The only source of information that is kept up-to-date is this manual document and its wiki mirror. Moreover, some of them might focus advanced concepts that are properly elaborated in the realm of this general-purpose documentation.
 \subsection{Copyright terms}
-The XOTcl Request Broker (xorb) and all protocol plug-in packages, i.e. currently xosoap, are provided under the provisions of the \href{http://creativecommons.org/licenses/LGPL/2.1/}{Lesser General Public License (LGPL) version 2.1}. All accompanying and documentary work comes under the \href{http://creativecommons.org/licenses/by-sa/2.0/at/}{Creative Commons Attributation and Share-alike (by-sa) licence}.
+The XOTcl Request Broker (xorb) and all protocol plug-in packages, i.e. currently xosoap, are provided under the provisions of the \href{http://creativecommons.org/licenses/LGPL/2.1/}{Lesser General Public License (LGPL) version 2.1}. All accompanying and documentary work, including this document, comes under the \href{http://creativecommons.org/licenses/by-sa/2.0/at/}{Creative Commons Attributation and Share-alike (by-sa) licence}.
 
      \section{Installation \& configuration guideline}
      	\subsection{Prerequisites}
@@ -69,16 +71,16 @@ Want to learn more?
 % concatenation of shadow information
 \end{hints}
 
-\item Create a local proxy of the remote object or remote procedure, a so called \emph{client proxy}. This client proxy object holds a proxy method for the remote method or procedure to call. There are a few flavours for specifying such a client proxy, the most straight forward, however, is by instantiating ::xorb::GObject and thus creating a proxy object (GObject might be resolved as 'G(lueing)Object' which introduces a subtle difference between glue object and glueing object).
+\item Create a local proxy of the remote object or remote procedure, a so called \emph{client proxy}\index{Clientproxy}. This client proxy object holds a proxy method for the remote method or procedure to call. There are a few flavours for specifying such a client proxy, the most straight forward, however, is by instantiating ::xorb::ProxyObject and thus creating a proxy object (ProxyObject might be resolved as 'G(lueing)Object' which introduces a subtle difference between glue object and glueing object).
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=13,lastline=13]{../examples/xosoap/example-01-soap-consumer.tcl}
 The only significant action here is to associate the previously defined glue object to the client proxy. The information encapsulated by the glue object is then used by the underlying infrastructure to form remote calls out of the combined information of the glue object and the client proxies interface. The latter is defined in the third step.
 \item Specify and realise the interface of your client proxy. The notion of object interfaces, to keep it simple, refers to the set methods and their method signatures defined on the object. When looking at Figure \ref{fig:quickstart:xosoap:1}, we learn that the interface of the remote object EchoService is quite simplistic: There is a single method echoFloat that takes a single argument flagged "inputFloat". The argument is, apart from a concrete label, further qualified by a type constraint called xsFloat. These type constraints are realised as \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check options on non-positional arguments}, in XOTcl terms. Besides, the interface promises a specific return value type, stipulated by setting "-returns" on ad\_proc.
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=16,lastline=21]{../examples/xosoap/example-01-soap-consumer.tcl}
-The method ad\_proc that comes with ::xorb::GObject overloads ad\_proc as defined on ::xotcl::Object and allows for declarations of the following term structure: \\\begin{footnotesize}\textbf{<GObject>} \textbf{ad\_proc} [-returns \textit{Anything}] \textbf{<name>} \textbf{<arguments>} \textbf{<documentation>} \textbf{<body>}\end{footnotesize}\\
-For a detailed description see \apilink{::xorb::GObject}{instproc}{ad\_proc}.
-%\href{http://openacs-dotlrn.wu-wien.ac.at/api-doc/proc-view?proc=::xorb::GObject+instproc+ad_proc}{::xorb::GObject->ad\_proc}.
+The method ad\_proc that comes with ::xorb::ProxyObject overloads ad\_proc as defined on ::xotcl::Object and allows for declarations of the following term structure: \\\begin{footnotesize}\textbf{<ProxyObject>} \textbf{ad\_proc} [-returns \textit{Anything}] \textbf{<name>} \textbf{<arguments>} \textbf{<documentation>} \textbf{<body>}\end{footnotesize}\\
+For a detailed description see \apilink{::xorb::ProxyObject}{instproc}{ad\_proc}.
+%\href{http://openacs-dotlrn.wu-wien.ac.at/api-doc/proc-view?proc=::xorb::ProxyObject+instproc+ad_proc}{::xorb::ProxyObject->ad\_proc}.
 \item Invoke the proxy method to perform the remote call
-\lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:1,frame=single,basicstyle=\footnotesize,firstline=24,lastline=24]{../examples/xosoap/example-01-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:1,frame=single,basicstyle=\footnotesize,firstline=23,lastline=23]{../examples/xosoap/example-01-soap-consumer.tcl}
 \end{enumerate}
 So far, it needed three declarative steps to realise a call to a SOAP service. The public interface of xosoap comes with various levels of granularity (see \ref{sec:advanced:interface:what}) with the above example referring to the medium-level interface. The higher-level one allows to realise the previous example in a total of three steps with only two declarative ones. Let's rewrite the example:
 
@@ -113,16 +115,17 @@ So far, it needed three declarative steps to realise a call to a SOAP service. T
 At this level, stub (or proxy) methods appear in their purest forms as mere placeholders for remote calls realising a local representation of a remote (object) interface. Please note that declarations by means of glue/ ad\_glue don't take a method body as they are mere interface descriptors. This makes them syntactically comparable to the \xotclref{Object-abstract}{abstract keyword} that comes with XOTcl to mimic abstract classes. However, do not align them at the semantic level.
   \begin{figure}[htbp]
 \begin{center}
-\includegraphics[width=0.8\textwidth]{img/xorb-xosoap-consumer-interface.png}
+\includegraphics[width=0.75\textwidth]{img/xorb-xosoap-consumer-interface.png}
 \caption{Class diagram of interface entities}
 \label{fig:advanced:interface:1}
 \end{center}
 \end{figure}
 
-The \emph{medium-level interface} is already familiar to the reader when reviewing the quick start section. It is provided by xorb and more or less introduces two xorb-specific idioms, i.e. ::xorb::stub::ProxyObject and ::xorb::stub::ProxyClass. While they inherit all capabilities of the low-level interface, they provide additional facilities to create and use proxy objects. A glimpse at Figure \ref{fig:advanced:interface:1} reveals that they overwrite the methods \emph{ad\_proc} provided by ::xotcl::Object and \emph{ad\_instproc} ::xotcl::Class. This already suggests that proxy interfaces can now be declared in a slightly different manner than by glue/ad\_glue. While you can still revert to the former, ad\_proc and ad\_instproc allow for interface descriptors with method bodies. When looking at Listing , you might notice that the argument containing the method body declarations is empty (corresponds to an empty Tcl string). For the sake of simplicity, we did not introduce the most valuable feature of the medium-level interface at that stage that we refer to as \emph{proxy templates}. For a primer on this concept and examples see Section \ref{sec:advanced:template}. 
+The \emph{medium-level interface} is already familiar to the reader when reviewing the quick start section. It is provided by xorb and more or less introduces two xorb-specific idioms, i.e. ::xorb::stub::ProxyObject and ::xorb::stub::ProxyClass. While they inherit all capabilities of the low-level interface, they provide additional facilities to create and use proxy objects. A glimpse at Figure \ref{fig:advanced:interface:1} reveals that they overwrite the methods \emph{ad\_proc} provided by ::xotcl::Object and \emph{ad\_instproc} ::xotcl::Class. This already suggests that proxy interfaces can now be declared in a slightly different manner than by glue/ad\_glue. While you can still revert to the former, ad\_proc and ad\_instproc allow for interface descriptors with method bodies. When looking at Listing , you might notice that the argument containing the method body declarations is empty (corresponds to an empty Tcl string). For the sake of simplicity, we did not introduce a notable feature of the medium-level interface at that stage that we refer to as \emph{proxy templates}. For a primer on this concept and examples see Section \ref{sec:advanced:template}.
+
+The \emph{high-level interface}, as can been seen from Figure \ref{fig:advanced:interface:1}, is a purely protocol plug-in-specific one. As for xosoap, we provide two intregating idioms: ::xosoap::client::SoapObject and ::xosoap::client::SoapClass inherit and expose and combine properties of glue objects and proxy clients in one. This allows for an abbreviated and compact writing of SOAP client code, with all facilities introduced by lower interface levels. For an introductory example see the quick start section on xosoap (see Section \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref{lst:quickstart:xosoap:3}.
 
  \subsection{Proxy templates}\label{sec:advanced:template}
-
 Proxy templates or rather template methods on proxy objects follow an primary intention: Extending the use of pure interface descriptors to full-featured methods that allow to pack program logic along with a call abstraction in a single method body. Our intention can be best summarised when following the idea of the Template Method pattern as documented by \cite{gof:1994}. As the term template suggests, there might be scenarios that integrate call abstraction, or in our remoting scenario simply remote calls, in more complex (i.e. multi-step) behaviour. This is, certainly, also realisable with the lower-level interface. However, it would require another construct, either a proc, or a subclass etc., that combines the general behaviour and the invocation references to the abstracted calls. By means of proxy template methods as introduced by the medium-level interface you can know write template code and invocations of abstracted calls in the same method block, making encapsulation in this respect more seamless. A primary, and still easily graspable example are conditional invocations of abstracted calls. Let's take the following example of Listing \ref{lst:quickstart:xosoap:2} where we simply rewrite lines 16 -- 21. This yields the following (see Listing \ref{lst:quickstart:xosoap:5} for the complete example): 
 
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=16,lastline=28]{../examples/xosoap/example-04-soap-consumer.tcl}
@@ -190,6 +193,8 @@ Figure \ref{fig:advanced:templates:1} aims at sketch the internals of proxy temp
      \lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:6,frame=single,basicstyle=\footnotesize,caption=Using proxy templates/ template methods (II)]{../examples/xosoap/example-05-soap-consumer.tcl}
  \newpage
  \bibliography{/Users/ssoberni/Documents/doc/diss/thesis}
+ \newpage
+\printindex
     \end{document}
     
     %        In the following section, I assume that you have OpenACS 5.1+ or DotLRN 

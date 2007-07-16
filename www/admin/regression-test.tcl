@@ -470,10 +470,10 @@ test subsection "Skeleton: Implementation specification"
 ::xorb::ServiceImplementation myImplementation \
     -implements ::template::myTreaty \
     -using {
-    ::xorb::Delegate m2 -proxies ::myproc
-    ::xorb::Method m3 {
-      arg1:required 
-      arg3:required
+    Delegate m2 -for ::myproc
+    Method m3 {
+      -arg1:required 
+      -arg3:required
     } {doc} {
       return 1
     }  
@@ -526,7 +526,7 @@ test subsection "Update on implementations: recreation => conformance, binding"
 myImplementation sync
 # extended one
 myImplementation using {
-  ::xorb::Delegate m4 -proxies ::myproc2
+  ::xorb::Delegate m4 -for ::myproc2
 }
 
 ? {catch {array set status [myImplementation action]}} 0 "Implementation update (impl as super-set of contract) retrieve status (getAction-1)."
@@ -578,9 +578,9 @@ ServiceImplementation CalleeInterface \
     -implements ::template::CallerInterface \
     -using {
       ::xorb::Delegate abstractCallTwo \
-	  -proxies ::template::ServantClass::servantMethod
+	  -for ::template::ServantClass::servantMethod
       ::xorb::Delegate abstractCallOne \
-	  -proxies ::template::servantProc
+	  -for ::template::servantProc
 }
 
 ? {CalleeInterface check} 1 "Verifying conformance of implementation ('check', implementation is fully containing contract)"
@@ -590,7 +590,7 @@ ServiceImplementation CalleeInterface \
     -implements ::template::CallerInterface \
     -using {
       ::xorb::Delegate abstractCallTwo \
-	  -proxies ::template::ServantClass::servantMethod
+	  -for ::template::ServantClass::servantMethod
 }
 
 ? {CalleeInterface check} 0 \
@@ -608,9 +608,9 @@ ServiceImplementation CalleeInterface \
     -implements ::template::CallerInterface \
     -using {
       ::xorb::Delegate abstractCallTwo \
-	  -proxies ::template::ServantClass::servantMethod
+	  -for ::template::ServantClass::servantMethod
       ::xorb::Delegate abstractCallOne \
-	  -proxies ::template::servantProc
+	  -for ::template::servantProc
 }
 
 ?+ {CalleeInterface deploy \
@@ -640,9 +640,9 @@ set p [parameter::get -parameter "per_instance_policy"]
 	     -name ::xowiki::ExamplePage \
 	     -implements ::template::FtsContentProvider \
 	     -using {
-	       ::xorb::Delegate datasource -proxies ::xowiki::datasource
-	       ::xorb::Method url {
-		 revision_id:required
+	       ::xorb::Delegate datasource -for ::xowiki::datasource
+	       Method url {
+		 -revision_id:required
 	       } {doc} {
 		 # render item link
 		 return "link"
@@ -792,9 +792,9 @@ ServantClass instproc servantMethod {-arg1 -arg2 -arg3} {}
 ::xorb::ServiceImplementation AAImplementation \
     -implements ::template::AATreaty \
     -using {
-      ::xorb::Delegate m1 -proxies ::template::servantProc
-      ::xorb::Delegate m2 -proxies {::template::ServantObj servantMethod} 
-      ::xorb::Delegate m3 -proxies ::template::ServantClass::servantMethod
+      ::xorb::Delegate m1 -for ::template::servantProc
+      ::xorb::Delegate m2 -for {::template::ServantObj servantMethod} 
+      ::xorb::Delegate m3 -for ::template::ServantClass::servantMethod
     }
 
 AATreaty mixin add ::xorb::Synchronizable
@@ -1272,18 +1272,18 @@ namespace eval ::mSearch {
 ?+ { ProcAdapter AATreaty-2-mSearch-Adapter \
 	 -implements ::template::AATreaty \
 	 -using {
-	   ::xorb::Method m2 {
-	     arg1
-	     arg2
-	     arg3
+	   Method m2 {
+	     -arg1
+	     -arg2
+	     -arg3
 	   } {m2's doc} {
 	     # ns_write returns 1 
 	     ns_write "<pre>[info vars] invoked</pre>"
 	   }
-	   ::xorb::Method m3 {
-	     arg1
-	     arg2
-	     arg3
+	   Method m3 {
+	     -arg1
+	     -arg2
+	     -arg3
 	   } {m3's doc} {
 	     # ns_write returns 1 
 	     ns_write "<pre>[info vars] invoked</pre>"
