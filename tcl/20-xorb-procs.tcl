@@ -552,6 +552,8 @@ namespace eval xorb {
   } -object_type acs_sc_contract \
     -id_column contract_id \
     -table_name acs_sc_contracts \
+    -pretty_name "ACS Service Contract" \
+    -pretty_plural "ACS Service Contracts" \
     -superclass {
       ::xorb::Object
       ::xotcl::Class
@@ -1294,6 +1296,8 @@ ad_after_server_initialization synchronise_contracts {
   } -object_type acs_sc_implementation \
     -id_column impl_id \
     -table_name acs_sc_impls \
+    -pretty_name "ACS Service Implementation" \
+    -pretty_plural "ACS Service Implementations" \
     -superclass {
       ::xorb::Object 
       ::xotcl::Class

@@ -34,7 +34,11 @@ if {[::xotcl::Object isobject $name] && [$name istype ::xorb::Object]} {
   }
 }
 
-if {[info exists obj] && [::xotcl::Object isobject $obj]} {
+if {[permission::permission_p \
+    -party_id [::xo::cc user_id] -object_id $package_id \
+    -privilege "write"] && \
+	[info exists obj] && \
+	[::xotcl::Object isobject $obj]} {
   $obj mixin add ::xorb::Synchronizable
   $obj sync -delete
   $obj mixin delete ::xorb::Synchronizable

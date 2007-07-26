@@ -1,5 +1,12 @@
 2007-07-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
+	* www/admin/index.tcl: A rough and crappy admin WUI know comes
+          with the request-broker. I is supposed to ressemble (in the
+          very near future) the functionality by acs-service-contract
+          admin panels. I distinguished between xorb-based and pure
+          acs-based contracts/ implementations, currently in terms of
+          a different set of actions (deletion).
+
 	* tcl/20-xorb-procs.tcl: Finally, proceded and completed the
           partial rework of the contract/implementation interface. It
           is a major refinement that aims at realising two types of
