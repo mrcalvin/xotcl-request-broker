@@ -1,3 +1,52 @@
+2007-07-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: Finally, proceded and completed the
+          partial rework of the contract/implementation interface. It
+          is a major refinement that aims at realising two types of
+          method slots (in the CLOS sense of the word). They might
+          probably be a feature of XOTcl 1.6 release family, however,
+          in the context of xorb, they allow for declaring (a)
+          delegates (XOTcl: forwards) and (b) methods through object
+          facilities. Initially, we simply allowed for ::xorb::Method
+          in a proc/ instproc style of writing. We extended this to
+          Delegates and, furthermore, streamlined the identity of
+          ServiceContracts and Implementations as (a) ordinary classes
+          and (b) ordinary objects. (a) means that one can know
+          expect a proper instproc when using ::xorb::Method or a
+          forward when using ::xorb::Delegate on
+          Implementations. ServiceImplementations can therefore be
+          instantiated etc. (b) refers to the fact that we now allow
+          the per-object flag on Methods/Delegates,
+          i.e. ServiceImplementations can know provide/contain servant
+          code on the pure object level. This requires to refine the
+          ServantAdapter logic of xorb in the subsequent
+          step. However, this feature refinement reconnects xorb to
+          from where it started: XOTcl. Remains to be tested.
+	  Some remarks on the realisation: Slots as such, especially
+          when interfereing or building-upon their basic
+          infrastructure, are tricky to handle in a
+          multi-interpreter/threaded environment with streamed
+          representations. This relates to the fact that they are in
+          fact re-initialised (re-call to the constructor) when
+          turning a stream back into an object. A proper mean to
+          distinguish between declaration + re-init time is the slots
+          method as provided by Class. Streams do not revert to it, so
+          it is convenient to use for the purpose of distinguishing
+          runtime contexts.
+
+	* www/admin/index.tcl: Started realising the admin WUI for the
+          request broker, still heavy work in progress.
+
+	* tcl/xorb-package-procs.tcl: Finally integrated xorb's
+          package facilities with those of xotcl-core. This allows for
+          seamless package initialisation practices in WUI and
+          background setup (filters, ...) as required by
+          xorb. Specialisation is provided for package inits in
+          non-connection contexts.
+
+	* tcl/15-xorb-aux-procs.tcl: Added some query helpers for
+          object types to select subtrees, instances etc.
+
 2007-07-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: While polishing

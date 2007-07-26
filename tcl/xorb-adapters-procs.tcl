@@ -30,6 +30,7 @@ namespace eval ::xorb {
     if {![catch { array set tmp [[my info class] adapts]} msg] && \
 	    [info exists tmp($r)]} {
       set adaptee [lindex $tmp($r) 0]
+      my debug adapter(r)=$r
       if {![::xotcl::Object isobject $adaptee]} {
 	#TODO:-destroy_on_cleanup
 	set tmpObj [::xotcl::Object new -destroy_on_cleanup]

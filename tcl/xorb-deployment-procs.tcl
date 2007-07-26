@@ -153,7 +153,7 @@ namespace eval ::xorb::deployment {
     }
 
     set aliases [list] 
-    foreach a [$obj info slots] {lappend aliases [$a name]}
+    foreach a [$obj info slots] {lappend aliases xorb=[$a name]}
     my debug "++c=$contract,uqSet=$uqSet,aliases=$aliases"
     foreach uq $uqSet {
       if {[lsearch -exact $aliases $uq] == -1} {
@@ -365,6 +365,7 @@ namespace eval ::xorb::deployment {
   
    Policy::Subject instproc \
       condition=isProtocol {
+	query_context
 	value
       } {
 	set oughttobe $value
@@ -377,8 +378,10 @@ namespace eval ::xorb::deployment {
   # policy-level semantics
 
   ::xotcl::Class Policy::PolicyLevelSubject
-  Policy::PolicyLevelSubject instproc condition=isImplementation {value} {
-    my log "[namespace tail [self]] eq $value? [expr {[namespace tail [self]] eq $value}]"
+  Policy::PolicyLevelSubject instproc condition=isImplementation {
+    query_context 
+    value} {
+      my debug "[namespace tail [self]] eq $value? [expr {[namespace tail [self]] eq $value}]"
     return [expr {[namespace tail [self]] eq $value}]
   }
 

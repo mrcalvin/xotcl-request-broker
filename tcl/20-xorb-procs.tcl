@@ -932,8 +932,7 @@ namespace eval xorb {
     #return $id  
     # TODO: add exception handling
  
-  } 
-
+  }
 
 #   ServiceContract instforward defines %self slots
 
@@ -1071,9 +1070,11 @@ ad_after_server_initialization synchronise_contracts {
     set arr(description) [string trim [my description]]
     set arrOperation([my name]) [string trim [array get arr]]
     return [string trim [array get arrOperation]]
+    
   }
 
-  # Abstract instproc get {domain slot} {
+
+# Abstract instproc get {domain slot} {
 #     set arr(input) [join [my arguments]]
 #     set arr(output)  [join [my returns]]
 #     set arr(description) [string trim [my description]]
@@ -1088,6 +1089,17 @@ ad_after_server_initialization synchronise_contracts {
   # # # # # # # # # # # # # # # #
   
   ::xotcl::Class Delegate -superclass ::xorb::Attribute -slots {
+    Attribute private_p -default "false"
+    Attribute deprecated_p -default "false"
+    Attribute warn_p -default "false"
+    # / / / / / / / / / / / / / / / /
+    # In the current xotcl-core
+    # there is a method 'debug' defined
+    # on ::xotcl::Object that conflicts
+    # to this documentary flag
+    # therefore, we revert to the *_p
+    # notation, for the time being
+    Attribute debug_p -default "false"
     Attribute for -type "my qref" -proc qref {value} {
       if {$value eq {}} {
 	return 0
@@ -1095,16 +1107,88 @@ ad_after_server_initialization synchronise_contracts {
 	my uplevel {$obj set $var [regsub {\s+} $value ::]}
 	return 1    
       }
-    } 
-  }
-  
-  Delegate instproc init {-selfproxy:switch} {
-    if {$selfproxy} {
-      my instvar domain
-      my for "${domain}::__[namespace tail [self]]__" 
     }
-    next --noArgs
   }
+  Delegate instproc declareServant {} {
+    my instvar name domain for {__doc__ doc} \
+	{private_p private} {deprecated_p deprecated} {warn warn_p} \
+	{debug_p debug}
+    set scope [expr {[my per-object] ? "" : "inst"}]
+    $domain ${scope}forward servant=$name $for
+    $domain __api_make_forward_doc $scope $name
+  }
+
+  Delegate instproc init {{doc {}}} {
+    my instvar name domain manager
+    my set __doc__ $doc
+    set forwarder [expr {[my per-object] ? "forward" : "instforward"}]
+    if {$domain eq ""} {
+      set domain [self callingobject]
+    }
+    $domain $forwarder $name $manager invoke %self %proc
+    # / / / / / / / / / / / / / / / / / /
+    # Inits of slot objects are called
+    # at various stages, the current
+    # implementation requires this when
+    # evaluating a streamed representation
+    # of the slot object in new interpreters
+    # or threads. However, we do not want 
+    # the underlying servant forward/method
+    # to be re-initialised in these contexts.
+    # This might fail as the argument flow
+    # to configure/ init in a serialised
+    # environment is unpredictable!
+    #my log "SLOT-INIT?isconnected=[ns_conn isconnected],xotcl-thread?[info exists ::xotcl::currentThread]"
+    #my log reallyconnection=[catch {ns_conn headers} msg]
+
+    #my declareServant
+
+  }
+
+  Delegate instproc invoke {obj proc args} {
+    return [eval $obj servant=$proc $args]
+  }
+
+  # / / / / / / / / / / / / / / / /
+  # The two method declaration are
+  # mere dummies, required by the
+  # implementation of slots in XOTcl
+  # 1.5.x in a multi-threaded 
+  # environment as the AOLServer.
+  # The background: There is, currently,
+  # an optimisation or rather 
+  # fallback on old-style parameter
+  # commands as provided by XOTcl.
+  # This optimisation is realised as
+  # instmixin on ::xotcl::Slot (i.e.
+  # ::xotcl::Slot::Optimizer) which
+  # intercepts calls to slot constructors
+  # (inits). The current implementation
+  # of slots requires a re-init when
+  # being evaluated from a streamed
+  # state which means the optimsation
+  # would prevent xorb's method slots
+  # from being properly initiated.
+  # Options are:
+  # 1-) selectively de-queue the optimising
+  # instmixin when creating the slot
+  # objects (::ServiceImplementation->slots)
+  # however, this does not hold in
+  # streamed environments!!!
+  # 2-) We use these dummies (see below)
+  # to cause the instmixin to return
+  # without optimisation.
+  Delegate instproc assign args {}
+  Delegate instproc get args {}
+
+
+  # Delegate instproc init {-selfproxy:switch} {
+#     if {$selfproxy} {
+#       my instvar domain
+#       my for ${domain}::servant=[namespace tail [self]] 
+#     }
+#     next --noArgs
+#   }
   # Delegate instproc get {domain slot} {
 #     return "[my name] [my for]"
 #   }
@@ -1129,30 +1213,60 @@ ad_after_server_initialization synchronise_contracts {
   # Credits go to G. Neumann and
   # his method slot implementation
   # study.
+  Method instproc declareServant {} {
+    my instvar name domain __arguments__ {__doc__ doc} __body__ \
+	{private_p private} {deprecated_p deprecated} {warn warn_p} \
+	{debug_p debug}
+    set scope [expr {[my per-object] ? "" : "inst"}]
+    $domain ${scope}proc servant=$name $__arguments__ $__body__
+    # / / / / / / / / / / / / / 
+    # TODO: due to the inner magic
+    # of the doc builders, we need
+    # to provide the real name and
+    # cannot camoflage it for the moment.
+    # however, in the end, the name
+    # without the servant=* prefix
+    # should be used.
+    $domain __api_make_doc $scope servant=$name
+  }
+
   Method instproc configure args {
-    my debug CONFIGURE=$args
     foreach {flag value} $args {
       switch -- $flag {
-	-mixin	{my mixin $value}
-	-set	{my set $value}
-	-array	{my array $value}
+	-mixin	 	{my mixin $value}
+	-set		{my set $value}
+	-array		{my array $value}
+	-per-object 	{my per-object $value}
+	-private	{my private $value}
+	-deprecated	{my deprecated $value}
+	-warn		{my warn $value}
+	-debug		{my debug $value}
 	default break
       }
     }
   }
-  Method instproc init {arguments doc body args} {
-    my instvar domain
-    #set dashedArgs [list]
-    #foreach a $arguments {
-    #  lappend dashedArgs -$a
-    #}
-    my debug METHOD=$arguments
-    set name [namespace tail [self]]
-    if {$body ne {}} {
-      $domain ad_instproc __${name}__ $arguments $doc $body 
-    }
-    next -selfproxy
+
+  Method instproc init args {
+    foreach {arguments doc body} [lrange $args end-2 end] break
+    my set __arguments__ $arguments
+    #my set __doc__ $doc
+    my set __body__ $body
+    next $doc;#Delegate->init
   }
+
+  # Method instproc init {arguments doc body args} {
+#     my instvar domain
+#     #set dashedArgs [list]
+#     #foreach a $arguments {
+#     #  lappend dashedArgs -$a
+#     #}
+#     my debug METHOD=$arguments
+#     set name [namespace tail [self]]
+#     if {$body ne {}} {
+#       $domain ad_instproc servant=$name $arguments $doc $body 
+#     }
+#     next -selfproxy
+#   }
 
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
@@ -1213,10 +1327,52 @@ ad_after_server_initialization synchronise_contracts {
     next
   }
 
+  # / / / / / / / / / / / / / / / / /
+  # Slots require special treatment
+  # with respect to their behaviour
+  # during initialisation, as initialisation
+  # is triggered more than once during
+  # the lifecycle of a single object.
+  # This is especially true for multi-
+  # threaded environments such as 
+  # here and the nature of streaming
+  # as realised by the Serializer.
+  # A conveniert point of distinction
+  # between declaration time and re-
+  # initalisation time is the passthrough
+  # of "slots" which is not done during
+  # a re-init. Therefore, it is the 
+  # place to hook-in declaration-only
+  # behaviour.
+  # ServantManage and the declaration
+  # of shadowed servants for xorb's
+  # method/delegate slots is such 
+  # an example (see below)
+
+  ::xotcl::Class ServantManager
+  ServantManager instproc init args {
+    next;# init
+    my debug MIXIN-SLOT-INIT
+    my declareServant
+  }
+
   ServiceImplementation instproc slots args {
+    #if {[::xotcl::Slot info instmixin ::xotcl::Slot::Optimizer] ne {}} {
+    #  my log SLOT-CLEAR
+    #  ::xotcl::Slot instmixin delete ::xotcl::Slot::Optimizer
+    #}
     ::xotcl::Object instmixin add ::xorb::NamespaceHandler
+    ::xorb::Delegate instmixin add ::xorb::ServantManager
     next;#Class->slots
+    ::xorb::Delegate instmixin delete ::xorb::ServantManager
     ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
+    # / / / / / / / / / / 
+    # TODO: take precautious
+    # measures to avoid 
+    # object system corruption
+    # upon local failure
+    my log SLOT-RESET
+    #::xotcl::Slot instmixin add ::xotcl::Slot::Optimizer
     
   }
 
@@ -2190,7 +2346,7 @@ ad_after_server_initialization synchronise_contracts {
     }
    
     my debug HERE
-    $__skeleton__ instproc [my name] $arguments [subst {
+    $__skeleton__ instproc xorb=[my name] $arguments [subst {
       # / / / / / / / / / / / / / / / /
       # a generic container for storing
       # validated, uplifted values of 
@@ -2217,7 +2373,7 @@ ad_after_server_initialization synchronise_contracts {
   }
   Skeleton instproc Delegate args {
     my instvar __skeleton__
-    eval $__skeleton__ instforward [my name] [my for]
+    eval $__skeleton__ instforward xorb=[my name] [my for]
   }
 
   # # # # # # # # # # # # # # # #
@@ -2308,7 +2464,7 @@ ad_after_server_initialization synchronise_contracts {
 	  [my info class] slot for mixin delete ::xotcl::Slot::Nocheck
 	 }
 
-	$__skeleton__ instproc [my name] args [subst {
+	$__skeleton__ instproc xorb=[my name] args [subst {
 	  set d [concat \[list $declaration\]]
 	  ::xoexception::try {
 	    if {\$d ne {} && \[string first - \$d\] == -1 && \
@@ -2337,10 +2493,11 @@ ad_after_server_initialization synchronise_contracts {
 	    # of other packages?)
 	    set rulingPolicy ::xorb::deployment::Default
 	    my debug rulingPolicy=\$rulingPolicy
-	    set p \[\$rulingPolicy check_permissions $__skeleton__ \[self proc\]\]
+	    set p \[\$rulingPolicy check_permissions $__skeleton__ [my name]\]
 	    if {\$p} {  
 	      ::xoexception::try {
-		set r \[eval my __[my name] \[expr { 
+		my log indirection=\[my serialize\]
+		set r \[eval my xorb=__[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
 		}\]\] 
 	      } catch {Exception e} {
@@ -2667,7 +2824,7 @@ ad_after_server_initialization synchronise_contracts {
       my debug "NEXT=[$skeleton procsearch $call],arguments=$arguments"
       ::xotcl::nonposArgs mixin add \
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
-      set result [eval $skeleton $call $arguments]
+      set result [eval $skeleton xorb=$call $arguments]
       # provide for cleanup from checkoption+uplift mixin
       # in case it has been failed before:
       if {[lsearch [::xotcl::nonposArgs info mixin] \

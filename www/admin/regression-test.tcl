@@ -479,9 +479,10 @@ test subsection "Skeleton: Implementation specification"
     }  
 }
 
-set eStream {pretty_name ::template::myImplementation name ::template::myImplementation aliases {m2 ::myproc m3 ::template::myImplementation::__m3__} contract_name ::template::myTreaty owner {}}
+set eStream {pretty_name ::template::myImplementation name ::template::myImplementation aliases {m2 ::myproc m3 ::template::myImplementation::servant=m3} contract_name ::template::myTreaty owner {}}
 set eSignature [ns_sha1 $eStream]
 
+#ns_log notice STREAM=[myImplementation stream]
 ? {catch {set spec [myImplementation stream]}} 0 "Streaming implementation into array list."
 ? {expr {$eStream eq $spec}} 1 "Streaming produces valid implementation spec."
 ? {catch {set sig [myImplementation getSignature]}} 0 "Streaming implementation into array list: generating signature."

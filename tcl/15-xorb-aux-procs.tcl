@@ -239,94 +239,6 @@ namespace eval ::xorb::aux {
     
   }
 
-#   AcsObjectType instproc acquireConstructor {} {
-#     my instvar dbConstructor __relation_attributes__ id_column supertype \
-# 	table_name dbPackage __requireRefresh__ abstract_p
-#     if {$__requireRefresh__ || !$abstract_p} {
-#       if {![info exists dbPackage]} {
-# 	set dbPackage [my canonise [my set object_type]] 
-#       }
-      
-      
-#       # __relation_attributes might not be initialised for types that did not
-#       # define any AcsAttributes. Default it to an empty tcl string.
-      
-#       if {![array exists __relation_attributes__]} {
-# 	array set __relation_attributes__ [list]
-#       }
-#       set relAttributes [array names __relation_attributes__]
-#       set m ${dbPackage}__$dbConstructor
-      
-#       if {![db_string [my qn ""] [subst [[self class] set procExists]]]} {
-# 	#set outerInterface [concat [$supertype set __relation_attributes__] \
-# 	#			$__relation_attributes__]
-# 	set types_declaration [my getRelationAttributes record]
-	
-# 	set idx 1
-# 	foreach a [my getRelationAttributes] {
-# 	  lappend declaration "p_$a alias for \$$idx;"
-# 	  incr idx
-# 	}
-# 	set declare [subst {
-# 	  declare
-# 	  [join $declaration]
-# 	  v_$id_column integer;
-# 	}]
-	
-# 	# resolve constructor of supertype
-# 	set supertypeCall [$supertype getConstructor]
-# 	# TODO: default to an acs_object__new call
-# 	set refs [expr {$relAttributes eq {}?\
-# 			    "":",[join $__relation_attributes__ ,]"}]
-# 	set vals [expr {$relAttributes eq {}?\
-# 			    "":",p_[join $__relation_attributes__ ,p_]"}]
-# 	set body [subst {
-# 	  begin
-# 	  v_$id_column := $supertypeCall;
-# 	  insert into $table_name ($id_column$refs) 
-# 	  values (v_$id_column$vals);
-# 	  return v_$id_column;
-# 	  end;
-# 	}]
-	
-# 	set statement [subst {
-# 	  create or replace function ${m}([join $types_declaration ,]) 
-# 	  returns integer as '
-# 	  $declare
-# 	  $body
-# 	  ' language 'plpgsql';
-# 	}]
-# 	my log CONSTRUCTOR=$statement
-# 	db_dml [my qn create_constructor] $statement
-	
-# 	# / / / / / / / / / / / / / / / / / / / /
-# 	# register with acs_function_args
-# 	# if there is a postgresql backend
-	
-# 	if {[db_driverkey ""] eq "postgresql"} {
-# 	  set functionArgs [join [my getRelationAttributes storedArgs] ,]
-# 	  db_exec_plsql [my qn register_function_args] {
-# 	    select define_function_args(:m,:functionArgs);
-# 	  }
-# 	}
-	
-#       }
-      
-#       # / / / / / / / / / / / / / / / / / / / /
-#       # register the constructor as a package
-#       # - tcl namespace + object type as package
-#       # - only needed if we use postgresql
-#       # both, for newly created once and those
-#       # that are already existing ...
-#       set pkg ::xo::db::sql::$dbPackage
-#       if {![my isobject $pkg]} { ::xo::db::sql::DbPackage create $pkg }
-#       if {[$pkg info methods $dbConstructor] eq {}} {
-# 	$pkg dbproc_nonposargs $dbConstructor
-#       }
-#     }
-#   }
-
-
   AcsObjectType instproc acquireConstructor {} {
     my instvar dbConstructor __relation_attributes__ id_column supertype \
 	table_name dbPackage __requireRefresh__ abstract_p
@@ -545,8 +457,65 @@ namespace eval ::xorb::aux {
     if {!$abstract_p} {
       my acquireConstructor
     }
+    # / / / / / / / / / / / / / / /
+    # resolve treesort key
+    my getTreesortKey
     next
   }
+
+  AcsObjectType instproc getTreesortKey {} {
+    my instvar treesortKey object_type
+    set treesortKey [db_string [my qn tree_sortkey] {
+        select tree_sortkey from acs_object_types
+        where object_type = :object_type
+      }]
+
+  }
+
+  # / / / / / / / / / / / / / / / /
+  # Some querying facilities:
+  # 1-) resolve type tree
+  # 2-) select all instances of
+  # a given type and its subtypes
+  # ...
+
+  AcsObjectType instproc query {
+    -subtypes:switch 
+    {-selectClauses {}}
+    what 
+  } {
+    my instvar object_type table_name id_column abstract_p \
+	__relation_attributes__ treesortKey
+    switch -- $what {
+      allInstances {
+	if {!$abstract_p} {
+	  if {$subtypes} {
+	    set typeClause "in ([my query allSubTypes])"
+	  } else {
+	    set typeClause "= '$object_type'"
+	  }
+	  set attrs [array names __relation_attributes__]
+	  return [subst {
+	    select $table_name.[join $attrs ",$table_name."]
+	    [expr {$selectClauses ne {}?",[join $selectClauses ,]":""}]
+	    from acs_objects,$table_name 
+	    where acs_objects.object_type $typeClause
+	    and acs_objects.object_id = $table_name.$id_column
+	  }]
+	}
+      }
+      allSubTypes {
+	return [subst {
+	  select object_type 
+	  from acs_object_types 
+	  where tree_sortkey between '$treesortKey' 
+	  and tree_right('$treesortKey')}]
+      }
+      default break
+    }
+
+  }
+  
 
   # / / / / / / / / / / / / / / / /
   # Inspired by DbAttribute, again
