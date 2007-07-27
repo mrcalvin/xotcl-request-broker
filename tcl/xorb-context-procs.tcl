@@ -63,14 +63,11 @@ namespace eval ::xorb::context {
     virtualObject
     virtualCall
     virtualArgs
-    {protocol {local}}
+    {protocol ::xorb::protocols::Tcl}
   } -superclass ::xo::ConnectionContext
  
   InvocationContext instproc getProtocolTree {} {
     my instvar protocol
-
-
-
 
     set p [string toupper $protocol 0 0]
     if {[$p istype ::xorb::protocols::PluginClass]} {

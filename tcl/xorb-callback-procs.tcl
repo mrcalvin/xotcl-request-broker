@@ -15,7 +15,16 @@ namespace eval ::xorb {
     # basic object types:
     ::xorb::ServiceContract dropObjectType
     ::xorb::ServiceImplementation dropObjectType
-    ::xorb::Object dropObjectType
+    
+    # / / / / / / / / / / / / / / / / /
+    # We don't remove the xorb primitive/
+    # composite type wrappers (anythings)
+    # as they are all managed/provided
+    # by the acs environment.
+    # However, xorb introduces the
+    # generic object messagetype
+    # which needs to be handled here:
+    ::xorb::datatypes::Object delete
   }
 
   proc after-install {} {

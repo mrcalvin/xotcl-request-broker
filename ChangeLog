@@ -1,3 +1,32 @@
+2007-07-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-datatypes-procs.tcl: Introduced a sponsorship
+          infrastructure for Anythings. This is, in particular, useful
+          for specifying placheholderships across protocol
+          domains. The idea is to allow the re-use of contract
+          specifications across these protocol domains, so that a
+          contract once specified for local call abstractions can be
+          re-used as description for a SOAP-based calls. Any object of
+          type MetaPrimitive/MetaComposite can know be assigned as
+          sponsors to another of their kind, but residing in a
+          different protocol scope. Therefore, whenever an Abstract
+          contained arguments of type string
+          (::xorb::datatypes::String), invocations from the SOAP
+          protocol layer will revert to string's sponsor,
+          i.e. ::xosoap::xsd::XsString. Still needs some testing to
+          make sure it fulfills all requirements and I did not miss to
+          align some bits and pieces.
+
+	* tcl/20-xorb-procs.tcl: ::xorb::Object is not featured as acs
+          object type anymore. Contract specifications now allow for
+          specifying a default typecode that is resolvable to a
+          Anything class. This allows to assume defaults (either
+          per-class -- through the attribute slot default -- or
+          per-object) when specifying contracts. This might be used to
+          short-cut the definition of argument lists of
+          ::xorb::Abstracts and it guarantees an overall fallback to
+          ::xorb::datatypes::String if no checkoption was provided at all.
+
 2007-07-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/index.tcl: A rough and crappy admin WUI know comes

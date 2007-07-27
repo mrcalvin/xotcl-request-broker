@@ -432,21 +432,16 @@ namespace eval xorb {
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   
-  # ! Note, however, we treat it as proper
-  # object type. This might not be necessary
-  # for the very moment, but might get interesting 
-  # in the future, when all constructs of SC 
-  # are subject to the ACS object model (incl.
-  # elements!
-  AcsObjectType Object -superclass ::xorb::aux::AcsObject \
-    -pretty_name "XORB Object" -pretty_plural "XORB Objects" \
-    -abstract_p "t" -instproc init args {
-      #my debug ---init-TOP
-      #if {![my exists name] || [my name] eq {}} {
-      #	my set name [namespace tail [self]]
-      #}
-      next
-    }
+  ::xotcl::Class Object -superclass ::xorb::aux::AcsObject
+  # AcsObjectType Object -superclass ::xorb::aux::AcsObject \
+#     -pretty_name "XORB Object" -pretty_plural "XORB Objects" \
+#     -abstract_p "t" -instproc init args {
+#       #my debug ---init-TOP
+#       #if {![my exists name] || [my name] eq {}} {
+#       #	my set name [namespace tail [self]]
+#       #}
+#       next
+#     }
   Object proc canonicalName {value} {
     # / / / / / / / / / / / /
     # 1) The name may not be set
@@ -609,7 +604,19 @@ namespace eval xorb {
     -pretty_name "XORB Service Contract" \
     -pretty_plural "XORB Service Contracts" \
     -table_name "xorb_service_contracts" \
-    -superclass ::xorb::AcsScContract
+    -superclass ::xorb::AcsScContract \
+    -slots {
+      # / / / / / / / / / / / / / / / / / /
+      # The contract specification object
+      # allows for specifying a default 
+      # typecode:
+      # This 'default' anything typecode can either
+      # be set for the scope of a specific
+      # contract or defaults to string 
+      # (::xorb::datatypes::String)
+      # see also ::xorb::Abstract->stream
+      Attribute defaultType -default string
+    }
 
   ServiceContract instforward defines %self slots
   ServiceContract instforward description %self contract_desc
@@ -1067,7 +1074,22 @@ ad_after_server_initialization synchronise_contracts {
   }
 
   Abstract instproc stream {} {
-    set arr(input) [join [my arguments]]
+    my instvar domain
+    # / / / / / / / / / / / / / / /
+    # Starting with 0.4, we provide
+    # for typecode defaulting.
+    # While the actual default is
+    # defined at the domain's level
+    # it is enforced at the slot's one:
+    set argList [list]
+    foreach a [my arguments] {
+      if {![regexp {^(.+):(.+)$} $a _ npName checkoption]} {
+	lappend argList [string trim ${a} :]:[$domain defaultType]
+      } else {
+	lappend argList $a
+      }
+    }
+    set arr(input) [join $argList]
     set arr(output)  [join [my returns]]
     set arr(description) [string trim [my description]]
     set arrOperation([my name]) [string trim [array get arr]]
@@ -1221,6 +1243,7 @@ ad_after_server_initialization synchronise_contracts {
 	{debug_p debug}
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}proc servant=$name $__arguments__ $__body__
+     my for ${domain}::servant=$name
     # / / / / / / / / / / / / / 
     # TODO: due to the inner magic
     # of the doc builders, we need

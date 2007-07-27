@@ -25,7 +25,36 @@ namespace eval ::xorb::datatypes {
   
   ::xotcl::Class MetaPrimitive -slots {
     Attribute checkoption
+    Attribute protocol -default {::xorb::protocols::Tcl}
   } -superclass ::xotcl::Class
+  
+  # / / / / / / / / / / / / / / / / /
+  # Realising a basic scheme of 
+  # anything sponsorship across protocols
+  # Sponsor anythings are considered 
+  # homolgues in different protocol domains.
+
+  MetaPrimitive instproc isSponsorFor {for} {
+    if {[$for istype [self class]] \
+	    && [my protocol] ne [$for protocol] \
+	    && $for ne [my info class]} {
+      $for addSponsor [my protocol] [self]
+    }
+  }
+  
+  MetaPrimitive instproc addSponsor {protocol anything} {
+    my instvar sponsors
+    set sponsors($protocol) $anything
+  }
+
+  MetaPrimitive instproc selectSponsor {protocol} {
+    my instvar sponsors
+    if {$protocol eq [my protocol]} {return [self];}
+    foreach {prot sponsor} [array get sponsors] {
+      if {$prot eq $protocol} {return $sponsor;}
+      return [$sponsor selectSponsor $protocol]
+    }
+  }
 
   MetaPrimitive instproc init args {
     my instvar checkoption
@@ -33,10 +62,9 @@ namespace eval ::xorb::datatypes {
       set checkoption [string tolower [namespace tail [self]] 0 0] 
     }
     if {![my isStored]} {
-      db_transaction {
-	db_exec_plsql [my qn insert_new_datatype] \
-            "select acs_sc_msg_type__new(:checkoption,'');"
-      }
+      ::xo::db::sql::acs_sc_msg_type new \
+	  -msg_type_name $checkoption \
+	  -msg_type_spec {}
     }
     next
   }
@@ -47,10 +75,8 @@ namespace eval ::xorb::datatypes {
   MetaPrimitive instproc delete {} {
     my instvar checkoption
     if {[my isStored]} {
-      db_transaction {
-	db_exec_plsql [my qn delete_datatype] \
-	    "select acs_sc_msg_type__delete(:checkoption);"
-      }
+      ::xo::db::sql::acs_sc_msg_type delete \
+	  -msg_type_name $checkoption
     }
   }
   MetaPrimitive proc deleteAll {} {
@@ -289,10 +315,26 @@ namespace eval ::xorb::datatypes {
     }
     foreach $tokens $tc break;
     # b) resolve Anything
+    # / / / / / / / / / / / / / / /
+    # Starting with 0.4, resolution is
+    # done in two steps:
+    # 1-) resolving the typecode in
+    # an anything object
+    # 2-) identifying the actual, protocol
+    # dependent anything sponsor.
     set any [Anything resolve $any]
     if {$any eq {}} {
       error "Invalid typecode specification: $tc"
     }
+    set p [expr {[::xotcl::Object isobject ::xo::cc]?\
+		     [::xo::cc protocol]:\
+		     "::xorb::protocols::Tcl"}]
+    set sp [$any selectSponsor $p]
+    if {$sp eq {}} {
+      error [subst {
+	No sponsor could be identified for Anything '$any' 
+	in the realm of protocol '$p'.}]
+    }	     
   }
   
   AnyReader instproc get {what} {
@@ -662,7 +704,95 @@ namespace eval ::xorb::datatypes {
 	return [string is integer $__value__]
       }
 
-  namespace export Anything MetaPrimitive AnyReader String \
-      Integer MetaComposite
+  MetaPrimitive Boolean -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [string is boolean $__value__]
+      }
+  
+  MetaPrimitive Timestamp -superclass Anything \
+      -instproc validate args {
+	# / / / / / / / / / / / / / / / /
+	# It is not quite clear to me
+	# by which means 'timestamp' is
+	# defined (in terms of a value space)
+	# in the context of message types.
+	# However, I assume compatibility to SQL:1999 
+	# data type 'timestamp' WITHOUT timezone.
+	# This reflects by observation, that
+	# timestamp is, for instance, generated through
+	# ns_localsqltimestamp which omits the TZ, e.g.
+	# 2007-07-26 18:40:36
+	my instvar __value__
+	return [regexp {^([1-9]\d\d\d+|0\d\d\d)-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\s(([01]\d|2[0-3]):[0-5]\d:[0-5]\d$} $__value__]
+	return 1
+      }
+  
+  MetaPrimitive Uri -superclass Anything \
+      -instproc validate args {
+	# / / / / / / / / / / / / / / / /
+	# Lacking, again, a clear
+	# understanding on what uri
+	# refers to, we adopt a so-so
+	# validation following RFC 3986
+	# we first extract the five and
+	# components and the verify for
+	# a scheme-qualified uri
+	# see http://rfc.sunsite.dk/rfc/rfc3986.html
+	my instvar __value__
+	if {[regexp {^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?} $__value__ _ 1 scheme 3 authority path 6 query 8 fragment]} {
+	  # validation
+	  # 1-) scheme
+	  if {$scheme eq {} || ![regexp {^[[:alnum:]\+\-\.]+$} $scheme]} {return 0;}
+	  if {$authority eq {} || ![regexp {^([[:alnum:]\:]*@)?[[:alnum:]\_\-\.\~]+|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$} $authority]} {return 0;}
+	  if {$path ne {} && ![regexp {^/?[[:alnum:]\_\-\.\~\!\$\&\'\(\)\*\+\,\;\=\:\@]+(/[[:alnum:]\_\-\.\~\!\$\&\'\(\)\*\+\,\;\=\:\@]+)*$} $path]}
+	  if {$query ne {} && ![regexp {^[[:alnum:]\_\-\.\~\!\$\&\'\/\(\)\*\+\,\;\=\:\@\/\?]+$} $query]} {return 0;}
+	  if {$fragment ne {} && ![regexp {^[[:alnum:]\_\-\.\~\!\$\&\'\/\(\)\*\+\,\;\=\:\@\/\?]+$} $fragment]} {return 0;}
+	} else {
+	  return 0
+	}
+	return 1
+      }
+  
+  MetaPrimitive Version -superclass Anything \
+      -instproc validate args {
+	# / / / / / / / / / / / / / / / / / / / / / / / / /
+	# I employ the regex as specified
+	# at http://openacs.org/doc/current/apm-design.html
+	return [regexp {^[0-9]+((\.[0-9]+)+((d|a|b|)[0-9]?)?)$} $__value__]
+	my instvar __value__
+	return 1
+      }
+  
+  # / / / / / / / / / / / / / / / / 
+  # It remains widely unclear to me
+  # how to conceptualise a validation
+  # for the latter two types, as
+  # there is hardly any source of
+  # reference. I leave it open for the
+  # moment.
+  # / / / / / / / / / / / / / / / /
+  # As for floatings, we limit ourselves
+  # to a format validation, no value
+  # space is enforced
+  MetaPrimitive Float -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [regexp {[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?^$} $__value__]
+      }
+  
+  MetaPrimitive Bytearray -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return 1
+      }
 
+  MetaComposite Object -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [::xotcl::Object isobject $__value__]
+      }
+  
+  namespace export Anything MetaPrimitive AnyReader String \
+      Integer MetaComposite Boolean
 }
