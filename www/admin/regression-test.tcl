@@ -12,6 +12,7 @@ test set failed 0
 test proc case msg {ad_return_top_of_page "<title>$msg</title><h2>$msg</h2>"} 
 test proc section msg    {my reset; ns_write "<hr><h3>$msg</h3>"} 
 test proc subsection msg {ns_write "<h4>$msg</h4>"} 
+test proc subsubsection msg {ns_write "<h5>$msg</h5>"} 
 test proc errmsg msg     {ns_write "ERROR: $msg<BR/>"; test incr failed}
 test proc okmsg msg      {ns_write "OK: $msg<BR/>"; test incr passed}
 test proc code msg       {ns_write "<pre>$msg</pre>"}
@@ -639,7 +640,7 @@ set p [parameter::get -parameter "per_instance_policy"]
 ?+ {
   ServiceImplementation FtsContentProviderImpl \
 	     -name ::xowiki::ExamplePage \
-	     -implements ::template::FtsContentProvider \
+	     -implements FtsContentProvider \
 	     -using {
 	       ::xorb::Delegate datasource -for ::xowiki::datasource
 	       Method url {
@@ -820,7 +821,7 @@ AAImplementation mixin delete ::xorb::Synchronizable
 set contractClass [$s info mixin]
 ?++ {::xotcl::Object isobject ${contractClass}::rvc} 1 \
     "Creating manager for checking return value type constraints"
-?++ {lsort [${contractClass}::rvc info procs]} [list m2 m3] \
+?++ {lsort [${contractClass}::rvc info procs]} [list m1 m2 m3] \
     "Verifying manager for expected check procs."
 
 test subsection "Invoker: Dispatching invocation calls"
@@ -883,6 +884,7 @@ set aus  [AnythingUs new \
 proc servantProc {arg1 arg2 arg3} {
   ns_write "<pre>servantProc:</pre>"
   ns_write "<pre>arg1=$arg1,arg2=$arg2,arg3=$arg3</pre>"
+  return {}
 }
 ?+ {$i invoke} [subst {
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
@@ -992,6 +994,91 @@ set aus  [AnythingUs new \
   Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]), contract mismatch (contract)
 }]
+
+test subsubsection "Implementation hosting per-object servants"
+
+::xorb::ServiceImplementation PerObjectImplementation \
+    -implements ::template::AATreaty \
+    -using {
+      ::xorb::Delegate m1 -for ::template::servantProc;# per-instance!
+      ::xorb::Delegate m2 -for {::template::ServantObj servantMethod} \
+	  -per-object true \
+	  -deprecated_p false \
+	  -warn_p false \
+	  -private_p false \
+	  -debug_p false
+      ::xorb::Method m3 \
+	  -per-object true \
+	  -deprecated_p false \
+	  -warn_p false \
+	  -debug_p false \
+	  {-arg1 -arg2 -arg3} {
+	    I am a per-object method servant
+	  } {
+	    ns_write \
+		"<pre>Per-object method servant called with [info vars]</pre>"
+	    return 1;
+	  }
+    }
+
+?+ {
+  PerObjectImplementation deploy
+} "Use deployment mechanism to sync 'per-object implementation'"
+
+# / / / / / / / / / / / / /
+# preparing call to 
+# per-instance Delegate
+
+::xo::cc virtualObject ::template::PerObjectImplementation
+::xo::cc virtualCall m1
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+?+ {set i [Invoker new]} \
+    "Creating invoker instance for dispatch to per-object implementation (per-instance delegate"
+?++ {[$i invoke] set __value__} {} [subst {
+  Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# / / / / / / / / / / / / /
+# preparing call to 
+# per-object Delegate
+
+::xo::cc virtualObject ::template::PerObjectImplementation
+::xo::cc virtualCall m2
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+?+ {set i [Invoker new]} \
+    "Creating invoker instance for dispatch to per-object implementation (per-object delegate)"
+?++ {[$i invoke] set __value__} 1 [subst {
+  Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
+# / / / / / / / / / / / / /
+# preparing call to 
+# per-object Method
+
+::xo::cc virtualObject ::template::PerObjectImplementation
+::xo::cc virtualCall m3
+set aus  [AnythingUs new \
+	      -signature {{-arg1:string -arg2:string -arg3:string}} \
+	      -arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
+::xo::cc virtualArgs [$aus now]
+
+?+ {set i [Invoker new]} \
+    "Creating invoker instance for dispatch to per-object implementation (per-object method)"
+?++ {[$i invoke] set __value__} 1 [subst {
+  Dispatching invocation call: [::xo::cc virtualObject]->[::xo::cc virtualCall]\
+      ([::xo::cc virtualArgs]).
+}]
+
 
 
 # # # # # # # # # # # # # #
@@ -1265,6 +1352,7 @@ namespace eval ::mSearch {
   } {doSearch's doc} {
     # ns_write returns 1 
     ns_write "<pre>[info vars] invoked</pre>"
+    return {}
   }
 } 
 
@@ -1316,7 +1404,7 @@ set aus  [AnythingUs new \
 #::xo::cc virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
 ?+ {set i [Invoker new]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
-?++ {[$i invoke] set __value__} 1 [subst {
+?++ {[$i invoke] set __value__} {} [subst {
   Dispatching invocation call (positive MIXED proc adaptor test): [::xo::cc virtualObject]->[::xo::cc virtualCall]\
       ([::xo::cc virtualArgs]).
 }]
@@ -1618,6 +1706,17 @@ AAImplementation sync -delete
  } 0 "Staging: AAImplementation (id:[AAImplementation object_id]) was removed."
 
 AAImplementation mixin delete ::xorb::Synchronizable
+
+PerObjectImplementation mixin add ::xorb::Synchronizable
+PerObjectImplementation sync -delete
+
+? { db_0or1row impl_deleted \
+  [PerObjectImplementation subst { select * 
+  from acs_sc_impls
+    where impl_id = $object_id }]
+ } 0 "Unstaging: PerObjectImplementation (id:[PerObjectImplementation object_id]) was removed."
+
+PerObjectImplementation mixin delete ::xorb::Synchronizable
 
 AA-2-LC-Adapter mixin add ::xorb::Synchronizable
 AA-2-LC-Adapter sync -delete

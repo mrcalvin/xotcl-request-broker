@@ -15,12 +15,17 @@ ad_library {
 namespace eval ::xorb::stub {
 
   namespace import -force ::xorb::client::*
+  namespace import -force ::xorb::datatypes::*
+  namespace import -force ::xorb::exceptions::*
   namespace import -force ::xoexception::try
   # / / / / / / / / / / / / / / / / / / /
   # merry with ::xorb::InvocationContext
 
   ::xotcl::Class ContextObjectClass -slots {
+    # / / / / / / / / / / / / / /
+    # TODO: Need to unify this somehow.
     Attribute clientPlugin
+    Attribute clientProtocol
   } -superclass ::xotcl::Class
 
 #   ContextObjectClass instproc recreate {obj} {
@@ -39,6 +44,8 @@ namespace eval ::xorb::stub {
     Attribute virtualObject
     Attribute virtualCall
     Attribute virtualArgs
+    Attribute callback
+    Attribute protocol -default ::xorb::protocols::Tcl
   }
 
 #   ContextObject instproc reset {} {
@@ -77,9 +84,68 @@ namespace eval ::xorb::stub {
   ::xotcl::Class Requestor -slots {
     Attribute earlyBoundContext -default {}
     Attribute stubObject
+    Attribute protocol
   }
-  Requestor abstract instproc handle args
+  Requestor abstract instproc call args
+  Requestor instproc stream {{obj {}}} {
+    set vars [list]
+    if {$obj eq {}} {set obj [self]}
+    foreach v [$obj info vars] {
+      if {[$obj exists $v]} {
+	lappend vars "-set $v [$obj set $v]"
+      }
+    }
+    return $vars
+  }
+  Requestor instproc setup {} {
+    # / / / / / / / / / / / / / /
+    # Enforce synchrony or asynchrony
+    # at the application level
+    # (program flow)
+    my instvar contextObj
+    if {[$contextObj exists callback]} {
+      set cbObj [$contextObj callback]
+      my mixin add [self class]::NonBlocking
+      my instvar worker attach
+      set attach ::Requestor
+      if {[$cbObj exists worker]} {
+	set worker [$cbObj set worker]
+      } else {
+	set worker [::xorb::WorkerPool acquire]
+      }
+      $contextObj callback [list [$cbObj getCallback]]
+      ns_log notice HERE2
+      set script [subst {
+	set context \[[$contextObj info class] new [join [my stream $contextObj]]\]
+	[my info class] $attach [join [my stream]] -set contextObj \$context
+	$attach proc call args {
+	  my instvar callback callName contextObj
+	  if {\[catch {
+	    set r \[next\]
+	    eval \$callback \$callName.onComplete \$r
+	  } msg\]} {
+	    ns_log notice CALL-INNER=\$msg
+	  } 
+	       
+	  \$contextObj destroy
+	  my destroy
+	}
+      }]
+      my debug SCRIPT=$script
+      $worker do $script
+    }
+  }
 
+  ::xotcl::Class Requestor::NonBlocking -slots {
+    Attribute worker
+    Attribute attach -default {::Requestor}
+  }
+  Requestor::NonBlocking instproc call args {
+    my instvar worker attach
+    $worker do -async $attach call $args
+    my destroy_on_cleanup
+  }
+  
   # / / / / / / / / / / / / / / /
   # A specific Requestor class that
   # is capable of handling various
@@ -88,47 +154,18 @@ namespace eval ::xorb::stub {
   # similar flavours)
 
   ::xotcl::Class CallAbstractionRequestor -slots {
-    Attribute call
+    Attribute callName
     Attribute signatureMask
     Attribute returntype -default {}
   } -superclass Requestor  
   
-  CallAbstractionRequestor instproc handle args {
-    my instvar earlyBoundContext stubObject call \
-	signatureMask returntype
-
-    namespace import -force ::xorb::exceptions::*
-    # / / / / / / / / / / / / /
-    # early bound context available?
-    # lately bound context?
-    # any ?
-    # / / / / / / / / / / / / / / / / /
-    # Order of precedence in resolution 
-    # of a glue or context object:
-    # 1-) early bound (at declaration time
-    # of a method through ad_glue)
-    # 2-) lately bound (at call time),
-    # the stub object being the context
-    # object itself! 
-    # 3-) lately bound (at call time of
-    # proxy method, assigned to the proxy
-    # object through 'glueobject')
-    my debug stub-class=[$stubObject info class],co?[$stubObject istype ::xorb::stub::ContextObject]
-
-    if {$earlyBoundContext ne {}} {
-      set contextObj $earlyBoundContext
-    } elseif {[$stubObject istype ::xorb::stub::ContextObject]} {
-      set contextObj $stubObject
-    } elseif {[catch {set contextObj [$stubObject glueobject]}] || \
-		  ![info exists contextObj] || \
-		  $contextObj eq {}} {
-      error "Requestor cannot resolve any context ('glue') object."
-    }
-    
+  CallAbstractionRequestor instproc call args {
+    my instvar earlyBoundContext stubObject callName \
+	    signatureMask returntype contextObj protocol
     # / / / / / / / / / / / / /
     # derive from context object
     # prototype!
-
+    
     $contextObj copy [self]::co
     set contextObj [self]::co
     
@@ -137,8 +174,7 @@ namespace eval ::xorb::stub {
     # proper invocation context?
     # populate invocation context
     
-    $contextObj virtualCall $call
-
+    $contextObj virtualCall $callName
     # / / / / / / / / / / / / /
     # simulate xotcl nonposArgs
     # parser, i.e. enforce both
@@ -155,6 +191,13 @@ namespace eval ::xorb::stub {
       }
     }
     # call parser
+    # / / / / / / / / / / / / /
+    # set client protocol and
+    # mix into requesthandler
+    set contextClass [$contextObj info class]
+    set plugin [$contextClass clientPlugin]
+    set protocol [$contextClass clientProtocol]
+
     my debug ARGS-TO-PARSE=[lindex $args 0]
     ::xotcl::nonposArgs mixin add \
 	::xorb::datatypes::Anything::CheckOption+Uplift
@@ -163,18 +206,14 @@ namespace eval ::xorb::stub {
 	::xorb::datatypes::Anything::CheckOption+Uplift
     
     $contextObj virtualArgs $r
-    my log REQUEST-CTX=[$contextObj serialize]
-    # / / / / / / / / / / / / /
-    # set client protocol and
-    # mix into requesthandler
-    set contextClass [$contextObj info class]
-    set plugin [$contextClass clientPlugin]
-    
+    my debug REQUEST-CTX=[$contextObj serialize]
+
     try {
       ::xorb::client::crHandler mixin add $plugin
       ::xorb::client::crHandler handleRequest $contextObj
       ::xorb::client::crHandler mixin delete $plugin
     } catch {Exception e} {
+      ns_log notice HERE1
       error $e
     } catch {error e} {
       global errorInfo
@@ -210,12 +249,42 @@ namespace eval ::xorb::stub {
       # our recreate mechanism
       #$contextObj reset
       #return
-      return [$any as $returntype]
+      return [$any as -protocol $protocol $returntype]
     }
 
-    #set msg(cObj) $contextObj
-    #set msg(args) $args
-    #return [array get msg]
+  }
+  CallAbstractionRequestor instproc setup {} {
+    my instvar earlyBoundContext stubObject \
+	contextObj
+
+    namespace import -force ::xorb::exceptions::*
+    # / / / / / / / / / / / / /
+    # early bound context available?
+    # lately bound context?
+    # any ?
+    # / / / / / / / / / / / / / / / / /
+    # Order of precedence in resolution 
+    # of a glue or context object:
+    # 1-) early bound (at declaration time
+    # of a method through ad_glue)
+    # 2-) lately bound (at call time),
+    # the stub object being the context
+    # object itself! 
+    # 3-) lately bound (at call time of
+    # proxy method, assigned to the proxy
+    # object through 'glueobject')
+    my debug stub-class=[$stubObject info class],co?[$stubObject istype ::xorb::stub::ContextObject]
+
+    if {$earlyBoundContext ne {}} {
+      set contextObj $earlyBoundContext
+    } elseif {[$stubObject istype ::xorb::stub::ContextObject]} {
+      set contextObj $stubObject
+    } elseif {[catch {set contextObj [$stubObject glueobject]}] || \
+		  ![info exists contextObj] || \
+		  $contextObj eq {}} {
+      error "Requestor cannot resolve any context ('glue') object."
+    }
+    next;#Requestor->setup
   }
   
   Requestor proc require {
@@ -420,12 +489,13 @@ namespace eval ::xorb::stub {
 
     set body [subst -nocommands {
       set requestor [::xorb::stub::Requestor require \
-			 -call $methName \
+			 -callName $methName \
 			 -signatureMask $innerSignature \
 			 -stubObject $self $context $voidness]
       ::xoexception::try {
 	my debug INNER-ARGS=\$args
-	\$requestor handle \$args
+	\$requestor setup
+	\$requestor call \$args
       } catch {Exception e} {
 	\$e write
 	error [subst {
@@ -433,6 +503,8 @@ namespace eval ::xorb::stub {
 	  [\$e message]
 	}]
       } catch {error e} {
+	global errorInfo
+	ns_log notice ERROR=\$errorInfo
 	error \$e
       }
     }]

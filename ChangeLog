@@ -1,3 +1,41 @@
+2007-07-30  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/admin/regression-test.tcl: Added a collection of test
+          cases for the revised method/delegate notations, based upon
+          the method slot idiom.
+
+	* tcl/xorb-datatypes-procs.tcl: Fixed the new sponsorship
+          mechansim across xorb. At some points, it is required to
+          provide the current protocol identifier to the casting
+          mechanism (::xorb::datatypes::Anything->as) or the typecode
+          resolver (::xorb::datatypes::AnyReader). This was now
+          completed and tested (the same goes for the protocol plug-ins).
+
+	* tcl/20-xorb-procs.tcl: Fixed the improved Delegate/Method
+          notation (based upon a basic method slot mechansim) for
+          reflecting ad_(inst)proc and ad_(inst)forward in terms of
+          ad_* specific flags. They now allow for specifying
+          private_p, deprecated_p, warn_p and debug_p. More
+          importantly, Delegate/Method can now be specified on the
+          per-object level, i.e. an instance of ServiceImplementation
+          can now act as valid servant host (formerly, it was always
+          realised on the per-instance, class level). This is more in
+          line with the object-centeredness of XOTcl and realises the
+          per-object attribute as known from XOTcl's attribute
+          slots. It required some changes in the way, the lifecycle
+          manager deals with servant-hosting implementations (at the
+          object level). I added some in-depth test cases to the
+          regression test, according to these, all seems fine.
+	  Another major completing step is the introduction of a new
+          xorb-specific type, ::xorb::datatypes::Void. Whenever a
+          contract specification object or rather its abstract slots
+          do not specify an explicit returns type constraint (returns
+          eq {}), we default to void. At the Tcl level, void is
+          semantically equivalent with an empty Tcl string as. At the
+          level of protocol plug-ins, however, expressing the intended
+          voidnesses makes a considerable difference in terms of
+          marshalling of the return value. 
+
 2007-07-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-datatypes-procs.tcl: Introduced a sponsorship

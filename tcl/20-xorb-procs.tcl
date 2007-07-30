@@ -1135,7 +1135,7 @@ ad_after_server_initialization synchronise_contracts {
   }
   Delegate instproc declareServant {} {
     my instvar name domain for {__doc__ doc} \
-	{private_p private} {deprecated_p deprecated} {warn warn_p} \
+	{private_p private} {deprecated_p deprecated} {warn_p warn} \
 	{debug_p debug}
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}forward servant=$name $for
@@ -1239,7 +1239,7 @@ ad_after_server_initialization synchronise_contracts {
   # study.
   Method instproc declareServant {} {
     my instvar name domain __arguments__ {__doc__ doc} __body__ \
-	{private_p private} {deprecated_p deprecated} {warn warn_p} \
+	{private_p private} {deprecated_p deprecated} {warn_p warn} \
 	{debug_p debug}
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}proc servant=$name $__arguments__ $__body__
@@ -1262,10 +1262,10 @@ ad_after_server_initialization synchronise_contracts {
 	-set		{my set $value}
 	-array		{my array $value}
 	-per-object 	{my per-object $value}
-	-private	{my private $value}
-	-deprecated	{my deprecated $value}
-	-warn		{my warn $value}
-	-debug		{my debug $value}
+	-private_p	{my private_p $value}
+	-deprecated_p	{my deprecated_p $value}
+	-warn_p		{my warn_p $value}
+	-debug_p	{my debug_p $value}
 	default break
       }
     }
@@ -2241,8 +2241,9 @@ ad_after_server_initialization synchronise_contracts {
       [self]::$name destroy_on_cleanup
 
     } catch {error e} {
+      global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
-		 "contract: $name, msg: $e"]
+		 "contract: $name, msg: $errorInfo"]
     }
 
     return [self]::$name
@@ -2388,11 +2389,14 @@ ad_after_server_initialization synchronise_contracts {
 		 [subst { ::xoexception::try {
 		         ::xotcl::nonposArgs mixin add \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
+		   #my debug SKELETON-CALLINGOBJ=\[self callingobject\],trace=\[my stackTrace\]
+		  # my debug \[\[self callingobject\] serialize\]
 		   set r \[[my set __rvc_call__] \$r\]
 		   ::xotcl::nonposArgs mixin delete \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
 		 } catch {error e} {
-		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$e\]
+		   global errorInfo
+		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$errorInfo\]
 		 }}]:""}]
       my debug "r=\$r"
       return \$r
@@ -2420,14 +2424,30 @@ ad_after_server_initialization synchronise_contracts {
     # / / / / / / / / / / / / / /
     # provide for return value
     # verification
-    if {[my returns] ne {}} {
-      set rvc [ReturnValueChecker __require__ $__skeleton__]
-      $rvc __add__\
-	  -call [my name]\
-	  -declaration [my returns]
-      set npLabel [lindex [split [my returns] :] 0]
-      my set __rvc_call__ [concat $rvc [my name] -$npLabel]
+    set l [split [my returns] :]
+    switch [llength $l] {
+      0	{ 
+	set label returnValue
+	set tc void
+      }
+      1 {
+	set label returnValue
+	set tc $l
+      }
+      2 {
+	set label [lindex $l 0]
+	set tc [lindex $l 1]
+      }
+      default { error "Return value specification invalid."}
     }
+    #set declaration [expr {[my returns] eq {}?"returnValue:void":"[my returns]"}]
+    set declaration ${label}:${tc}
+    set rvc [ReturnValueChecker __require__ $__skeleton__]
+    $rvc __add__\
+	-call [my name]\
+	-declaration $declaration
+    set npLabel [lindex [split $declaration :] 0]
+    my set __rvc_call__ [concat $rvc [my name] -$npLabel]
     next;# Skeleton->Abstract
   }
   ReturnValueChecker instproc __add__ {
@@ -2505,7 +2525,7 @@ ad_after_server_initialization synchronise_contracts {
 	    [expr {$isLifecycled?[subst {
 	      # activate
 	      $s mixin add [self class]::LifeCycleManager;
-	      $s __activate__;
+	      $s __activate__ $__type__;
 	    }]:""}]
 	  
 	    # enforce ruling deployment policy
@@ -2544,7 +2564,7 @@ ad_after_server_initialization synchronise_contracts {
 	    
 	    [expr {$isLifecycled?[subst {
 	      # deactivate
-	      $s __deactivate__;
+	      $s __deactivate__ $__type__;
 	      $s mixin delete [self class]::LifeCycleManager;
 	    }]:""}]
 	  } catch {Exception e} {
@@ -2610,15 +2630,11 @@ ad_after_server_initialization synchronise_contracts {
 	  # servant is pure tcl proc or ad_proc
 	  return 0
 	} elseif {[::xotcl::Object isobject $parent] && \
-		      ([info procs $servant] ne {} || \
-			   [$parent istype ::xorb::ObjectAdapter] || \
-			   [$parent istype ::xorb::ProcAdapter])} {
-	  # servant is ::xotcl::Object->proc
+		      [$parent info methods $tail] ne {}} {
 	  return 1
 	} elseif {[::xotcl::Object isclass $parent] && \
 		       ([$parent info instprocs $tail] ne {} || \
-			    [$parent istype ::xorb::ClassAdapter])} {
-	  # servant is ::xotcl::Class->instproc
+			    [$parent istype ::xorb::Adapter])} {
 	  return 2
 	} else {
 	  # non-identifiable servant
@@ -2634,13 +2650,19 @@ ad_after_server_initialization synchronise_contracts {
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
   
-  ::xotcl::Class ServantAdapter::LifeCycleManager
-  ServantAdapter::LifeCycleManager instproc __dispatch__ {mode} {
+  ::xotcl::Class ServantAdapter::LifeCycleManager -array set modes {
+    1 Object
+    2 Class
+  }
+  ServantAdapter::LifeCycleManager instproc __dispatch__ {mode t} {
     ::xoexception::try {
-      set type Object
-      if {[::xotcl::Object isclass [self]]} {
-	set type Class
-      }
+      [self class] instvar modes
+      set type $modes($t)
+      #my debug lifecycle=[my serialize]
+      #set type Object
+      #if {[::xotcl::Object isclass [self]]} {
+	#set type Class
+      #}
       set mode [string trim $mode __]
       my $mode$type 
     } catch {error e} {
@@ -2649,11 +2671,11 @@ ad_after_server_initialization synchronise_contracts {
 		   Mode '$mode' for '[self]' (type=$type) failed.}]]
     }
   }
-  ServantAdapter::LifeCycleManager instproc __activate__ args {
-      my __dispatch__ [self proc]
+  ServantAdapter::LifeCycleManager instproc __activate__ type {
+      my __dispatch__ [self proc] $type
   }
-  ServantAdapter::LifeCycleManager instproc __deactivate__ args {
-    my __dispatch__ [self proc]
+  ServantAdapter::LifeCycleManager instproc __deactivate__ type {
+    my __dispatch__ [self proc] $type
   }
   
   # # # # # # # # # # # # # # # # 
@@ -2804,6 +2826,7 @@ ad_after_server_initialization synchronise_contracts {
     Attribute call
     Attribute arguments -default {}
     Attribute skeleton
+    Attribute protocol
   }
 
   Invoker instproc resolve {objectId} {
@@ -2812,11 +2835,12 @@ ad_after_server_initialization synchronise_contracts {
 
   Invoker instproc init args {
     my instvar impl call arguments \
-	skeleton
+	skeleton protocol
     # / / / / / / / / / / / / / / / / / /
     # 1) invocation data
     set impl [my resolve [::xo::cc virtualObject]]
     set call [::xo::cc virtualCall]
+    set protocol [::xo::cc protocol]
     set arguments [list]
 
     # / / / / / / / / / / / / / / / / / /
@@ -2839,6 +2863,19 @@ ad_after_server_initialization synchronise_contracts {
       error [::xorb::exceptions::InvocationException new \
 		 "Skeleton for '$impl' could not be materialised"]
     }
+    # / / / / / / / / / / / / / / / 
+    # We hand over current protocol
+    # information to the skeleton
+    # object, this will be used to
+    # resolve anything sponsors etc.
+    # during return value checking
+    # for instance.
+    # TODO: This is certainly not
+    # the most elegant way to do
+    # it, and we will have to
+    # reconsider the dispatch mechanism
+    # at this point ...
+    $skeleton set protocol $protocol
     Skeleton mixin delete ::xorb::SkeletonCache
   }
 
@@ -2853,7 +2890,7 @@ ad_after_server_initialization synchronise_contracts {
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
       set result [eval $skeleton xorb=$call $arguments]
       # provide for cleanup from checkoption+uplift mixin
-      # in case it has been failed before:
+      # in case it has failed before:
       if {[lsearch [::xotcl::nonposArgs info mixin] \
 	       ::xorb::datatypes::Anything::CheckOption+Uplift] ne "-1"} {
 	::xotcl::nonposArgs mixin delete \

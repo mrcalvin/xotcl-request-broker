@@ -25,6 +25,7 @@ namespace eval ::xorb {
     # generic object messagetype
     # which needs to be handled here:
     ::xorb::datatypes::Object delete
+    ::xorb::datatypes::Void delete
   }
 
   proc after-install {} {

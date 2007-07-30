@@ -164,7 +164,9 @@ namespace eval ::xorb::datatypes {
     my log ANYINPARSE=$cast
     foreach s [$cast info slots] {
       set type [$s anyType]
-      set ar [AnyReader new -typecode $type]
+      set ar [AnyReader new \
+		  -typecode $type \
+		  -protocol [$reader protocol]]
       $s instvar tagName
       set s [namespace tail $s]
       set value [$object set $s]
@@ -212,7 +214,8 @@ namespace eval ::xorb::datatypes {
     uplevel [list regexp {^(\w+)(.*)?$} $typeKey _ hook typeInfo]
   }
 
-   Anything instproc as {
+  Anything instproc as {
+    {-protocol  ::xorb::protocols::Tcl}
     -object:switch
     -default
     typeKey
@@ -220,7 +223,9 @@ namespace eval ::xorb::datatypes {
     if {$typeKey eq {}} {
       return [self]
     } else {
-      set ar [AnyReader new -typecode $typeKey]
+      set ar [AnyReader new \
+		  -protocol $protocol \
+		  -typecode $typeKey]
       my log "+++3:typeKey=[$ar any]"
       # 3) recast anything into concrete anything implementation
       my class [$ar any]
@@ -290,6 +295,7 @@ namespace eval ::xorb::datatypes {
   # # # # # # # # # # # # # # #
 
   ::xotcl::Class AnyReader -slots {
+    Attribute protocol -default "::xorb::protocols::Tcl"
     Attribute typecode
     Attribute observer
     Attribute name
@@ -326,15 +332,14 @@ namespace eval ::xorb::datatypes {
     if {$any eq {}} {
       error "Invalid typecode specification: $tc"
     }
-    set p [expr {[::xotcl::Object isobject ::xo::cc]?\
-		     [::xo::cc protocol]:\
-		     "::xorb::protocols::Tcl"}]
-    set sp [$any selectSponsor $p]
+
+    set sp [$any selectSponsor [my protocol]]
     if {$sp eq {}} {
       error [subst {
 	No sponsor could be identified for Anything '$any' 
-	in the realm of protocol '$p'.}]
-    }	     
+	in the realm of protocol '[my protocol]'.}]
+    }
+    set any $sp
   }
   
   AnyReader instproc get {what} {
@@ -568,7 +573,15 @@ namespace eval ::xorb::datatypes {
     # for Anything!
     #set isObj  [regexp {^object(=(.*))?$} $checkoption _ class]
     set anyBase [[self class] info parent]
-    set ar [::xorb::datatypes::AnyReader new -typecode $checkoption]
+    # / / / / / / / / / / / / / / / /
+    # calling object need to be ...
+    # 1-) either ::xorb::Invoker
+    # 2-) or ::xorb::stub::Requestor
+    set p [self callingobject]
+    my debug UPLIFT-CALLER=$p,[my stackTrace]
+    set ar [eval ::xorb::datatypes::AnyReader new \
+		-typecode $checkoption \
+		[expr {[$p exists protocol]?"-protocol [$p set protocol]":""}]]
     my debug "CHECKOPTION:$checkoption,ARGS=$args,ANY=[$ar any]"
     if {[$ar any] ne {}} {
       # my log "ARANY=[$ar any]"
@@ -582,7 +595,11 @@ namespace eval ::xorb::datatypes {
 	  foreach {argName argValue} $args break
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
-	    uplevel [list set uplift(-$argName) [$argValue as $checkoption]]
+	    uplevel [list set uplift(-$argName) \
+			 [eval $argValue as \
+			      [expr {[$p exists protocol]?\
+					 "-protocol [$p set protocol]":""}] \
+			      $checkoption]]
 	    my debug ===1
 	  } elseif {[my isobject $argValue] && $isObj} {
 	    #if {$class eq {}} {
@@ -691,6 +708,13 @@ namespace eval ::xorb::datatypes {
   # version
   # float
   # bytearray
+
+  MetaPrimitive Void -superclass Anything \
+      -instproc validate args {
+	my instvar __value__
+	return [expr {$__value__ eq {}}]
+      }
+  
   
   MetaPrimitive String -superclass Anything \
       -instproc validate args {
