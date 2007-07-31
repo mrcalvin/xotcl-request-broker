@@ -101,7 +101,7 @@ soap-consumer.tcl}{direct your browser to it} to see it at work.
 You just need four little steps and a few lines of code to get there:
 \begin{enumerate}
 \item Provide SOAP-specific configuration information as \emph{glue object}. To be concrete, create an 
-instance of the XOTcl class ::xosoap::SoapGlueObject and initiate the newly created object with some 
+instance of the XOTcl class \objlink{::xosoap::SoapGlueObject} and initiate the newly created object with some 
 important bits of information:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=6,lastline=10]{../examples/xosoap/example-01-soap-consumer.tcl}
@@ -114,7 +114,7 @@ SOAPAction header field. Line 2 and the setter call on callNamespace, on the con
 protocol level, i.e. the SOAP level. The value of callNamespace will be used to set the namespace 
 attached to the method-describing element. This is used by a few SOAP frameworks, e.g. .NET 
 Remoting, to dispatch the remote call correctly to the responsible servant. For a detailed list of 
-configuration options, please, refer to ::xosoap::SoapGlueObject.
+configuration options, please, refer to \objlink{::xosoap::SoapGlueObject}.
 
 Want to learn more?
  \begin{hints}
@@ -149,7 +149,7 @@ The method ad\_proc that comes with ::xorb::ProxyObject overloads ad\_proc as de
 on ::xotcl::Object and allows for declarations of the following term structure: \\\begin{footnotesize}\textbf
 {<ProxyObject>} \textbf{ad\_proc} [-returns \textit{Anything}] \textbf{<name>} \textbf{<arguments>} \textbf
 {<documentation>} \textbf{<body>}\end{footnotesize}\\
-For a detailed description see \apilink{::xorb::ProxyObject}{instproc}{ad\_proc}.
+For a detailed description see \proclink{::xorb::ProxyObject}{instproc}{ad\_proc}.
 %\href{http://openacs-dotlrn.wu-wien.ac.at/api-doc/proc-view?proc=::xorb::ProxyObject+instproc+ad_proc}{::xorb::ProxyObject->ad\_proc}.
 \item Invoke the proxy method to perform the remote call
 \lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:1,frame=single,basicstyle=\footnotesize,firstline=23,lastline=23]{../examples/xosoap/example-01-soap-consumer.tcl}
@@ -164,7 +164,7 @@ example in a total of three steps with only two declarative ones. Let's rewrite 
 step. Note, that we now take advantage of a construct that natively comes with xosoap, the 
 class ::xosoap::client::SoapObject. This makes it completely sufficient, for instance, to import from the Tcl 
 namespace ::xosoap::client::* without any need to use facilities of xorb directly (see full code snippet of 
-the following example in listing \ref{lst:quickstart:xosoap:3}.)
+the following example in Listing \ref{lst:quickstart:xosoap:3}.)
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=5,lastline=9]
 {../examples/xosoap/example-02-soap-consumer.tcl}
 \item The second step is, again, devoted to the declaration of the actual proxy interface, a local 
@@ -230,7 +230,7 @@ At this point, you have accomplished most of the work needed to provide your Ech
 \end{center}
 \end{figure}
   \section{Advanced usage}\label{sec:advanced}
-    \subsection{Public interface}
+    \subsection{Public interface}\label{sec:interface}
   \subsubsection{What is the structure of xorb's and xosoap's public interfaces?}\label{sec:advanced:interface:what}
   As can be seen from Figure \ref{fig:advanced:interface:1}, the interface available is organised in three 
 packages and at the same time levels of granularity. The \emph{lowest-level interface} is deeply 
@@ -403,9 +403,72 @@ However, in the context of proxy templates, the call as such leads to the actual
 abstracted call.
 \end{itemize}
   \subsection{Glue objects}\label{sec:advanced:xorb:gobjects}
+  
+  \subsubsection{How to use scoping on glue objects for re-use?}\label{sec:advanced:xorb:gobjects:why}
+  Against the basic notion of context objects (see: \nameref{sec:advanced:xorb:gobjects:what}), \emph{glue objects}, the xorb-specific flavour of context objects, have already been introduced in at least two notational forms in the quick start guide (see \ref{sec:quickstart:xosoap}) to the reader. There is, however, an advanced usage that can be applied to glue objects that we refer to as \emph{scoping}. Behind the scenes, this feature is the result of a specific order of precedence when resolving the glue object that, in turn, is used for further processing of a call issued upon a client proxy. There are two dimensions of precedence, one regarding the \emph{moment of resolution} (declaration or call time) and the \emph{scope of reach} of a glue object.
+  \begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.45\textwidth]{img/scoping-glue-objects-structure.png}
+\caption{Precedence order for resolving glue objects}
+\label{fig:advanced:scoping:1}
+\end{center}
+\end{figure}
+As shown in Figure \ref{fig:advanced:scoping:1}, upon issue of a call upon a client proxy (EchoClient), the \objlink{::xorb::stub::Requestor} follows a three-level precedence:
+\begin{enumerate}
+\item The glue object reference passed to the non-positional argument glueobject on either glue, ad\_glue, ad\_proc and ad\_instproc take the highest precedence. These precedence is enforced upon declaration time, i.e. the reference is compiled into the body of the proxy method. This level of specifying a glue object allows to realise client proxies as mere collections of remote procedure proxies (and not proxies in the OO sense).
+\item As can be learnt from Figure \ref{fig:advanced:scoping:1} and introduced in Listing \ref{lst:quickstart:xosoap:3}, the role of client proxy and glue object are unified in a set of objects, namely \objlink{::xosoap::client::SoapObject} or  \objlink{::xosoap::client::SoapClass}. If the requestor identifies a proxy object of this kind, it is granted second highest precedence. We refer to this level as the per-object scope (see Figure \ref{fig:advanced:scoping:2}). As for the scope, it is applicable to all proxy methods defined on the client proxy.
+\item In Listing \ref{lst:quickstart:xosoap:1} we can find that there is also a property "glueobject" available for all objects of type ::xotcl::Object. This property, or rather the glue object assigned to it, takes the lowest precedence in the resolution order. Comparable to level 2, it applies to all proxy methods defined, however, as the glue object is a distinct entity from the client proxy, it is potentially re-usable for various client proxies. Therefore, we refer to the level of precedence as the shared scope (see Figure \ref{fig:advanced:scoping:2}).
+\end{enumerate}
+  \begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.45\textwidth]{img/scoping-glue-objects-scheme.png}
+\caption{Dimensions of precedence: resolution time \& scope of reach.}
+\label{fig:advanced:scoping:2}
+\end{center}
+\end{figure}
+A comparison of these three configurations yields some insights on (dis-)advantages and provides some  hands-on usage examples. Using both the per-method and per-object/ shared scope within a single proxy object allows to implement more than just one interface through a single proxy object. However, this decision needs to be taken upon declaration time as this is a limitation of the current per-method scoping. Also, we so provide the means to specify both proxies for remote methods (in the strict OO sense) and remote procedures in a single entity. Let's look at a slight modification of Listing \ref{lst:quickstart:xosoap:3} that aims at illustrating this first configuration. In a first step, we add a second glue object which contains a different set of configurations options, in particular it targets a different endpoint:
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=6,lastline=8]{../examples/xosoap/example-08-soap-consumer.tcl}
+
+Note, that EchoClient as declared in Listing \ref{lst:quickstart:xosoap:3} already contains shadow information of a glue object. If we now pass the second glue object defined to the ad\_proc declaration, this second glue object takes precedence over the first one, i.e. EchoClient itself.
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=18,lastline=24]{../examples/xosoap/example-08-soap-consumer.tcl}
+
+The ultimate result of this minor tweak in Listing \ref{lst:quickstart:xosoap:8} is that the call will be delivered to a remote object that listens at a different endpoint than the one in Listing \ref{lst:quickstart:xosoap:3}.\\\\
+Both, per-object and shared scope, allow for more simplified notations of proxy objects.  As for re-use, the per-object scope is primarily centred around the re-use of the proxy interface as represented by the proxy object while continuously, over the program flow, adapting the configuration in terms of glue object manipulations. The shared scope puts emphasis on the re-use of a given glue object on multiple proxy objects. Moreover, it allows for dynamic, non-hierarchical refinements through mixins. In doing so, we gain the opportunity can inject glue objects for a selected period of time upon certain conditions into client proxies. 
+
+Again, to provide a hands-on experience, let's have a look at Listing \ref{lst:quickstart:xosoap:9}. In fact, we try to achieve the same behaviour as realised in Listing \ref{lst:quickstart:xosoap:8} but by completely different means. This time we want to decorate our previously defined client proxy at an arbitrary moment during run time. For this purpose, we need an appropriate decorator, such as:
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=27,lastline=33]{../examples/xosoap/example-09-soap-consumer.tcl}
+
+The decorator, an XOTcl mixin class, can be realised in manifold ways, the above is only one of a couple of options at hand. The main idea, however, is that a new glue object (ProxyDecorator::GlueObject) is return upon calls to the decorator's "glueobject" method. The actual step of decorating the client proxy might take the following form:
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=37,lastline=37]{../examples/xosoap/example-09-soap-consumer.tcl}
+
+Once this is achieved, calls to the accessor "glueobject" of the equally named attribute won't deliver the original glue object, but the decorator's one. This is due to the basic mixin mechanism provided by XOTcl with the decorator's "glueobject" method shadowing the actual accessor called "glueobject". 
+After the successful decoration, the call, again, is delivered to the endpoint stipulated in the second glue object.
+
+We want to remind the reader at this point that the above classification somehow need to be considered oversimplifying. The main reason is the distinctions and elaborations are based on constructs that were defined, as an explicit design decision, as public interface (see Section \ref{sec:interface}). However,  as many features are built upon generic XOTcl mechanisms, the same statements and considerations are equally valid for other entities or interface levels: Any object of type \objlink{::xotcl::Object} may be associated with a glue object and can hold proxy methods through glue/ad\_glue, each of them being able to reference a distinct glue object. Therefore, the account given above applies to more than the scenarios outlined in the scope of this introductory section.
   \subsubsection{What is the idea of glue objects?}\label{sec:advanced:xorb:gobjects:what}
-  \subsubsection{Why do we use context objects in xorb and its plug-ins?}\label
-{sec:advanced:xorb:gobjects:why}
+  Glue objects, as represented by all sub-classes of \objlink{::xorb::stub::ContextObject}, are the xorb-specific flavour of what is more commonly known as \emph{context objects} in language design. Context objects, in short, represent a specific pattern of argument passing applicable to various object-based language environments \cite{zdun:2005b}. The technique comprises the use of a generic or specifically typed object as single argument to operations with the actual arguments being stored as per-object variables (or more commonly, instance variables). The use of context objects has been suggested for a set of scenarios. These might be reflected against the requirements and design decisions taken in xorb's stub interface (see Section \ref{sec:interface}).
+  
+First, it allows to avoid the escalation of operation signatures which is a common risk when a considerable amount of arguments needs to be passed. This is certainly given in the scope of xorb and its protocol plug-ins, just to take \objlink{::xosoap::client::SoapGlueObject} as an example. The list of properties is, by the way, not taxonomic but rather open for further extensions provided that this required due to a couple of reasons. The most prominent one is \emph{concatenation} of protocol-specific shadow information, e.g. whenever a new transport handler (SMTP, JMS) is added it might require new properties at the level of the most specific glue object. Another source of an increased need of top-down configurability is the considerable level of heterogeneity between remoting frameworks interacting. This heterogeneity ranges from variation in (de-)marshaling styles, resolution mechanisms to fundamental modes of interaction.
+
+Second, the quality of arguments, i.e. their varying structure, might be another source of complexity that can be better abstracted from by means of context objects. This is somehow closely related to aspect five outlined below.
+
+Third, the set of arguments to be passed might vary from invocation to invocation, a requirement that is rather hard to serve by more conventional argument passing techniques in an elegant and effective manner. The actual argument being an object or even a typed object, we might revert to the given mechanisms of inheritance and polymorphism to model these variations more appropriately.
+
+Fourth, escalated operations signatures are hard to maintain in generic framework designs, where an arbitrary number and arbitrary kinds of clients manipulate these bits of information. This is valid for the generic extension mechanisms that come with xorb, for instance the interceptor infrastructure.
+
+Fifth, context objects allow to specify an interface or even an protocol for manipulating the stored argument data. By interface, we refer to a set of accessors, for instance, a protocol, however, would require more sophisticated features. Though this can be realised in various language settings, we now concentrate on XOTcl. XOTcl comes with a specific kind of objects, so called \emph{slots}, that generalise the idea of object properties or parameters (as known from other environments) and introduce manager objects for object-level variables. Slots allow various fine-granular interceptions to be executed upon manipulation of object states. This allows to enforce protocols in terms of canonical naming, validation of value spaces etc. in a neat object-centric manner.
+
+Context objects in the scope of remoting frameworks, in their role as \emph{invocation contexts}, are thoroughly discussed and exemplified in \cite{zdun:2005}. A more general sketch in the same direction but applicable to a wider range of domains can be found in \cite{kelly:2003}.
+
+Context objects are also applied as solution to another design problem in xorb, namely the provision of a generic infrastructure for data type handling across boundaries of protocol plug-ins. This relates mainly to another flavour of the concept of context objects elaborated on both by \cite{maetzel:1996,sommerlad:1998}. 
   \section{Internals}\label{sec:internal}
   \subsection{What are "service contracts"?}\label{sec:internal:contracts}
   % call abstractions
@@ -426,7 +489,13 @@ abstracted call.
         \lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:5,frame=single,basicstyle=\footnotesize,caption=Using proxy templates/ template methods (I)]{../examples/xosoap/example-04-soap-consumer.tcl}
      \lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:6,frame=single,basicstyle=\footnotesize,caption=Using proxy templates/ template methods (II)]{../examples/xosoap/example-05-soap-consumer.tcl}
      \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
-\footnotesize]{../examples/xosoap/example-07-soap-provider-init.tcl}
+\footnotesize,label=lst:quickstart:xosoap:7]{../examples/xosoap/example-07-soap-provider-init.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,caption=Per-method precedence,label=lst:quickstart:xosoap:8]{../examples/xosoap/example-08-soap-consumer.tcl}
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,caption=Shared scope,label=lst:quickstart:xosoap:9]{../examples/xosoap/example-09-soap-consumer.tcl}
+
  \newpage
  \bibliography{/Users/ssoberni/Documents/doc/diss/thesis}
  \newpage

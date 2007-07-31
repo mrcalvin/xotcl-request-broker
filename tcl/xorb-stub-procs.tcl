@@ -46,6 +46,36 @@ namespace eval ::xorb::stub {
     Attribute virtualArgs
     Attribute callback
     Attribute protocol -default ::xorb::protocols::Tcl
+  } -ad_doc {
+    <p>The class ContextObject realises a specific pattern
+    of parameter passing which is used in xorb's client-side
+    interfaces. Instances (of refining sub-classes) serve as
+    generic container for parameters that are handed down the 
+    various layers of the stub/ client proxy infrastructure.</p>
+    
+    <p>The class provides the following properties (attribute slots):
+    <ul>
+    <li>virtualObject: The non-canonical object identifier as passed
+    through from the respective protocol plug-in, e.g. acs/FtsContentProvider
+    </li>
+    <li>virtualCall: The name of the abstracted operation called. 
+    In an OO setting, we rather refer to the abstracted method.
+    </li>
+    <li>virtualArgs: List of parameter/value pairs delegated to the invoker of
+    xorb. Depending on various stages of a dispatch run-through, these might
+    either be XOTcl objects of type <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xorb::datatypes::Anything">Anything</a> or a streamed list
+    representation containing non-positional argument pairs.
+    </li>
+    <li>protocol: Name of the main class representing the underlying
+    protocol plug-in, e.g. <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::Soap">::xosoap::Soap</a>
+    </li>
+    </ul>
+    </p>
+
+    <p>For an important refinement, providing a couple of protocol-specific
+    property extensions, see <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::client::SoapGlueObject">::xosoap::client::SoapGlueObject</p>
+  
+    @author stefan.sobernig@wu-wien.ac.at
   }
 
 #   ContextObject instproc reset {} {
@@ -611,7 +641,8 @@ namespace eval ::xorb::stub {
     doc
     body
   } {
-    set stubBody [my __makeStubBody__ -filter true]
+    set indirector [expr {$body ne {}?"true":"false"}]
+    set stubBody [my __makeStubBody__ -filter $indirector]
     uplevel [list [self] proc $methName args $stubBody]
     my __api_make_doc "" $methName
     # / / / / / / / / / / / / /
@@ -621,7 +652,7 @@ namespace eval ::xorb::stub {
       ::xotcl::Class create [self]::__indirector__
       my mixin add [self]::__indirector__
     }
-    if {$body ne {}} {
+    if {$indirector} {
       my debug INDIRECTOR-ARGLIST=$argList
       [self]::__indirector__ instproc $methName $argList $body
     }
@@ -651,14 +682,15 @@ namespace eval ::xorb::stub {
     # / / / / / / / / / / / / /
     # TODO: Neophytos' 'next'
     # extension -> body
-    set stubBody [my __makeStubBody__ -filter true]
+    set indirector [expr {$body ne {}?"true":"false"}]
+    set stubBody [my __makeStubBody__ -filter $indirector]
     uplevel [list [self] instproc $methName args $stubBody]
     my __api_make_doc inst $methName
     if {![my isclass [self]::__indirector__]} {
       ::xotcl::Class create [self]::__indirector__
       my instmixin add [self]::__indirector__
     }
-    if {$body ne {}} {
+    if {$indirector} {
       [self]::__indirector__ instproc $methName $argList $body
     }
   }

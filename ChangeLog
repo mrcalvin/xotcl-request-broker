@@ -1,151 +1,167 @@
+2007-08-01  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+	    
+	* Updated manual: Added section on glue objects + graphics 
+
+	* tcl/xorb-stub-procs.tcl: Added inline documentation for
+	  ContextObject. Fix regarding indirector generation: Passing
+	  an empty/ non-empty body argument to ad_proc/ad_instproc
+	  will now decide upon whether both the argument list is
+	  filtered (inner/outer record) and a indirector is created.
+
+	* tcl/xorb-datatypes-procs.tcl: Changed the validation
+	  semantics of ::xorb::datatypes::String which will now return
+	  1/true by default. ::xosoap::xsd::XsString, on the contrary,
+	  is now explicitly verified against a range of unicode
+	  character codes.
+
 2007-07-30  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/regression-test.tcl: Added a collection of test
-          cases for the revised method/delegate notations, based upon
-          the method slot idiom.
+	  cases for the revised method/delegate notations, based upon
+	  the method slot idiom.
 
 	* tcl/xorb-datatypes-procs.tcl: Fixed the new sponsorship
-          mechansim across xorb. At some points, it is required to
-          provide the current protocol identifier to the casting
-          mechanism (::xorb::datatypes::Anything->as) or the typecode
-          resolver (::xorb::datatypes::AnyReader). This was now
-          completed and tested (the same goes for the protocol plug-ins).
+	  mechansim across xorb. At some points, it is required to
+	  provide the current protocol identifier to the casting
+	  mechanism (::xorb::datatypes::Anything->as) or the typecode
+	  resolver (::xorb::datatypes::AnyReader). This was now
+	  completed and tested (the same goes for the protocol plug-ins).
 
 	* tcl/20-xorb-procs.tcl: Fixed the improved Delegate/Method
-          notation (based upon a basic method slot mechansim) for
-          reflecting ad_(inst)proc and ad_(inst)forward in terms of
-          ad_* specific flags. They now allow for specifying
-          private_p, deprecated_p, warn_p and debug_p. More
-          importantly, Delegate/Method can now be specified on the
-          per-object level, i.e. an instance of ServiceImplementation
-          can now act as valid servant host (formerly, it was always
-          realised on the per-instance, class level). This is more in
-          line with the object-centeredness of XOTcl and realises the
-          per-object attribute as known from XOTcl's attribute
-          slots. It required some changes in the way, the lifecycle
-          manager deals with servant-hosting implementations (at the
-          object level). I added some in-depth test cases to the
-          regression test, according to these, all seems fine.
+	  notation (based upon a basic method slot mechansim) for
+	  reflecting ad_(inst)proc and ad_(inst)forward in terms of
+	  ad_* specific flags. They now allow for specifying
+	  private_p, deprecated_p, warn_p and debug_p. More
+	  importantly, Delegate/Method can now be specified on the
+	  per-object level, i.e. an instance of ServiceImplementation
+	  can now act as valid servant host (formerly, it was always
+	  realised on the per-instance, class level). This is more in
+	  line with the object-centeredness of XOTcl and realises the
+	  per-object attribute as known from XOTcl's attribute
+	  slots. It required some changes in the way, the lifecycle
+	  manager deals with servant-hosting implementations (at the
+	  object level). I added some in-depth test cases to the
+	  regression test, according to these, all seems fine.
 	  Another major completing step is the introduction of a new
-          xorb-specific type, ::xorb::datatypes::Void. Whenever a
-          contract specification object or rather its abstract slots
-          do not specify an explicit returns type constraint (returns
-          eq {}), we default to void. At the Tcl level, void is
-          semantically equivalent with an empty Tcl string as. At the
-          level of protocol plug-ins, however, expressing the intended
-          voidnesses makes a considerable difference in terms of
-          marshalling of the return value. 
+	  xorb-specific type, ::xorb::datatypes::Void. Whenever a
+	  contract specification object or rather its abstract slots
+	  do not specify an explicit returns type constraint (returns
+	  eq {}), we default to void. At the Tcl level, void is
+	  semantically equivalent with an empty Tcl string as. At the
+	  level of protocol plug-ins, however, expressing the intended
+	  voidnesses makes a considerable difference in terms of
+	  marshalling of the return value. 
 
 2007-07-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-datatypes-procs.tcl: Introduced a sponsorship
-          infrastructure for Anythings. This is, in particular, useful
-          for specifying placheholderships across protocol
-          domains. The idea is to allow the re-use of contract
-          specifications across these protocol domains, so that a
-          contract once specified for local call abstractions can be
-          re-used as description for a SOAP-based calls. Any object of
-          type MetaPrimitive/MetaComposite can know be assigned as
-          sponsors to another of their kind, but residing in a
-          different protocol scope. Therefore, whenever an Abstract
-          contained arguments of type string
-          (::xorb::datatypes::String), invocations from the SOAP
-          protocol layer will revert to string's sponsor,
-          i.e. ::xosoap::xsd::XsString. Still needs some testing to
-          make sure it fulfills all requirements and I did not miss to
-          align some bits and pieces.
+	  infrastructure for Anythings. This is, in particular, useful
+	  for specifying placheholderships across protocol
+	  domains. The idea is to allow the re-use of contract
+	  specifications across these protocol domains, so that a
+	  contract once specified for local call abstractions can be
+	  re-used as description for a SOAP-based calls. Any object of
+	  type MetaPrimitive/MetaComposite can know be assigned as
+	  sponsors to another of their kind, but residing in a
+	  different protocol scope. Therefore, whenever an Abstract
+	  contained arguments of type string
+	  (::xorb::datatypes::String), invocations from the SOAP
+	  protocol layer will revert to string's sponsor,
+	  i.e. ::xosoap::xsd::XsString. Still needs some testing to
+	  make sure it fulfills all requirements and I did not miss to
+	  align some bits and pieces.
 
 	* tcl/20-xorb-procs.tcl: ::xorb::Object is not featured as acs
-          object type anymore. Contract specifications now allow for
-          specifying a default typecode that is resolvable to a
-          Anything class. This allows to assume defaults (either
-          per-class -- through the attribute slot default -- or
-          per-object) when specifying contracts. This might be used to
-          short-cut the definition of argument lists of
-          ::xorb::Abstracts and it guarantees an overall fallback to
-          ::xorb::datatypes::String if no checkoption was provided at all.
+	  object type anymore. Contract specifications now allow for
+	  specifying a default typecode that is resolvable to a
+	  Anything class. This allows to assume defaults (either
+	  per-class -- through the attribute slot default -- or
+	  per-object) when specifying contracts. This might be used to
+	  short-cut the definition of argument lists of
+	  ::xorb::Abstracts and it guarantees an overall fallback to
+	  ::xorb::datatypes::String if no checkoption was provided at all.
 
 2007-07-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/index.tcl: A rough and crappy admin WUI know comes
-          with the request-broker. I is supposed to ressemble (in the
-          very near future) the functionality by acs-service-contract
-          admin panels. I distinguished between xorb-based and pure
-          acs-based contracts/ implementations, currently in terms of
-          a different set of actions (deletion).
+	  with the request-broker. I is supposed to ressemble (in the
+	  very near future) the functionality by acs-service-contract
+	  admin panels. I distinguished between xorb-based and pure
+	  acs-based contracts/ implementations, currently in terms of
+	  a different set of actions (deletion).
 
 	* tcl/20-xorb-procs.tcl: Finally, proceded and completed the
-          partial rework of the contract/implementation interface. It
-          is a major refinement that aims at realising two types of
-          method slots (in the CLOS sense of the word). They might
-          probably be a feature of XOTcl 1.6 release family, however,
-          in the context of xorb, they allow for declaring (a)
-          delegates (XOTcl: forwards) and (b) methods through object
-          facilities. Initially, we simply allowed for ::xorb::Method
-          in a proc/ instproc style of writing. We extended this to
-          Delegates and, furthermore, streamlined the identity of
-          ServiceContracts and Implementations as (a) ordinary classes
-          and (b) ordinary objects. (a) means that one can know
-          expect a proper instproc when using ::xorb::Method or a
-          forward when using ::xorb::Delegate on
-          Implementations. ServiceImplementations can therefore be
-          instantiated etc. (b) refers to the fact that we now allow
-          the per-object flag on Methods/Delegates,
-          i.e. ServiceImplementations can know provide/contain servant
-          code on the pure object level. This requires to refine the
-          ServantAdapter logic of xorb in the subsequent
-          step. However, this feature refinement reconnects xorb to
-          from where it started: XOTcl. Remains to be tested.
+	  partial rework of the contract/implementation interface. It
+	  is a major refinement that aims at realising two types of
+	  method slots (in the CLOS sense of the word). They might
+	  probably be a feature of XOTcl 1.6 release family, however,
+	  in the context of xorb, they allow for declaring (a)
+	  delegates (XOTcl: forwards) and (b) methods through object
+	  facilities. Initially, we simply allowed for ::xorb::Method
+	  in a proc/ instproc style of writing. We extended this to
+	  Delegates and, furthermore, streamlined the identity of
+	  ServiceContracts and Implementations as (a) ordinary classes
+	  and (b) ordinary objects. (a) means that one can know
+	  expect a proper instproc when using ::xorb::Method or a
+	  forward when using ::xorb::Delegate on
+	  Implementations. ServiceImplementations can therefore be
+	  instantiated etc. (b) refers to the fact that we now allow
+	  the per-object flag on Methods/Delegates,
+	  i.e. ServiceImplementations can know provide/contain servant
+	  code on the pure object level. This requires to refine the
+	  ServantAdapter logic of xorb in the subsequent
+	  step. However, this feature refinement reconnects xorb to
+	  from where it started: XOTcl. Remains to be tested.
 	  Some remarks on the realisation: Slots as such, especially
-          when interfereing or building-upon their basic
-          infrastructure, are tricky to handle in a
-          multi-interpreter/threaded environment with streamed
-          representations. This relates to the fact that they are in
-          fact re-initialised (re-call to the constructor) when
-          turning a stream back into an object. A proper mean to
-          distinguish between declaration + re-init time is the slots
-          method as provided by Class. Streams do not revert to it, so
-          it is convenient to use for the purpose of distinguishing
-          runtime contexts.
+	  when interfereing or building-upon their basic
+	  infrastructure, are tricky to handle in a
+	  multi-interpreter/threaded environment with streamed
+	  representations. This relates to the fact that they are in
+	  fact re-initialised (re-call to the constructor) when
+	  turning a stream back into an object. A proper mean to
+	  distinguish between declaration + re-init time is the slots
+	  method as provided by Class. Streams do not revert to it, so
+	  it is convenient to use for the purpose of distinguishing
+	  runtime contexts.
 
 	* www/admin/index.tcl: Started realising the admin WUI for the
-          request broker, still heavy work in progress.
+	  request broker, still heavy work in progress.
 
 	* tcl/xorb-package-procs.tcl: Finally integrated xorb's
-          package facilities with those of xotcl-core. This allows for
-          seamless package initialisation practices in WUI and
-          background setup (filters, ...) as required by
-          xorb. Specialisation is provided for package inits in
-          non-connection contexts.
+	  package facilities with those of xotcl-core. This allows for
+	  seamless package initialisation practices in WUI and
+	  background setup (filters, ...) as required by
+	  xorb. Specialisation is provided for package inits in
+	  non-connection contexts.
 
 	* tcl/15-xorb-aux-procs.tcl: Added some query helpers for
-          object types to select subtrees, instances etc.
+	  object types to select subtrees, instances etc.
 
 2007-07-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: While polishing
-          the interface, introduced some namespace import fiddling to
-          allow for pretty-looking contract and implementation
-          declarations: It is know possible to leave out namespace
-          qualifiers when declaring Abstracts, Delegates and Methods.
+	  the interface, introduced some namespace import fiddling to
+	  allow for pretty-looking contract and implementation
+	  declarations: It is know possible to leave out namespace
+	  qualifiers when declaring Abstracts, Delegates and Methods.
 	  As for Methods, I realised a basic allowance of
-          full-featured, instproc/proc like record declarations
-          (including dashes, checkoptions ...), even in an unescaped
-          manner (without protecting braces). One can now write
-          something like
+	  full-featured, instproc/proc like record declarations
+	  (including dashes, checkoptions ...), even in an unescaped
+	  manner (without protecting braces). One can now write
+	  something like
 	  [...]
 	  -using {
-	  	 Method myMethod {-arg1:required -arg2} {doc} {;}
+		 Method myMethod {-arg1:required -arg2} {doc} {;}
 	  }
 	  [...]
 	  There are three major reserved names regarding argument
-          for non-pos arguments: 'mixin', 'set', and 'array' are
-          interpreted by configure and therefore at the object level.
+	  for non-pos arguments: 'mixin', 'set', and 'array' are
+	  interpreted by configure and therefore at the object level.
 	  As for Delegates, the attribute formerly named 'proxies' is
-          know called 'for', which yields something like
+	  know called 'for', which yields something like
 	  [...]
 	  -using {
-	  	 Delegate myDelegate -for ::ns::myProc
+		 Delegate myDelegate -for ::ns::myProc
 	  }
 	  [...]
 
@@ -154,254 +170,254 @@
 	* Initial commit of xorb manual tex source (see www/doc/manual).
 
 	* tcl/xorb-stub-procs.tcl: Removed attribute slot declarations
-          concerning marshalled/ unmarshalled messages
-          from ContextObject and assigned them at the level of
-          xosoap. Revised the resolution order for glue objects by the
-          Requestor: 1- glue objects specified by ad_proc /
-          ad_instproc, 2- proxy object as glue object itself, 3-
-          glueobject instance variable or anything returned by a
-          method glueobject availabe at the level of the proxy object. 
+	  concerning marshalled/ unmarshalled messages
+	  from ContextObject and assigned them at the level of
+	  xosoap. Revised the resolution order for glue objects by the
+	  Requestor: 1- glue objects specified by ad_proc /
+	  ad_instproc, 2- proxy object as glue object itself, 3-
+	  glueobject instance variable or anything returned by a
+	  method glueobject availabe at the level of the proxy object. 
 	  Realised "proxy template" feature and distinct handling of
-          outer and inner record in __makeStubBody__. Renamed GObject
-          and GClass to ProxyObject and ProxyClass, respectively.
+	  outer and inner record in __makeStubBody__. Renamed GObject
+	  and GClass to ProxyObject and ProxyClass, respectively.
 
 	* tcl/xorb-datatypes-procs.tcl: Added a new check option to
-          the Checkoption+Uplift mixin that maps 'glue' check options
-          to 'required'. This is used for the 'proxy template' feature
-          as introduced in 0.4.
+	  the Checkoption+Uplift mixin that maps 'glue' check options
+	  to 'required'. This is used for the 'proxy template' feature
+	  as introduced in 0.4.
 
 2007-07-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-deployment-procs.tcl: Added a new aspect to the
-          lazy deployment part of
-          ::xorb::deployment::Checkable::Containment->check to handle
-          situations when an implementation is supposed to be checked
-          against a contract that has just happened to be queued for
-          deployment in the same start-up run!
+	  lazy deployment part of
+	  ::xorb::deployment::Checkable::Containment->check to handle
+	  situations when an implementation is supposed to be checked
+	  against a contract that has just happened to be queued for
+	  deployment in the same start-up run!
 
 	* tcl/xorb-datatypes-procs.tcl: Changed ::xorb::MetaAny to
-          ::xorb::MetaPrimitive, added a ::xorb::MetaComposite to
-          identify Typecodes and their anythings that declare
-          themselves to serve as composite structures. The latter is
-          used to remove the last nasty dependency (see
-          CheckOption+Uplift) to the soap protocol plug-in introduced
-          unreflectedly when realising the anything support as such.
+	  ::xorb::MetaPrimitive, added a ::xorb::MetaComposite to
+	  identify Typecodes and their anythings that declare
+	  themselves to serve as composite structures. The latter is
+	  used to remove the last nasty dependency (see
+	  CheckOption+Uplift) to the soap protocol plug-in introduced
+	  unreflectedly when realising the anything support as such.
 
 	* tcl/xorb-callback-procs.tcl: Added a callback after-install,
-          tested for expected behaviour during
-          installation/de-installation. Fixed typo in boolean expression. 
+	  tested for expected behaviour during
+	  installation/de-installation. Fixed typo in boolean expression. 
 
 	* tcl/xorb-adapters-procs.tcl: Fixed typo in if expression.
 
 	* tcl/20-xorb-procs.tcl: Revised the logic for lazy deployment
-          of contracts and implementations. The after-init blocks now
-          take care of processing candidates of all existing
-          subclasses of ServiceContract and ServiceImplementation
-          (Adapters ...). We now store the
-          information of deployment candidates in two separate lists,
-          one containing the suggested names of the specified items,
-          one listing the object references. The former is used in the
-          revised conformance checking scheme of implementations upon
-          server start-up, especially for the case of implementing
-          contracts queued for deployment in the same run!
+	  of contracts and implementations. The after-init blocks now
+	  take care of processing candidates of all existing
+	  subclasses of ServiceContract and ServiceImplementation
+	  (Adapters ...). We now store the
+	  information of deployment candidates in two separate lists,
+	  one containing the suggested names of the specified items,
+	  one listing the object references. The former is used in the
+	  revised conformance checking scheme of implementations upon
+	  server start-up, especially for the case of implementing
+	  contracts queued for deployment in the same run!
 	  Put the slot-based type validator qname and resolve-to-qname
-          in place on ServiceContract->contract_name,
-          ServiceImplementation->impl_name and
-          ServiceImplementation->impl_contract_name aka implements. 
+	  in place on ServiceContract->contract_name,
+	  ServiceImplementation->impl_name and
+	  ServiceImplementation->impl_contract_name aka implements. 
 	  Fixed dropObjectType for contracts: As there is no
-          propagation of contract removals provided either by the ACS
-          SC db scheme, nor the AcsObject* Framework (simply, because
-          Operations and Message Types are not covered by it for now),
-          we need some extra, message type removing logic here. Tested.
+	  propagation of contract removals provided either by the ACS
+	  SC db scheme, nor the AcsObject* Framework (simply, because
+	  Operations and Message Types are not covered by it for now),
+	  we need some extra, message type removing logic here. Tested.
 	  Added an ::xorb::Invoker->resolve that is simply a hook for
-          protocol plug-ins to provide their own name/object id resolution.
+	  protocol plug-ins to provide their own name/object id resolution.
 
 	* tcl/15-xorb-aux-procs.tcl: Fixed
-          ::xorb::aux::AcsObjectType->dropObjectType to handle the
-          deletion of "abstract" object types, those that don't have
-          an attribute table and constructor/destructor.
+	  ::xorb::aux::AcsObjectType->dropObjectType to handle the
+	  deletion of "abstract" object types, those that don't have
+	  an attribute table and constructor/destructor.
 	  As part of the revised naming/addressing scheme (object ids
-          as used by the protocol plugins and as resolved by the
-          Invoker to internal references), two type validators were
-          added to AcsAttribute: qname and resolve-to-qname. Both
-          verify that names of contracts and implementations do not
-          resolve to protected/ reserved namespaces (xotcl::*,
-          acs::*), the latter being used to provide backward
-          compatibility to legacy contracts and implementations that
-          do not map to tcl namespaces. resolve-to-qname does the some
-          plus resolving values handled by the slot object as
-          namespace which would do relative to the slot object (used
-          for implements of ServiceImplementation).
+	  as used by the protocol plugins and as resolved by the
+	  Invoker to internal references), two type validators were
+	  added to AcsAttribute: qname and resolve-to-qname. Both
+	  verify that names of contracts and implementations do not
+	  resolve to protected/ reserved namespaces (xotcl::*,
+	  acs::*), the latter being used to provide backward
+	  compatibility to legacy contracts and implementations that
+	  do not map to tcl namespaces. resolve-to-qname does the some
+	  plus resolving values handled by the slot object as
+	  namespace which would do relative to the slot object (used
+	  for implements of ServiceImplementation).
 	  Added a helper method on ::xotcl::Class to expand the
-          subclass tree to a given class (getAllSubClasses).
+	  subclass tree to a given class (getAllSubClasses).
 
 	* sql/postgresql/...-{create|drop}.sql: Fixed and tested for
-          installation and deinstallation. Major parts are are now
-          handled by the AcsObject* Framework and have been removed
-          from these files. 
+	  installation and deinstallation. Major parts are are now
+	  handled by the AcsObject* Framework and have been removed
+	  from these files. 
 
 2007-07-02  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Re-organised directory structure in www/, added serializer
-          patch for 0.4 which handles the observed issue of
-          re-evaluating variable traces and the streaming ordering
-          applied by the current version of xotcl serializer when
-          streaming slot objects to the blueprint. Note, however, that
-          a more generic solution to this issue is pending, for the
-          moment, the patch allows for running 0.4 and its new features.   
+	  patch for 0.4 which handles the observed issue of
+	  re-evaluating variable traces and the streaming ordering
+	  applied by the current version of xotcl serializer when
+	  streaming slot objects to the blueprint. Note, however, that
+	  a more generic solution to this issue is pending, for the
+	  moment, the patch allows for running 0.4 and its new features.   
 
 2007-06-28  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: We introduce the new naming /
-          addressing scheme. Concept-wise, it is the ::xorb::Invoker
-          that acts as main naming/addressing/resolution
-          principal. The invoker is provided with a new method
-          "resolve" that currently implements a single resolution
-          strategy: As we currently only have plug-ins that employ URL
-          based identifiers, we provide for resolving URL components/
-          fragments to 
+	  addressing scheme. Concept-wise, it is the ::xorb::Invoker
+	  that acts as main naming/addressing/resolution
+	  principal. The invoker is provided with a new method
+	  "resolve" that currently implements a single resolution
+	  strategy: As we currently only have plug-ins that employ URL
+	  based identifiers, we provide for resolving URL components/
+	  fragments to 
 
 2007-06-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-deployment-procs.tcl: Revised and simplified the
-          contract retrieval for conformance checking of
-          implementations. Context awareness at this level is now
-          limited to whether the managing thread exists or not. A
-          indirection (for either inside or outside calls to
-          ::xorb::Skeleton->getContract) is now decided within the
-          Skeleton class. Moreover, the non-cached version of Skeleton
-          explicitly removes already initialised skeleton objects
-          residing in its namespace (this was necessary to avoid
-          unwanted recreation). 
+	  contract retrieval for conformance checking of
+	  implementations. Context awareness at this level is now
+	  limited to whether the managing thread exists or not. A
+	  indirection (for either inside or outside calls to
+	  ::xorb::Skeleton->getContract) is now decided within the
+	  Skeleton class. Moreover, the non-cached version of Skeleton
+	  explicitly removes already initialised skeleton objects
+	  residing in its namespace (this was necessary to avoid
+	  unwanted recreation). 
 
 	* tcl/20-xorb-procs.tcl: Fixed for the incremental deletion of
-          contracts and implementations. It is not a highly prominent
-          feature but occurred in a test setting. Incremental deletion
-          at the XOTcl layer refers to removing (destroying) a
-          Abstract or Delegate (Method) slot object from a contract or
-          implementation. However, an updating synchronisation in case
-          of contracts requires (for the initial deletion in the
-          update process) all slot objects to be present. By introducing
-          an uniform delete method on Abstracts and Delegates we avoid
-          this issue: In case of contracts, this simply marks slots
-          for destruction for a moment after the deletion of the
-          contract from the db. At the same time they are marked for
-          exclusion from the signature generation in order to set for
-          an update situation. In case of implementations, this work
-          around is not strictly needed as the db schema of
-          acs-service-contract enforces the cascading deletion of
-          Aliases / Delegates. Therefore, a delete simply delegates to
-          destroy.
+	  contracts and implementations. It is not a highly prominent
+	  feature but occurred in a test setting. Incremental deletion
+	  at the XOTcl layer refers to removing (destroying) a
+	  Abstract or Delegate (Method) slot object from a contract or
+	  implementation. However, an updating synchronisation in case
+	  of contracts requires (for the initial deletion in the
+	  update process) all slot objects to be present. By introducing
+	  an uniform delete method on Abstracts and Delegates we avoid
+	  this issue: In case of contracts, this simply marks slots
+	  for destruction for a moment after the deletion of the
+	  contract from the db. At the same time they are marked for
+	  exclusion from the signature generation in order to set for
+	  an update situation. In case of implementations, this work
+	  around is not strictly needed as the db schema of
+	  acs-service-contract enforces the cascading deletion of
+	  Aliases / Delegates. Therefore, a delete simply delegates to
+	  destroy.
 
 	* tcl/xorb-datatypes-procs.tcl: Fixed the resolution of
-          Anything subtypes to fully qualified paths to be able to
-          distinguish more accurately between Anything classes based
-          upon the typecode. Started adding a set of xorb native
-          types, i.e. ::xorb::datatypes::String and
-          ::xorb::datatypes::Integer. The list has to be completed 
-          (following the entries in acs_sc_msg_types).
+	  Anything subtypes to fully qualified paths to be able to
+	  distinguish more accurately between Anything classes based
+	  upon the typecode. Started adding a set of xorb native
+	  types, i.e. ::xorb::datatypes::String and
+	  ::xorb::datatypes::Integer. The list has to be completed 
+	  (following the entries in acs_sc_msg_types).
 
 	* tcl/xorb-broker-procs.tcl: Completed another step through a
-          more sound lifecycling of contracts / implementations. on
-          each update on a contract, all previously bound impls are
-          checked for the ex-post conformance and the bindings are
-          reviewed int this respect.
+	  more sound lifecycling of contracts / implementations. on
+	  each update on a contract, all previously bound impls are
+	  checked for the ex-post conformance and the bindings are
+	  reviewed int this respect.
 
 	* tcl/20-xorb-procs.tcl: We introduced, as part of the
-          upcoming revised object reference / addressing scheme some
-          helpers that ascertain canonical reference generations for
-          xorb objects, i.e. service contracts and implementations,
-          for the internal usage (see "canonicalName" as method on
-          ::xorb::Object, ::xorb::ServiceContract,
-          ::xorb::ServiceImplementation). They simply take care of
-          mapping fully qualified tcl references (incl. namespaces)
-          into a underscored notation. 
+	  upcoming revised object reference / addressing scheme some
+	  helpers that ascertain canonical reference generations for
+	  xorb objects, i.e. service contracts and implementations,
+	  for the internal usage (see "canonicalName" as method on
+	  ::xorb::Object, ::xorb::ServiceContract,
+	  ::xorb::ServiceImplementation). They simply take care of
+	  mapping fully qualified tcl references (incl. namespaces)
+	  into a underscored notation. 
 	  Deletion of service contracts is now fixed for explicitly
-          removing the operations to the contract. 
+	  removing the operations to the contract. 
 	  Updated the skeleton generation to behave differently inside
-          or outside the managing thread
-          (::xorb::Skeleton->getContract,
-          ::xorb::Skeleton->getImplementation).
+	  or outside the managing thread
+	  (::xorb::Skeleton->getContract,
+	  ::xorb::Skeleton->getImplementation).
 	  Cleaned up the injection of CheckOption+Uplift, i.e. the
-          translation back and forth to Anythings of arguments and
-          return values through the checkoption mechanism: It is now
-          more closely tailored to calling scope of XORB core
-          functions and is cleared when the XORB scope is left
-          (i.e. the actual servant code is called). This avoids to
-          mix-in phantom variables in servant call scopes etc. 
+	  translation back and forth to Anythings of arguments and
+	  return values through the checkoption mechanism: It is now
+	  more closely tailored to calling scope of XORB core
+	  functions and is cleared when the XORB scope is left
+	  (i.e. the actual servant code is called). This avoids to
+	  mix-in phantom variables in servant call scopes etc. 
 	  The caching of skeletons is now restricted, by default, to
-       	  generation requests through ::xorb::Invoker, this allows to
-          use the Skeleton generator in cases where caching should be
-          avoided (generating = caching unbound implementations etc.).
+	  generation requests through ::xorb::Invoker, this allows to
+	  use the Skeleton generator in cases where caching should be
+	  avoided (generating = caching unbound implementations etc.).
 
 	* tcl/15-xorb-aux-procs.tcl: The AcsObject* framework has been
-          partly rewritten. Type constructors are know created for
-          each object type "on foot", e.g. we provide for a stored
-          procedure taking care of populating all supertypes
-          etc. instead of referring to supertype's constructors. 
+	  partly rewritten. Type constructors are know created for
+	  each object type "on foot", e.g. we provide for a stored
+	  procedure taking care of populating all supertypes
+	  etc. instead of referring to supertype's constructors. 
 	  ::xorb::aux::AcsObject now takes care of resolving the closest
-          object type class in reach of a given type instance (see
-          ::xorb::aux::AcsObject->getType). This allows for subtyping class
-          objects of type AcsObjectType without necessarily declaring
-          these subtypes AcsObjectType themselves. 
+	  object type class in reach of a given type instance (see
+	  ::xorb::aux::AcsObject->getType). This allows for subtyping class
+	  objects of type AcsObjectType without necessarily declaring
+	  these subtypes AcsObjectType themselves. 
 	  ::xorb::aux::AcsAttribute know allows for value checks on
-          object-scoped variables ('instance variables') through the
-          slot mechanism. This will be part in the revised object id /
-          addressing scheme in 0.4 (see
-          ::xorb::aux::AcsAttribute->xorb=quname). 
+	  object-scoped variables ('instance variables') through the
+	  slot mechanism. This will be part in the revised object id /
+	  addressing scheme in 0.4 (see
+	  ::xorb::aux::AcsAttribute->xorb=quname). 
 
 	* www/doc/regression-test.tcl: Fixed the request broker FOR
-          most (except for 7) and, most importantly, all critical of
-          the regression tests that come with the request broker. The
-          now reflect the newly introduced features and fixes
-          introduced in version 0.4.
+	  most (except for 7) and, most importantly, all critical of
+	  the regression tests that come with the request broker. The
+	  now reflect the newly introduced features and fixes
+	  introduced in version 0.4.
 
 2007-06-20  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-callback-procs.tcl: Added a before-uninstall
-          callback that unregisters acs_object_types defined for the
-          request broker.
+	  callback that unregisters acs_object_types defined for the
+	  request broker.
 
 	* tcl/xorb-deployment-procs.tcl: Added a more robust/ generic
-          deployment variant for contracts and implementations. Now,
-          both contracts and implementations have to be explicitly
-          deployed (calling 'deploy' on their specification
-          objects). Behind the scene, it will, depending on the
-          runtime context (intialisation, running instance) either be
-          lazily or instantly synchronised etc. This changes allows to
-          inject contracts and implementations from different
-          contexts, i.e. the developer shell or a web-ui script.
+	  deployment variant for contracts and implementations. Now,
+	  both contracts and implementations have to be explicitly
+	  deployed (calling 'deploy' on their specification
+	  objects). Behind the scene, it will, depending on the
+	  runtime context (intialisation, running instance) either be
+	  lazily or instantly synchronised etc. This changes allows to
+	  inject contracts and implementations from different
+	  contexts, i.e. the developer shell or a web-ui script.
 
 	* tcl/20-xorb-procs.tcl: Started rewriting the the
-          request-broker kernel to make use of the generic OpenACS
-          Object System support that comes with
-          0.4. ::xorb::ServiceContract and
-          ::xorb::ServiceImplementation are partly completed.
+	  request-broker kernel to make use of the generic OpenACS
+	  Object System support that comes with
+	  0.4. ::xorb::ServiceContract and
+	  ::xorb::ServiceImplementation are partly completed.
 
 	* sql/postgresql/xotcl-request-broker-create.sql: There is a
-          new constructor procedure and extension table for elements
-          to message types in service contracts (constructor:
-          xorb_msg_type_element__new, table:
-          xorb_msg_type_elements_ext). They allow for extending the
-          information model of message type elements independently
-          from the basic message type elements
-          (e.g. element_constraints). As message type elements are not
-          designed as acs_objects, it is somehow hacky. We plan to TIP
-          the amendment of acs-service-contract schema in this manner.
+	  new constructor procedure and extension table for elements
+	  to message types in service contracts (constructor:
+	  xorb_msg_type_element__new, table:
+	  xorb_msg_type_elements_ext). They allow for extending the
+	  information model of message type elements independently
+	  from the basic message type elements
+	  (e.g. element_constraints). As message type elements are not
+	  designed as acs_objects, it is somehow hacky. We plan to TIP
+	  the amendment of acs-service-contract schema in this manner.
 
 	* sql/postgresql/acs-object-model-function-args.sql: Adding
-          generic upgrade script to register a set of plpgsql stored
-          procedures related to the ACS Object System with with
-          xotcl-core's DB abstraction layer (::xo::db::sql::*). This
-          has, at this point in time, not committed to any version in
-          the OpenACS code base. The upgrade therefore applies to all
-          supported OpenACS versions.
+	  generic upgrade script to register a set of plpgsql stored
+	  procedures related to the ACS Object System with with
+	  xotcl-core's DB abstraction layer (::xo::db::sql::*). This
+	  has, at this point in time, not committed to any version in
+	  the OpenACS code base. The upgrade therefore applies to all
+	  supported OpenACS versions.
 
 	* sql/postgresql/acs-service-contract-function-args.sql:
-          Adding generic upgrade script to register a set of pgplsql
-          stored procedures with xotcl-core's DB abstraction layer
-          (::xo::db::sql::*). In acs-service-contract => 5.4.0d1, they
-          are integrated with the released package.
+	  Adding generic upgrade script to register a set of pgplsql
+	  stored procedures with xotcl-core's DB abstraction layer
+	  (::xo::db::sql::*). In acs-service-contract => 5.4.0d1, they
+	  are integrated with the released package.
 
 	* tcl/xorb-callback-procs.tcl: Added initial callback support
 	  for XORB. It will handle upgrade and install refinements
@@ -414,5 +430,5 @@
 	  base class for XOTcl representations of acs_objects. The
 	  facilities are integrated with the xotcl-core DB abstraction
 	  layer (::xo::db::sql::*).
-	
+
 	* ChangeLog: Added this ChangeLog to the repository.

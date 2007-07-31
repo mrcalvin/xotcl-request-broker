@@ -718,8 +718,9 @@ namespace eval ::xorb::datatypes {
   
   MetaPrimitive String -superclass Anything \
       -instproc validate args {
+	# as everything is a string
 	my instvar __value__
-	return [string is print $__value__]
+	return 1
       }
   
   MetaPrimitive Integer -superclass Anything \
