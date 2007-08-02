@@ -94,6 +94,7 @@ namespace eval ::xorb::deployment {
   
   ::xotcl::Object Checkable::Containment -proc check {obj} {
     set contract [$obj implements]
+    set prefix {}
     if {![nsv_exists ::xotcl::THREAD ::XorbManager]} {
       # managing thread not available
       # In this bootstrapping phase, we have two
@@ -107,7 +108,7 @@ namespace eval ::xorb::deployment {
 	select	ops.operation_name  
 	from   	acs_sc_operations ops
 	where  	ops.contract_name = :contract 
-      }]
+      }]; # no xorb=* prefix
 
       # / / / / / / / / / / / / / / / / / / / / / / / / /
       # 2) the requested contract might be queued for
@@ -134,7 +135,7 @@ namespace eval ::xorb::deployment {
 	  my debug ===3=cObj=$cObj
 	  foreach s [$cObj info slots] {
 	    if {[$s istype ::xorb::Abstract]} {
-	      lappend uqSet [$s name]
+	      lappend uqSet [$s name];# no xorb=* prefix
 	    }
 	  } 
 	}
@@ -149,11 +150,12 @@ namespace eval ::xorb::deployment {
       set c [::xorb::Skeleton getContract \
 		 -name $contract \
 		 -unbound]
-      set uqSet [$c info instprocs]
+      set uqSet [$c info instprocs];# plus xorb=* prefix!
+      set prefix xorb=
     }
 
     set aliases [list] 
-    foreach a [$obj info slots] {lappend aliases xorb=[$a name]}
+    foreach a [$obj info slots] {lappend aliases $prefix[$a name]}
     my debug "++c=$contract,uqSet=$uqSet,aliases=$aliases"
     foreach uq $uqSet {
       if {[lsearch -exact $aliases $uq] == -1} {

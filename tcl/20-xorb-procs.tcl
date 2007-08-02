@@ -2389,8 +2389,7 @@ ad_after_server_initialization synchronise_contracts {
 		 [subst { ::xoexception::try {
 		         ::xotcl::nonposArgs mixin add \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
-		   #my debug SKELETON-CALLINGOBJ=\[self callingobject\],trace=\[my stackTrace\]
-		  # my debug \[\[self callingobject\] serialize\]
+		   ${__skeleton__}::rvc set protocol \[my set protocol\]
 		   set r \[[my set __rvc_call__] \$r\]
 		   ::xotcl::nonposArgs mixin delete \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
@@ -2424,22 +2423,30 @@ ad_after_server_initialization synchronise_contracts {
     # / / / / / / / / / / / / / /
     # provide for return value
     # verification
-    set l [split [my returns] :]
-    switch [llength $l] {
-      0	{ 
-	set label returnValue
-	set tc void
-      }
-      1 {
-	set label returnValue
-	set tc $l
-      }
-      2 {
-	set label [lindex $l 0]
-	set tc [lindex $l 1]
-      }
-      default { error "Return value specification invalid."}
+    
+    if {[my returns] ne {} && ![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
+			  [my returns] _ 1 label tc]} {
+      error "Return value specification invalid." 
     }
+    
+    # -- defaults
+    if {![info exists label] || $label eq {}} {set label returnValue}
+    if {![info exists tc] || $tc eq {}} {set tc void}
+    #     switch [llength $l] {
+    #       0	{ 
+    # 	set label returnValue
+    # 	set tc void
+    #       }
+    #       1 {
+    # 	set label returnValue
+    # 	set tc $l
+    #       }
+    #       2 {
+    # 	set label [lindex $l 0]
+    # 	set tc [lindex $l 1]
+    #       }
+    #       default { error "Return value specification invalid."}
+    #     }
     #set declaration [expr {[my returns] eq {}?"returnValue:void":"[my returns]"}]
     set declaration ${label}:${tc}
     set rvc [ReturnValueChecker __require__ $__skeleton__]

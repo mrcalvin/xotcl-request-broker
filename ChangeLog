@@ -1,3 +1,33 @@
+2007-08-02  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-deployment-procs.tcl: Fixed another bug introduced
+          by the new internal instproc/proc naming scheme in xorb
+          (xorb=*) prefixes with the deployment mechanism. Actual, the
+          containment check did not work anymore, as the prefixes were
+          not taken care of.
+
+	* tcl/20-xorb-procs.tcl: Fixed two nasty bugs. First, the
+          current protocol context (needed for sponsorship resolution
+          of anythings) was not properly handled for the
+          ReturnValueChecker. Second, resolving return value
+          declaration (Abstract->returns) was not handled correctly by
+          the ReturnValueChecker. Introduced a generic mechanism based
+          on a nifty regex. This realises the following syntax for
+          return value constraints on Abstracts:
+	  1-) "xsString" resolves to "returnValue:xsString"
+	  2-) "myLabel:xsString" remains "myLabel:xsString"
+	  3-) "" (empty tcl string or returns not set) turns into
+          "returnValue:void" 
+	  4-) "soapStruct(::xosoap::demo::exampleStruct)" turns into
+          "returnValue:soapStruct(::xosoap::demo::exampleStruct)"
+	  5-) "myLabel:soapStruct(::xosoap::demo::exampleStruct)"
+          remains unchanged
+	  6-)
+          "myLabel:myLabel:soapStruct(::xosoap::demo::exampleStruct)"
+          (faulty!) turns into
+          "myLabel:soapStruct(::xosoap::demo::exampleStruct)"
+	  
+
 2007-08-01  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 	    
 	* Updated manual: Added section on glue objects + graphics 
