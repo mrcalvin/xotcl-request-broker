@@ -541,12 +541,53 @@ namespace eval ::xorb::stub {
     return $body
   }
 
-  Object instproc glue {
+  Object ad_instproc glue {
     -glueobject:contextobject
     -returns
     methType 
     methName 
     argList
+  } {
+    <p>The method allows to enrich any ::xotcl::Object by
+    proxy client features in the sense of the XOTcl Request
+    Broker. It realises a modifier/keyword to ordinary
+    proc/ instproc declarations. 
+    For details specific on the OpenACS-specific breed
+    of this method, please, have a look at  <a href="/api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">::xotcl::Object->ad_glue</a>
+    The overall idea is modeled after XOTcl's <a href="http://media.wu-wien.ac.at/langRef-xotcl.html#Object-abstract">abstract keyword</a>, which 
+    allows for specifying somewhat 'abstract' methods 
+    (either at the per-object or per-instance level) on ::xotcl::Objects.
+    Similarily, glue adopts this notational form and in addition,
+    provides means to provide proxy client information in terms
+    of 'glue objects' and return type constraints. 
+    For details, please, refer to the parameter descriptions below.
+    </p>
+
+    <p>
+    A simplistic example:
+    <pre>
+    ::xotcl::Object o 
+    
+    o glue \
+	-returns string \
+	-glueobject $someGlueObject \
+	proc helloWorld {
+	  -arg1:string
+	}
+    </pre>
+    </p>
+
+
+    @param glueobject The non-positional argument takes
+    the reference to a 'glue object' to be used to
+    process proxy invocations (see e.g., <a href="/api-doc/proc-view?proc=Class+%3a%3axosoap%3a%3aclient%3a%3aSoapGlueObject">SoapGlueObject</a> or <a href="/api-doc/show-object?show%5fmethods=1&show%5fsource=0&object=%3a%3axorb%3a%3astub%3a%3aContextObject">ContextObject</a>, in more general).
+    @param returns Stipulates a return type constraint
+    that will be enforced by xorb. One may provide 
+    any 'type code' provided either by xorb, e.g. string, integer, boolean,
+    or one of its protocol plug-ins (e.g. xsString, xsInteger, xsBoolean).
+    
+    @author stefan.sobernig@wu-wien.ac.at
+
   } {
     if {$methType ne "proc" && $methType ne "instproc"} {
       error "Invalid method type '$methType' (required: 'proc' or 'instproc')"
@@ -559,7 +600,7 @@ namespace eval ::xorb::stub {
     uplevel [list [self] $methType $methName args $body]
   }
   
-  Object instproc ad_glue {
+  Object ad_instproc ad_glue {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
@@ -570,6 +611,43 @@ namespace eval ::xorb::stub {
     methName 
     argList
     doc
+  } {
+    <p>The method allows to enrich any ::xotcl::Object by
+    proxy client features in the sense of the XOTcl Request
+    Broker. It realises a modifier/keyword to ordinary
+    proc/ instproc declarations. ad_glue is the OpenACS-
+    specific variant of <a href="/api-doc/proc-view?proc=::xotcl::Object+instproc+glue">::xotcl::Object->glue</a> and allows, in addition,
+    to provide inline documentation and some environment
+    switches, as known from <a href="/api-doc/proc-view?proc=ad%5fproc">::ad_proc</a> or ::xotcl::Object->ad_proc. For details specific
+    to its role regarding client proxies, please, watch out
+    for the inline documentation on <a href="/api-doc/proc-view?proc=::xotcl::Object+instproc+glue">::xotcl::Object->glue</a>.</p>
+
+     <p>
+    A simplistic example:
+    <pre>
+    ::xotcl::Object o 
+    
+    o ad_glue \
+	-private \
+	-returns string \
+	-glueobject $someGlueObject \
+	proc helloWorld {
+	  -arg1:string
+	} {
+	  Some inline doc
+	} 
+    </pre>
+    </p>
+
+    @param glueobject The non-positional argument takes
+    the reference to a 'glue object' to be used to
+    process proxy invocations (see e.g., <a href="/api-doc/proc-view?proc=Class+%3a%3axosoap%3a%3aclient%3a%3aSoapGlueObject">SoapGlueObject</a> or <a href="/api-doc/show-object?show%5fmethods=1&show%5fsource=0&object=%3a%3axorb%3a%3astub%3a%3aContextObject">ContextObject</a>, in more general).
+    @param returns Stipulates a return type constraint
+    that will be enforced by xorb. One may provide 
+    any 'type code' provided either by xorb, e.g. string, integer, boolean,
+    or one of its protocol plug-ins (e.g. xsString, xsInteger, xsBoolean).
+
+    @author stefan.sobernig@wu-wien.ac.at
   } {
     if {$methType ne "proc" && $methType ne "instproc"} {
       error "Invalid method type '$methType' (required: 'proc' or 'instproc')"
@@ -627,9 +705,20 @@ namespace eval ::xorb::stub {
   # / / / / / / / / / / / / / / /
   # Some simplistic facades
 
-  ::xotcl::Class ProxyObject -superclass ::xotcl::Object
-  #ProxyObject instforward with %self glueobject
-  ProxyObject instproc ad_proc {
+  ::xotcl::Class ProxyObject -ad_doc {
+    <p>The class can be used to create XOTcl objects that
+    serve as client proxies. While on generic XOTcl objects,
+    one needs to adopt the <a href="/api-doc/proc-view?\proc=::xotcl::Object+instproc+ad_glue">glue</a> or <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+glue">ad_glue</a> modifiers to proc
+    declarations to provide a client proxy, instances of 
+    ProxyObject come with adapted <a href="/api-doc/proc-view?proc=%3a%3axorb%3a%3astub%3a%3aProxyObject+instproc+ad%5fproc">ad_proc</a> semantics.
+    On top of ::xotcl::Object->ad_proc, one can provide necessary proxy
+    information such as glue objects, return type constraints etc. 
+    Moreover, 'proxying' ad_proc's take a body declaration that allows to put 
+    template code around the actual abstracted invocation represented by
+    ::xotcl::next. Please, refer to xorb's manual for more details and
+    examples on this feature. The inline documentation of <a href="/api-doc/proc-view?proc=%3a%3axorb%3a%3astub%3a%3aProxyObject+instproc+ad%5fproc">ad_proc</a> provides a little introductory example.</p>
+  } -superclass ::xotcl::Object
+  ProxyObject ad_instproc ad_proc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
@@ -640,6 +729,87 @@ namespace eval ::xorb::stub {
     argList
     doc
     body
+  } {
+    <p>This specialised/overloaded variant of ad_proc provides
+    for declaring proxy methods on a per-object level. While it 
+    supports all features of ::xotcl::Object->ad_proc (inline
+    documentation etc.), it also allows to specify 'proxy templates'.
+    Proxy templates simply describe the usage pattern when a
+    body script is provided (instead of an empty string). The ability
+    to provide a body is the key difference to <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+lue">glue</a>/<a href="api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">ad_glue</a> that
+    are mere 'abstract' modifiers. If you provide a body script,
+    make sure that you keep the following in mind:</p>
+    <ol>
+    <li>You must place ::xotcl::next in the body script. 
+    ::xotcl::next is responsible to proceed with
+    the actual proxy invocation.</li>
+    <li>You, furthermore, need to distinguish between two
+    types of non-positional arguments declared on the proxy method,
+    i.e. those that will be part of the proxy invocation (denoted by an mandatory 'glue' as checkoption) and those that will simply be available in the method
+    body's local scope.
+    </li>
+    </ol>
+    <p>
+    A simplistic example:
+    <pre>
+    ProxyObject po 
+    
+    po ad_proc \
+	-returns string \
+	-glueobject $someGlueObject \
+	helloWorld {
+	  -innerArgument:string,glue
+	  -outerArgument
+	  positionalArgument
+	} {
+	  Some inline doc
+	} {
+	  # all three arguments, provided that
+	  # a (default) value is given, will be
+	  # available in this local scope, however
+	  # only innerArgument will be used for
+	  # the proxy invocation.
+	  
+	  set result [next];# execute actual proxy invocation
+
+	  # 'result' refers to the return value of
+	  # the proxy invocation.
+	}
+    </pre>
+    </p>
+    <p>The following arguments may be provided to calls on ad_proc:</p>
+
+    @param private This correponds to ::ad_proc's and 
+    ::xotcl::Object->ad_proc's private
+    @param deprecated This correponds to ::ad_proc's and 
+    ::xotcl::Object->ad_proc's deprecated
+    @param warn This correponds to ::ad_proc's and 
+    ::xotcl::Object->ad_proc's warn
+    @param debug This correponds to ::ad_proc's and 
+    ::xotcl::Object->ad_proc's debug
+    @param glueobject The non-positional argument takes
+    the reference to a 'glue object' to be used to
+    process proxy invocations (see e.g., <a href="/api-doc/proc-view?proc=Class+%3a%3axosoap%3a%3aclient%3a%3aSoapGlueObject">SoapGlueObject</a> or <a href="/api-doc/show-object?show%5fmethods=1&show%5fsource=0&object=%3a%3axorb%3a%3astub%3a%3aContextObject">ContextObject</a>, in more general).
+    @param returns Stipulates a return type constraint
+    that will be enforced by xorb. One may provide 
+    any 'type code' provided either by xorb, e.g. string, integer, boolean,
+    or one of its protocol plug-ins (e.g. xsString, xsInteger, xsBoolean).
+    @methName The name of the proxy method
+    @argList A list of positional/non-positional arguments representing
+    the proxy method's signature. Please, note that you must distinguish 
+    between providing a method body (see below) or simply an empty string
+    to the body argument. As soon as you declare a body on the proxy method,
+    you need to distinguish between two type of arguments, i.e. those that 
+    will be part of the proxy invocation (denoted by an mandatory 'glue' 
+    as checkoption) and those that will simply be available in the method
+    body's local scope.
+    @doc The inline documentation string
+    @body The body declaration. Note, that you can either provide an empty
+    tcl string or a body script to a method call on ad_proc. However, some
+    semantics change as soon as a body is provided. See the object
+    for some initial hints.
+
+    @author stefan.sobernig@wu-wien.ac.at
   } {
     set indirector [expr {$body ne {}?"true":"false"}]
     set stubBody [my __makeStubBody__ -filter $indirector]
@@ -658,7 +828,22 @@ namespace eval ::xorb::stub {
     }
   }
 
-  ::xotcl::Class ProxyClass -superclass {
+  ::xotcl::Class ProxyClass -ad_doc {
+    <p>The meta class can be used to create XOTcl objects that
+    serve as classes that client proxies can be instantiated
+    from. While on generic XOTcl classes,
+    one needs to adopt the <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+glue">glue</a> or <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">ad_glue</a> modifiers to instproc
+    declarations, instances of 
+    ProxyClass come with adapted <a href="/api-doc/proc-view?proc=%3a%3axorb%3a%3astub%3a%3aProxyClass+instproc+ad%5finstproc">ad_instproc</a> semantics.
+    On top of ::xotcl::Class->ad_instproc, one can provide necessary proxy
+    information such as glue objects, return type constraints etc. 
+    Moreover, 'proxying' ad_instproc's take a body declaration that allows 
+    to put template code around the actual abstracted invocation represented by
+    ::xotcl::next. Please, refer to xorb's manual for more details and
+    examples on this feature. The inline documentation of <a href="/api-doc/proc-view?proc=%3a%3axorb%3a%3astub%3a%3aProxyClass+instproc+ad%5finstproc">ad_instproc</a> provides a little introductory example.</p>
+    <p>Note, that instances of ProxyClass are themselves <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xorb::stub::ProxyObject">ProxyObjects</a>!
+    </p>
+  } -superclass {
     ::xorb::stub::ProxyObject
     ::xotcl::Class
   }
@@ -667,7 +852,7 @@ namespace eval ::xorb::stub {
     my superclass add ProxyObject
     next
   }
-  ProxyClass instproc ad_instproc {
+  ProxyClass ad_instproc ad_instproc {
     {-private:switch false} 
     {-deprecated:switch false} 
     {-warn:switch false} 
@@ -678,6 +863,89 @@ namespace eval ::xorb::stub {
     argList
     doc
     body
+  } {
+     <p>This specialised/overloaded variant of ::xotcl::Class->ad_instproc 
+    provides for declaring proxy methods on a per-instance level. While it 
+    supports all features of ::xotcl::Class->ad_instproc (inline
+    documentation etc.), it also allows to specify 'proxy templates'.
+    Proxy templates simply describe the usage pattern when a
+    body script is provided (instead of an empty string). The ability
+    to provide a body is the key difference to <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+glue">glue</a>/<a href="api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">ad_glue</a> that
+    are mere 'abstract' modifiers. If you provide a body script,
+    make sure that you keep the following in mind:</p>
+    <ol>
+    <li>You must place ::xotcl::next in the body script. 
+    ::xotcl::next is responsible to proceed with
+    the actual proxy invocation.</li>
+    <li>You, furthermore, need to distinguish between two
+    types of non-positional arguments declared on the proxy method,
+    i.e. those that will be part of the proxy invocation (denoted by an mandatory 'glue' as checkoption) and those that will simply be available in the method
+    body's local scope.
+    </li>
+    </ol>
+    <p>
+    A simplistic example:
+    <pre>
+    ProxyClass pc 
+    
+    pc ad_instproc \
+	-returns string \
+	-glueobject $someGlueObject \
+	helloWorld {
+	  -innerArgument:string,glue
+	  -outerArgument
+	  positionalArgument
+	} {
+	  Some inline doc
+	} {
+	  # all three arguments, provided that
+	  # a (default) value is given, will be
+	  # available in this local scope, however
+	  # only innerArgument will be used for
+	  # the proxy invocation.
+	  
+	  set result [next];# execute actual proxy invocation
+
+	  # 'result' refers to the return value of
+	  # the proxy invocation.
+	}
+    </pre>
+    </p>
+    <p>
+    The following arguments may be provided to calls on ad_proc:
+    </p>
+
+    @param private This correponds to ::ad_proc's and 
+    ::xotcl::Class->ad_instproc's private
+    @param deprecated This correponds to ::ad_proc's and 
+    ::Xotcl::Class->ad_instproc's deprecated
+    @param warn This correponds to ::ad_proc's and 
+    ::Xotcl::Class->ad_instproc's warn
+    @param debug This correponds to ::ad_proc's and 
+    ::Xotcl::Class->ad_instproc's debug
+    @param glueobject The non-positional argument takes
+    the reference to a 'glue object' to be used to
+    process proxy invocations (see e.g., <a href="/api-doc/proc-view?proc=Class+%3a%3axosoap%3a%3aclient%3a%3aSoapGlueObject">SoapGlueObject</a> or <a href="/api-doc/show-object?show%5fmethods=1&show%5fsource=0&object=%3a%3axorb%3a%3astub%3a%3aContextObject">ContextObject</a>, in more general).
+    @param returns Stipulates a return type constraint
+    that will be enforced by xorb. One may provide 
+    any 'type code' provided either by xorb, e.g. string, integer, boolean,
+    or one of its protocol plug-ins (e.g. xsString, xsInteger, xsBoolean).
+    @methName The name of the proxy method
+    @argList A list of positional/non-positional arguments representing
+    the proxy method's signature. Please, note that you must distinguish 
+    between providing a method body (see below) or simply an empty string
+    to the body argument. As soon as you declare a body on the proxy method,
+    you need to distinguish between two type of arguments, i.e. those that 
+    will be part of the proxy invocation (denoted by an mandatory 'glue' 
+    as checkoption) and those that will simply be available in the method
+    body's local scope.
+    @doc The inline documentation string
+    @body The body declaration. Note, that you can either provide an empty
+    tcl string or a body script to a method call on ad_proc. However, some
+    semantics change as soon as a body is provided. See the object
+    for some initial hints.
+
+    @author stefan.sobernig@wu-wien.ac.at
   } {
     # / / / / / / / / / / / / /
     # TODO: Neophytos' 'next'

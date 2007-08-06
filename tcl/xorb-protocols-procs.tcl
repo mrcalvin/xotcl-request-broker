@@ -4,7 +4,7 @@ ad_library {
   
   @author stefan.sobernig@wu-wien.ac.at	
   @creation-date March 7, 2007			
-  @cvs-id $Id: xorb-procs.tcl 17 2006-09-26 14:34:40Z ssoberni $
+  @cvs-id $Id$
 
 }
 
@@ -12,6 +12,7 @@ namespace eval ::xorb::protocols {
 
   ::xotcl::Class PluginClass -superclass ::xotcl::Class -slots {
     Attribute prettyName
+    Attribute contextClass
   }
   PluginClass instproc init args {
     if {![my exists prettyName]} {
@@ -52,7 +53,7 @@ namespace eval ::xorb::protocols {
       ::xorb::rhandler mixin delete [self]
     }
   }
-
+  
   PluginClass instproc registerInterceptors {interceptors} {
     set cmds {}
     foreach i $interceptors {
@@ -63,7 +64,7 @@ namespace eval ::xorb::protocols {
 	      position 0
 	      protocol [string tolower [namespace tail [self]] 0 0]
 	      listen all
-      }}] 
+	    }}] 
     }
     if {$cmds ne {}} {
       ::xorb::Standard contains $cmds
@@ -76,7 +77,7 @@ namespace eval ::xorb::protocols {
   
   PluginClass RemotingPlugin -superclass Plugin -prettyName "remote"
   PluginClass LocalPlugin -superclass Plugin -prettyName "local"
-
+  
   # # # # # # # # # # # # # 
   # # # # # # # # # # # # # 
   # # Tcl Protocol-Plugin
@@ -84,7 +85,7 @@ namespace eval ::xorb::protocols {
   # # # # # # # # # # # # # 
   
   PluginClass Tcl -superclass LocalPlugin
-
+  
   Tcl instproc handleRequest {requestObj} {
     array set call $requestObj
     # # # # # # # # # # # #
@@ -93,19 +94,18 @@ namespace eval ::xorb::protocols {
 				      $call(impl_id):$call(impl)}]
     ::xo::cc virtualCall $call(operation)
     ::xo::cc virtualArgs $call(call_args)
-
+    
     next;#::xorb::RequestHandler->handleRequest
   }
-
+  
   Tcl instproc handleResponse {requestObj responseObj} {
     set r [next];#::xorb::RequestHandler->handleResponse
     [my listener] dispatchResponse $r
   }
-
+  
   # / / / / / / / / / / / /
   # interceptors?
-
-
+  
   namespace export PluginClass Plugin RemotingPlugin LocalPlugin Tcl
 }
 

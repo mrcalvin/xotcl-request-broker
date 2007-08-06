@@ -383,8 +383,8 @@ namespace eval ::xorb::deployment {
   Policy::PolicyLevelSubject instproc condition=isImplementation {
     query_context 
     value} {
-      my debug "[namespace tail [self]] eq $value? [expr {[namespace tail [self]] eq $value}]"
-    return [expr {[namespace tail [self]] eq $value}]
+      my debug "[namespace tail [self]] eq [::xorb::Object canonicalName $value]? [expr {[namespace tail [self]] eq [::xorb::Object canonicalName $value]}]"
+    return [expr {[namespace tail [self]] eq [::xorb::Object canonicalName $value]}]
   }
 
   # # # # # # # # # # # # # # #

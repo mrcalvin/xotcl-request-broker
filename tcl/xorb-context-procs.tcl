@@ -13,6 +13,29 @@ namespace eval ::xorb::context {
 
   # # # # # # # # # # # # # #
   # # # # # # # # # # # # # #
+  # # Generic extensions
+  # # to ConnectionContext
+  # # as it comes with 
+  # # xotcl-core
+  # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # #
+  
+  ::xo::ConnectionContext slots {
+    Attribute httpMethod -default GET
+  }
+
+  ::xo::ConnectionContext instproc isGet {} {
+    my instvar httpMethod
+    return [expr {$httpMethod eq "GET"}]
+  }
+
+  ::xo::ConnectionContext instproc isPost {} {
+    my instvar httpMethod
+    return [expr {$httpMethod eq "POST"}]
+  }
+
+  # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # #
   # # Meta-Class ContextClass
   # # # # # # # # # # # # # #
   # # # # # # # # # # # # # #
@@ -59,12 +82,12 @@ namespace eval ::xorb::context {
     }
   }
 
-  ContextClass InvocationContext -parameter {
+  ::xotcl::Class InvocationContext -parameter {
     virtualObject
     virtualCall
     virtualArgs
     {protocol ::xorb::protocols::Tcl}
-  } -superclass ::xo::ConnectionContext
+  }
  
   InvocationContext instproc getProtocolTree {} {
     my instvar protocol
@@ -79,7 +102,7 @@ namespace eval ::xorb::context {
     }
   }
 
-  ContextClass RemotingInvocationContext -parameter {
+  ::xotcl::Class RemotingInvocationContext -parameter {
     method
     marshalledRequest
     marshalledResponse

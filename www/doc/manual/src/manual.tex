@@ -127,7 +127,7 @@ Want to learn more?
 \item Create a local proxy of the remote object or remote procedure, a so called \emph{client proxy}
 \index{Clientproxy}. This client proxy object holds a proxy method for the remote method or procedure to 
 call. There are a few flavours for specifying such a client proxy, the most straight forward, however, is by 
-instantiating ::xorb::ProxyObject and thus creating a proxy object (ProxyObject might be resolved as 'G
+instantiating \objlink{::xorb::stub::ProxyObject} and thus creating a proxy object (\objlink{::xorb::stub::ProxyObject} might be resolved as 'G
 (lueing)Object' which introduces a subtle difference between glue object and glueing object).
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=13,lastline=13]{../examples/xosoap/example-01-soap-consumer.tcl}
@@ -145,7 +145,7 @@ options on non-positional arguments}, in XOTcl terms. Besides, the interface pro
 value type, stipulated by setting "-returns" on ad\_proc.
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=16,lastline=21]{../examples/xosoap/example-01-soap-consumer.tcl}
-The method ad\_proc that comes with ::xorb::ProxyObject overloads ad\_proc as defined 
+The method ad\_proc that comes with \objlink{::xorb::ProxyObject} overloads ad\_proc as defined 
 on ::xotcl::Object and allows for declarations of the following term structure: \\\begin{footnotesize}\textbf
 {<ProxyObject>} \textbf{ad\_proc} [-returns \textit{Anything}] \textbf{<name>} \textbf{<arguments>} \textbf
 {<documentation>} \textbf{<body>}\end{footnotesize}\\
@@ -162,7 +162,7 @@ example in a total of three steps with only two declarative ones. Let's rewrite 
 \begin{enumerate}
 \item The major difference is that step 1 and 2 of the previous procedure are merged into one single 
 step. Note, that we now take advantage of a construct that natively comes with xosoap, the 
-class ::xosoap::client::SoapObject. This makes it completely sufficient, for instance, to import from the Tcl 
+class \objlink{::xosoap::client::SoapObject}. This makes it completely sufficient, for instance, to import from the Tcl 
 namespace ::xosoap::client::* without any need to use facilities of xorb directly (see full code snippet of 
 the following example in Listing \ref{lst:quickstart:xosoap:3}.)
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=5,lastline=9]
@@ -237,8 +237,8 @@ packages and at the same time levels of granularity. The \emph{lowest-level inte
 integrated with XOTcl idioms, especially ::xotcl::Object and ::xotcl::Class. xorb, therefore, allows to turn 
 any XOTcl object into a client proxy to take advantage of call abstractions (either in a distributed or non-
 distributed scenario). At this level, xorb introduces two particular keywords (i.e. methods) that allow to 
-define "stub" methods in the literal sense of the word on ::xotcl::Object and its subclasses, \emph{glue} 
-(or \emph{ad\_glue}). These methods appear as keywords (one might refer to modifiers, though this is 
+define "stub" methods in the literal sense of the word on ::xotcl::Object and its subclasses, \proclink{::xotcl::Object}{instproc}{glue}
+(or \proclink{::xotcl::Object}{instproc}{ad\_glue}). These methods appear as keywords (one might refer to modifiers, though this is 
 not appropriate strictly speaking) to ordinary proc or instproc declarations, however, these method 
 declaration don't require or allow method bodies to be defined. The example provided in the quickstart 
 guide (see \ref{sec:quickstart:xosoap} can be realised with any XOTcl object, by simply writing:
@@ -247,7 +247,7 @@ guide (see \ref{sec:quickstart:xosoap} can be realised with any XOTcl object, by
 \item In this step, you can, thanks to the deep integration with the fundamental idiom ::xotcl::Object, you 
 can simply revert to the use of an ordinary object. Either create one (as shown in the example below) or 
 use existing objects and make them proxy objects by, first, attaching the glue object to it and, second, 
-declare a proxy interface by means of \emph{ad\_glue} (or glue):
+declare a proxy interface by means of \proclink{::xotcl::Object}{instproc}{ad\_glue} (or \proclink{::xotcl::Object}{instproc}{glue}):
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=13,lastline=13]{../examples/xosoap/example-03-soap-consumer.tcl}
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=17,lastline=23]{../examples/xosoap/example-03-soap-consumer.tcl}
 \item The actual call is effectuated the same way as in the previous example:
@@ -255,7 +255,7 @@ declare a proxy interface by means of \emph{ad\_glue} (or glue):
   \end{enumerate}
 At this level, stub (or proxy) methods appear in their purest forms as mere placeholders for remote calls 
 realising a local representation of a remote (object) interface. Please note that declarations by means of 
-glue/ ad\_glue don't take a method body as they are mere interface descriptors. This makes them 
+\proclink{::xotcl::Object}{instproc}{glue}/ \proclink{::xotcl::Object}{instproc}{ad\_glue} don't take a method body as they are mere interface descriptors. This makes them 
 syntactically comparable to the \xotclref{Object-abstract}{abstract keyword} that comes with XOTcl to 
 mimic abstract classes. However, do not align them at the semantic level.
   \begin{figure}[htbp]
@@ -268,12 +268,12 @@ mimic abstract classes. However, do not align them at the semantic level.
 
 The \emph{medium-level interface} is already familiar to the reader when reviewing the quick start 
 section. It is provided by xorb and more or less introduces two xorb-specific idioms, 
-i.e. ::xorb::stub::ProxyObject and ::xorb::stub::ProxyClass. While they inherit all capabilities of the low-
+i.e. \objlink{::xorb::stub::ProxyObject} and \objlink{::xorb::stub::ProxyClass}. While they inherit all capabilities of the low-
 level interface, they provide additional facilities to create and use proxy objects. A glimpse at Figure \ref
 {fig:advanced:interface:1} reveals that they overwrite the methods \emph{ad\_proc} provided 
 by ::xotcl::Object and \emph{ad\_instproc} ::xotcl::Class. This already suggests that proxy interfaces can 
-now be declared in a slightly different manner than by glue/ad\_glue. While you can still revert to the 
-former, ad\_proc and ad\_instproc allow for interface descriptors with method bodies. When looking at 
+now be declared in a slightly different manner than by \proclink{::xotcl::Object}{instproc}{glue}/\proclink{::xotcl::Object}{instproc}{ad\_glue}. While you can still revert to the 
+former, \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and \proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc} allow for interface descriptors with method bodies. When looking at 
 Listing , you might notice that the argument containing the method body declarations is empty 
 (corresponds to an empty Tcl string). For the sake of simplicity, we did not introduce a notable feature of 
 the medium-level interface at that stage that we refer to as \emph{proxy templates}. For a primer on this 
@@ -281,7 +281,7 @@ concept and examples see Section \ref{sec:advanced:template}.
 
 The \emph{high-level interface}, as can been seen from Figure \ref{fig:advanced:interface:1}, is a purely 
 protocol plug-in-specific one. As for xosoap, we provide two intregating 
-idioms: ::xosoap::client::SoapObject and ::xosoap::client::SoapClass inherit and expose and combine 
+idioms: \objlink{::xosoap::client::SoapObject} and \objlink{::xosoap::client::SoapClass} inherit and expose and combine 
 properties of glue objects and proxy clients in one. This allows for an abbreviated and compact writing of 
 SOAP client code, with all facilities introduced by lower interface levels. For an introductory example see 
 the quick start section on xosoap (see Section \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref
@@ -305,7 +305,7 @@ yields the following (see Listing \ref{lst:quickstart:xosoap:5} for the complete
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=16,lastline=28]{../examples/xosoap/example-04-soap-consumer.tcl}
 
-We draw your attention to the last argument of the ad\_proc call which perfectly resembles the 
+We draw your attention to the last argument of the \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc}ad\_proc call which perfectly resembles the 
 declaration of a method body. The exemplary condition we introduce here is only to simplistic but 
 delivers the message. You might have noticed that the floating point number used in the EchoClient/
 EchoService example corresponds to the decimal representation of the golden ratio phi. We, now, in our 
@@ -318,7 +318,7 @@ forwarder to the actual proxy method.
 Now, once you got the main idea behind this example, take a closer look  at the declaration of 
 arguments in line 17. You might notice that there is a slight but important modification of how the 
 argument inputFloat is specified. In fact, we added an additional \emph{check option 'glue'} which is 
-mandatory as soon as you provide a non-empty method body to either ad\_proc and ad\_instproc. There 
+mandatory as soon as you provide a non-empty method body to either \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and \proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc}. There 
 are two reasons for this requirement: First, regarding concepts and clarity for you as developer, you are 
 now specifying two method records (i.e. set of arguments plus check options)  within one single step, on 
 the one hand, the record for the decorating method (the proxy template method) called "echoFloat" and, 
@@ -398,7 +398,7 @@ of precedence, visualised by the call path in Figure  \ref{fig:advanced:template
 on the mixin class (i.e. \lstinline!::EchoClient::__indirector__!). The inner record refers to the record 
 declaration of echoFloat of EchoClient.
 \item The original or native call path in XOTcl would continue along the inheritance and realisation 
-(instantiation) path, involving e.g. ProxyObject and Object in Figure  \ref{fig:advanced:templates:1}. 
+(instantiation) path, involving e.g. \objlink{::xorb::stub::ProxyObject} and Object in Figure  \ref{fig:advanced:templates:1}. 
 However, in the context of proxy templates, the call as such leads to the actual invocation of the 
 abstracted call.
 \end{itemize}
@@ -415,7 +415,7 @@ abstracted call.
 \end{figure}
 As shown in Figure \ref{fig:advanced:scoping:1}, upon issue of a call upon a client proxy (EchoClient), the \objlink{::xorb::stub::Requestor} follows a three-level precedence:
 \begin{enumerate}
-\item The glue object reference passed to the non-positional argument glueobject on either glue, ad\_glue, ad\_proc and ad\_instproc take the highest precedence. These precedence is enforced upon declaration time, i.e. the reference is compiled into the body of the proxy method. This level of specifying a glue object allows to realise client proxies as mere collections of remote procedure proxies (and not proxies in the OO sense).
+\item The glue object reference passed to the non-positional argument glueobject on either \proclink{::xotcl::Object}{instproc}{glue}, \proclink{::xotcl::Object}{instproc}{ad\_glue}, \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and \proclink{::xorb::ProxyClass}{instproc}{ad\_instproc} take the highest precedence. These precedence is enforced upon declaration time, i.e. the reference is compiled into the body of the proxy method. This level of specifying a glue object allows to realise client proxies as mere collections of remote procedure proxies (and not proxies in the OO sense).
 \item As can be learnt from Figure \ref{fig:advanced:scoping:1} and introduced in Listing \ref{lst:quickstart:xosoap:3}, the role of client proxy and glue object are unified in a set of objects, namely \objlink{::xosoap::client::SoapObject} or  \objlink{::xosoap::client::SoapClass}. If the requestor identifies a proxy object of this kind, it is granted second highest precedence. We refer to this level as the per-object scope (see Figure \ref{fig:advanced:scoping:2}). As for the scope, it is applicable to all proxy methods defined on the client proxy.
 \item In Listing \ref{lst:quickstart:xosoap:1} we can find that there is also a property "glueobject" available for all objects of type ::xotcl::Object. This property, or rather the glue object assigned to it, takes the lowest precedence in the resolution order. Comparable to level 2, it applies to all proxy methods defined, however, as the glue object is a distinct entity from the client proxy, it is potentially re-usable for various client proxies. Therefore, we refer to the level of precedence as the shared scope (see Figure \ref{fig:advanced:scoping:2}).
 \end{enumerate}
@@ -452,7 +452,7 @@ The decorator, an XOTcl mixin class, can be realised in manifold ways, the above
 Once this is achieved, calls to the accessor "glueobject" of the equally named attribute won't deliver the original glue object, but the decorator's one. This is due to the basic mixin mechanism provided by XOTcl with the decorator's "glueobject" method shadowing the actual accessor called "glueobject". 
 After the successful decoration, the call, again, is delivered to the endpoint stipulated in the second glue object.
 
-We want to remind the reader at this point that the above classification somehow need to be considered oversimplifying. The main reason is the distinctions and elaborations are based on constructs that were defined, as an explicit design decision, as public interface (see Section \ref{sec:interface}). However,  as many features are built upon generic XOTcl mechanisms, the same statements and considerations are equally valid for other entities or interface levels: Any object of type \objlink{::xotcl::Object} may be associated with a glue object and can hold proxy methods through glue/ad\_glue, each of them being able to reference a distinct glue object. Therefore, the account given above applies to more than the scenarios outlined in the scope of this introductory section.
+We want to remind the reader at this point that the above classification somehow need to be considered oversimplifying. The main reason is the distinctions and elaborations are based on constructs that were defined, as an explicit design decision, as public interface (see Section \ref{sec:interface}). However,  as many features are built upon generic XOTcl mechanisms, the same statements and considerations are equally valid for other entities or interface levels: Any object of type \objlink{::xotcl::Object} may be associated with a glue object and can hold proxy methods through \proclink{::xotcl::Object}{instproc}{glue}/\proclink{::xotcl::Object}{instproc}{ad\_glue}, each of them being able to reference a distinct glue object. Therefore, the account given above applies to more than the scenarios outlined in the scope of this introductory section.
   \subsubsection{What is the idea of glue objects?}\label{sec:advanced:xorb:gobjects:what}
   Glue objects, as represented by all sub-classes of \objlink{::xorb::stub::ContextObject}, are the xorb-specific flavour of what is more commonly known as \emph{context objects} in language design. Context objects, in short, represent a specific pattern of argument passing applicable to various object-based language environments \cite{zdun:2005b}. The technique comprises the use of a generic or specifically typed object as single argument to operations with the actual arguments being stored as per-object variables (or more commonly, instance variables). The use of context objects has been suggested for a set of scenarios. These might be reflected against the requirements and design decisions taken in xorb's stub interface (see Section \ref{sec:interface}).
   

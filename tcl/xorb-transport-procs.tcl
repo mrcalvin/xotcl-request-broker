@@ -4,7 +4,7 @@ ad_library {
 
   @author stefan.sobernig@wu-wien.ac.at	
   @creation-date March 7, 2007			
-  @cvs-id $Id: xorb-procs.tcl 17 2006-09-26 14:34:40Z ssoberni $
+  @cvs-id $Id$
 }
 
 namespace eval ::xorb::transport {
@@ -25,23 +25,14 @@ namespace eval ::xorb::transport {
     [self]::listener destroy
   }
   ListenerClass instproc initialise {} {
-    # create context object
-    # / / / / / / / / / / / / / / / / / /
-    # clear ad_conn, require a context 
-    # object (::xo::ic)
     ad_conn -reset
-    [my contextClass] require \
-	-user_id [acs_magic_object "unregistered_visitor"]
     if {![my isobject [self]::listener]} {
       my create [self]::listener 
-    } else {
-      #[self]::listener configure 
-    }
+    } 
     next
   }
   ListenerClass instproc redirect {} {
     if {[my isobject [self]::listener]} {
-      my log "---2---,class=[[self]::listener procsearch processRequest]"
       [self]::listener processRequest
     }
     next
@@ -49,7 +40,7 @@ namespace eval ::xorb::transport {
   
   ListenerClass TransportListener
   TransportListener instproc processRequest {requestObj} {
-    ::xorb::rhandler handleRequest $requestObj
+   # ::xorb::rhandler handleRequest $requestObj
     next
   }
   TransportListener instproc dispatchResponse args {next}

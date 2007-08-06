@@ -24,9 +24,9 @@ namespace eval xorb {
     # / / / / / / / / / / / / / / / / / / / / / / / /
     # nest an object into [self] that represents 
     # the mixin-hook for request interceptors ("request flow")
-    ::xotcl::Object [self]::RequestFlow -proc handleRequest {requestObj} {
+    ::xotcl::Object [self]::RequestFlow -proc handleRequest {context} {
       #my log "---requestObj-4:$requestObj"
-      set r $requestObj
+      set r $context
       next 
       return $r
     }
@@ -34,36 +34,34 @@ namespace eval xorb {
     # / / / / / / / / / / / / / / / / / / / / / / / / 
     # nest an object into [self] that represents
     # the mixin-hook for response interceptors ("response flow")
-    ::xotcl::Object [self]::ResponseFlow -proc handleResponse {responseObj} {
-      set r $responseObj 
+    ::xotcl::Object [self]::ResponseFlow -proc handleResponse {context} {
+      set r $context
       next 
       return $r
     }
   }
 
-  InterceptorChain instproc load {config} {
+  InterceptorChain instproc load {config context} {
     set c [lsearch -glob -inline \
 	       [Configuration allinstances] *$config]
-    my debug "c=$c,ptree=[::xo::cc getProtocolTree]"
     if {$c ne {}} {
-      my debug "unfold=[$c unfold]"
-      [self]::RequestFlow mixin [$c unfold]
-      [self]::ResponseFlow mixin [$c unfold -reverse]
+      [self]::RequestFlow mixin [$c unfold $context]
+      [self]::ResponseFlow mixin [$c unfold -reverse $context]
     }
   }
 
-  InterceptorChain instproc handleRequest {requestObj} {
+  InterceptorChain instproc handleRequest {context} {
     # / / / / / / / / / / / / / / / / / / / / / / / /
     # initialise a configuration, i.e. linearised sequence,
     # of interceptors
     set config [parameter::get -parameter "interceptor_config"]
     #my log "---reqestObj-3:$requestObj"
-    my load [string toupper $config 0 0]
-    return [[self]::RequestFlow handleRequest $requestObj]
+    my load [string toupper $config 0 0] $context
+    return [[self]::RequestFlow handleRequest $context]
   }
 
-  InterceptorChain instproc handleResponse {responseObj} {
-    return [[self]::ResponseFlow handleResponse $responseObj]
+  InterceptorChain instproc handleResponse {context} {
+    return [[self]::ResponseFlow handleResponse $context]
   }
 
   ####################################################
@@ -136,14 +134,14 @@ namespace eval xorb {
     set h [concat [self] [my info heritage]]
     return [[self class] reverse $h]
   }
-  Configuration instproc unfold {-reverse:switch} {
+  Configuration instproc unfold {-reverse:switch ctx} {
     array set mixins [list]
     set l [my reversedHeritage]
     set interceptors [list]
     foreach pre $l {
       if {[$pre istype [self class]]} {
 	my debug "pre=$pre,mixin-exists?[my array exists mixins]"
-	foreach {idx interceptor} [$pre records] {
+	foreach {idx interceptor} [$pre records $ctx] {
 	  if {[info exists mixins($idx)]} {
 	    set item $mixins($idx)
 	    set interceptor [lappend item [join $interceptor]]
@@ -186,7 +184,7 @@ namespace eval xorb {
       }
     }
   }
-  Configuration instproc records {} {
+  Configuration instproc records {context} {
     array set temp [list]
     #set __children  [lsort -command [list my compare] \
 			# -increasing [my info children]]
@@ -205,14 +203,14 @@ namespace eval xorb {
       # / / / / / / / / / / / / / / / / 
       # 2) introduce mixin guards
       if {$listen ne "all"} {
-	lappend gxpr "\[lsearch -glob [list $listen] \[::xo::cc virtualObject\]\] != -1"
+	lappend gxpr "\[lsearch -glob [list $listen] \[$context virtualObject\]\] != -1"
       }
       
       if {$protocol ne {}} {
 	# hierarchy of protocol plug-ins (starting with current offset)
 	# escalate [::xo::cc protocol] -> e.g. Soap / Remote / All
 	# hProtocols evaluate at runtime
-	lappend gxpr "\[lsearch -glob \[::xo::cc getProtocolTree\] [list *$protocol]\] != -1"
+	lappend gxpr "\[lsearch -glob \[$context getProtocolTree\] [list *$protocol]\] != -1"
       }
       if {$gxpr ne {}} {
 	set child [list "$child -guard [list [join $gxpr { && }]]"]
@@ -272,13 +270,13 @@ namespace eval xorb {
 
   Interceptor LoggingInterceptor
   
-  LoggingInterceptor instproc handleRequest {requestObj} {
-    my debug [$requestObj serialize]
+  LoggingInterceptor instproc handleRequest {context} {
+    my debug [$context serialize]
     next
   }
 
-  LoggingInterceptor instproc handleResponse {responseObj} {
-    my debug [$responseObj serialize]
+  LoggingInterceptor instproc handleResponse {context} {
+    my debug [$context serialize]
     next
   }
 
@@ -319,7 +317,7 @@ namespace eval xorb {
     next
   }
 
-   RequestHandler ad_instproc handleRequest {requestObj} {} {	
+   RequestHandler ad_instproc handleRequest {context} {} {	
     
      # / / / / / / / / / / / / / / /
      # 1) preprocessing (CoI)
@@ -333,7 +331,7 @@ namespace eval xorb {
      # / / / / / / / / / / / / / / /
      # 2) init invoker and dispatch
      
-     set invoker [Invoker new $requestFlowResult]
+     set invoker [Invoker new -context $requestFlowResult]
      $invoker destroy_on_cleanup
      set r [$invoker invoke]
      
@@ -342,11 +340,11 @@ namespace eval xorb {
      my handleResponse $requestFlowResult $r
    }
   
-  RequestHandler ad_instproc handleResponse {responseObj} {} {
+  RequestHandler ad_instproc handleResponse {context} {} {
     # / / / / / / / / / / / / / / / / / / / / /
     # 4) Pass response to response flow
     my debug NEXT-3=[self next]
-    set responseFlowResult [next $responseObj]
+    set responseFlowResult [next $context]
     #my dispatchResponse $responseFlowResult
     return $responseFlowResult;# protocol-specific mixin->dispatchResponse 
   }
@@ -616,6 +614,66 @@ namespace eval xorb {
       # (::xorb::datatypes::String)
       # see also ::xorb::Abstract->stream
       Attribute defaultType -default string
+    } -ad_doc {
+      <p>
+      The meta class provides means to declare
+      new xorb-specific service contracts. It is also referred to as
+      'contract specification object' throughout xorb's
+      manual. A service contract is, actually, 
+      specified through a set of <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aAbstract">::xorb::Abstract</a> slot objects defined on the contract specification object while the specification object itself allows
+      for providing a contract description by using 
+      ad_doc.
+      </p>
+      <p>
+      Take a look at an introductory example:
+
+      <pre>
+      ServiceContract myContract -defines {
+	Abstract a1 \
+	    -arguments {
+	      inputArg:integer
+	    } -returns string \
+	-description {
+	  Here, we outline an abstract call "a1"
+	  and its basic characteristics to be realised
+	  both by servant code and client proxies.
+	}
+      } -ad_doc {
+	A brief description of "myContract".
+      }
+
+      myContract deploy
+      </pre>
+
+      Don't forget to call ::xorb::Object->deploy on your newly
+      specified contract once you are done with the actual specification.
+      Deployment refers to the overall procedure of, primarily, synchronising
+      the contract with the backend and initialising it in the broker.
+      Without prior deployment, you won't be able to use the contract, for
+      instance, for binding implementations to it.
+      </p> 
+      <p>
+      If you want to make sure that the contract has been properly
+      initialised and deployed, verify either with <a href="/acs-service-contract">OpenACS' service contract site</a> or 
+      <a href="/request-broker/admin/">xorb's cockpit</a>.
+      </p>
+
+      <p>
+      The meta class provides the following properties/attributes 
+      to its instances:
+      <ul>
+      <li>defaultType: You may provide any 'type code' 
+      (i.e. integer, string, boolean, ...) that will be used
+      on Abstract's argument lists where not provided by each
+      argument item as checkoption. The overall default is 'string'.
+      This also allows you to simply omit argument-level checkoptions
+      provided that a default is given (and sufficient in your use case).
+      </li>
+      </ul>
+      </p>
+
+      @author stefan.sobernig@wu-wien.ac.at
+      
     }
 
   ServiceContract instforward defines %self slots
@@ -1071,6 +1129,42 @@ ad_after_server_initialization synchronise_contracts {
     Attribute arguments -default {}
     Attribute returns -default {}
     Attribute description -default {}
+  } -ad_doc {
+    <p>The slot class is a specialisation of <a href="http://media.wu-wien.ac.at/langRef-xotcl.html#Attribute">XOTcl's Attribute
+    class</a> and allows to specify abstract elements of interface
+    descriptions, i.e. service contracts. Abstract elements
+    are more commonly understood as abstract operations, 
+    either reflecting procedures (in a procedural) or methods
+    (in an OO environment). Abstract allows to define
+    such an abstract operation, somehow, similar to 
+    <a href="http://media.wu-wien.ac.at/langRef-xotcl.html#Object-abstract">XOTcl's abstract keyword</a>, but with slightly different semantics.</p>
+    <p>For this purpose, it provides three attributes/properties
+    to its instances:
+    <ul>
+    <li>arguments: It takes a list of argument declarations which are 
+    internally treated (and may therefore be specified that way) as 
+    non-positional arguments, though written without a leading "-" (dash).
+    Each argument label may be accompanied by a 'type code' as checkoption.
+    If not given, the default 'type code' as specified by the domain 
+    object (see <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceContract">ServiceContract</a>) is applied.
+    </li>
+    <li>
+    returns: Takes a single (or possibly multiple) return value constraints
+    in terms of 'type codes'. You may adopt the following notational forms: 
+    Providing a single term (e.g. string) will be mapped to 
+    "returnValue:string", therefore, type codes take precedence in the 
+    internal resolution. Or, you provide both, label and type code which 
+    remains untouched.
+    </li>
+    <li>
+    description: Allows to specify a documentary bit of information, targeting
+    the developer.
+    </li>
+    </ul>
+    </p>
+
+    <p> For a code snippet in context, see <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceContract">ServiceContract</a>.
+    
   }
 
   Abstract instproc stream {} {
@@ -1132,11 +1226,57 @@ ad_after_server_initialization synchronise_contracts {
 	return 1    
       }
     }
+  } -ad_doc {
+    <p>The slot class is a specialisation of <a href="http://media.wu-wien.ac.at/langRef-xotcl.html#Attribute">XOTcl's Attribute class</a> and mediates 
+    between abstract operations defined for a service contract and 
+    servant code, i.e. procs or XOTcl objects/classes that should be bound to
+    abstract calls. Delegates realise basic delegation or forwarding
+    bindings (in contrast to <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aMethod">::xorb::Method</a>). You may specify OpenACS-specific switches
+    on Delegates as you would expect from using ::xotcl::Object->ad_forward 
+    or ::xotcl::Class->ad_instforward (see below).</p>
+    
+    <p>Let's look at a first example:
+    <pre>
+    ServiceImplementation myImplementation \
+	-implements myContract \
+	-using {
+	  Delegate a1 -private_p true \
+	      -for ::some_proc {
+		This is a simple delegate that binds ::some_proc
+		to abstract calls a1 as specified by 'myContract'
+	      }
+	}
+    myImplementation deploy
+    </pre>
+    </p>
+    <p>
+    Delegate, in this role, provides the following properties/ attributes 
+    to its instances:
+    <ul>
+    <li>
+    for: This is the pointer to an existing proc/ad_proc, an 
+    ::xotcl::Object->proc/ad_proc or an 
+    ::xotcl::Class->ad_instproc/instproc that is bound as servant script.
+    </li>
+    <li>per-object: In fact, you can choose whether you want the 
+    specification object itself (per-object level) be the 
+    forwarding agent and host for the servant script or its 
+    instances (per-instance level).
+    </li>
+    <li>private_p: OpenACS private switch</li>
+    <li>debug_p: OpenACS debug switch</li>
+    <li>warn_p: OpenACS warn switch</li>
+    <li>deprecated_p: OpenACS deprecated switch</li>
+    </ul>
+    </p>
+    <p>See also <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceImplementation">ServiceImplementation</a>.</p>
+    @author stefan.sobernig@wu-wien.ac.at
   }
   Delegate instproc declareServant {} {
     my instvar name domain for {__doc__ doc} \
 	{private_p private} {deprecated_p deprecated} {warn_p warn} \
 	{debug_p debug}
+    my debug DOC2=$doc
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}forward servant=$name $for
     $domain __api_make_forward_doc $scope $name
@@ -1144,6 +1284,7 @@ ad_after_server_initialization synchronise_contracts {
 
   Delegate instproc init {{doc {}}} {
     my instvar name domain manager
+    my debug DOC1=$doc
     my set __doc__ $doc
     set forwarder [expr {[my per-object] ? "forward" : "instforward"}]
     if {$domain eq ""} {
@@ -1229,7 +1370,33 @@ ad_after_server_initialization synchronise_contracts {
     return "[my name] [my for]"
   }
   
-  ::xotcl::Class Method -superclass Delegate
+  ::xotcl::Class Method -ad_doc {
+        <p>The slot class is a specialisation of <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aDelegate">::xorb::Delegate</a>. Similar to <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aDelegate">::xorb::Delegate</a>, 
+    it mediates between abstract operations defined for a service contract and 
+    servant code, i.e. procs or XOTcl objects/classes that should be bound to
+    abstract calls. However, in contrast to <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aDelegate">::xorb::Delegates</a>, they realise servant
+    bindings, i.e. they establish both a delegation and the servant code in one. The servant code can be specified in a notational form that mimic the writing of proc/instproc declarations with non-positional arguments.
+    You may specify OpenACS-specific switches
+    on ::xorb::Methods as you would expect from using ::xotcl::Object->ad_proc
+    or ::xotcl::Class->ad_instproc.</p>
+    
+    <p> An example is given in the inline documentation on 
+    <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceImplementation">ServiceImplementation</a>. Method, in this role, provides 
+    the following properties/ attributes to its instances:
+    <ul>
+    <li>per-object: In fact, you can choose whether you want the 
+    specification object itself (per-object level) be the 
+    forwarding agent and host for the servant script or its 
+    instances (per-instance level).
+    </li>
+    <li>private_p: OpenACS private switch</li>
+    <li>debug_p: OpenACS debug switch</li>
+    <li>warn_p: OpenACS warn switch</li>
+    <li>deprecated_p: OpenACS deprecated switch</li>
+    </ul>
+    </p>
+
+  } -superclass Delegate
   # / / / / / / / / / / / / / / / 
   # Overwriting Object->configure
   # allows to write non-pos Args 
@@ -1333,7 +1500,59 @@ ad_after_server_initialization synchronise_contracts {
     -pretty_name "XORB Service Implementation" \
     -pretty_plural "XORB Service Implementations" \
     -table_name "xorb_service_impls" \
-    -superclass ::xorb::AcsScImplementation
+    -superclass ::xorb::AcsScImplementation \
+    -ad_doc {
+       <p>
+      The meta class provides means to declare
+      new xorb-specific implementation contracts. It is also referred to as
+      'implementation specification object' throughout xorb's
+      manual. A service implementation is, actually, 
+      specified through a set of <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aDelegate">::xorb::Delegate</a> or <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aMethod">::xorb::Method</a> slot objects defined on the contract specification object while the specification object itself allows
+      for providing an implementation description by using 
+      ad_doc.
+      </p>
+      <p>
+      Providing implementations (or 'callee interfaces') comes in two
+      flavours, the first realising a mere delegation or forwarding 
+      (see <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aDelegate">::xorb::Delegate</a>), the second
+      allowing for combining both implementation and servant code in one 
+      (see <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aMethod">::xorb::Method</a>).
+      </p>
+      <p>
+      Take a look at an introductory example which complements to
+      the example given for <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceContract">ServiceContract</a>:
+
+      <pre>
+      ServiceImplementation myImplementation \
+      -implements myContract \
+      -using {
+	Method a1 {
+	  -inputArg:required
+	} {Echoes an incoming string} {
+	  return $inputArg
+	}
+      }
+
+      myImplementation deploy
+      </pre>
+
+      Don't forget to call ::xorb::Object->deploy on your newly
+      specified implementation once you are done with the actual specification.
+      Deployment refers to the overall procedure of, primarily, synchronising
+      the implementation with the backend and initialising it in the broker.
+      As for implementations, they are also queued for conformance checks
+      with the contracts they aim at implementing and creating bindings
+      to these contracts, provided that the qualify as valid bindings.
+      Without prior deployment, you won't be able to use the implementation.
+      </p> 
+      <p>
+      If you want to make sure that the implementation has been properly
+      initialised and deployed, verify either with <a href="/acs-service-contract">OpenACS' service contract site</a> or 
+      <a href="/request-broker/admin/">xorb's cockpit</a>.
+      </p>
+
+      @author stefan.sobernig@wu-wien.ac.at
+    }
 
   ServiceImplementation instforward name %self impl_name
 
@@ -1371,62 +1590,63 @@ ad_after_server_initialization synchronise_contracts {
   # a re-init. Therefore, it is the 
   # place to hook-in declaration-only
   # behaviour.
-  # ServantManage and the declaration
+  # ServantManager and the declaration
   # of shadowed servants for xorb's
   # method/delegate slots is such 
   # an example (see below)
 
-  ::xotcl::Class ServantManager
-  ServantManager instproc init args {
-    next;# init
-    my debug MIXIN-SLOT-INIT
-    my declareServant
-  }
+ ::xotcl::Class ServantManager
+ ServantManager instproc init args {
+   my debug PROCSEARCH(manager)=[self next]
+   next;# init
+   my debug MIXIN-SLOT-INIT
+   my declareServant
+ }
 
-  ServiceImplementation instproc slots args {
-    #if {[::xotcl::Slot info instmixin ::xotcl::Slot::Optimizer] ne {}} {
-    #  my log SLOT-CLEAR
-    #  ::xotcl::Slot instmixin delete ::xotcl::Slot::Optimizer
-    #}
-    ::xotcl::Object instmixin add ::xorb::NamespaceHandler
-    ::xorb::Delegate instmixin add ::xorb::ServantManager
-    next;#Class->slots
-    ::xorb::Delegate instmixin delete ::xorb::ServantManager
-    ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
-    # / / / / / / / / / / 
-    # TODO: take precautious
-    # measures to avoid 
-    # object system corruption
-    # upon local failure
-    my log SLOT-RESET
-    #::xotcl::Slot instmixin add ::xotcl::Slot::Optimizer
-    
-  }
+ ServiceImplementation instproc slots args {
+  #if {[::xotcl::Slot info instmixin ::xotcl::Slot::Optimizer] ne {}} {
+  #  my log SLOT-CLEAR
+  #  ::xotcl::Slot instmixin delete ::xotcl::Slot::Optimizer
+  #}
+   ::xotcl::Object instmixin add ::xorb::NamespaceHandler
+   ::xorb::Delegate instmixin add ::xorb::ServantManager
+   next;#Class->slots
+   ::xorb::Delegate instmixin delete ::xorb::ServantManager
+   ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
+   # / / / / / / / / / / 
+   # TODO: take precautious
+   # measures to avoid 
+   # object system corruption
+   # upon local failure
+   my log SLOT-RESET
+   #::xotcl::Slot instmixin add ::xotcl::Slot::Optimizer
+   
+ }
 
-  ServiceImplementation instproc expandAlias {
-    contractName
-    implName
-    operation
-    spec
-  } { 
-    switch [llength $spec] {
-      1  {
-	set alias $spec
-	set language TCL
-      }
+ ServiceImplementation instproc expandAlias {
+   contractName
+   implName
+   operation
+   spec
+ } { 
+   switch [llength $spec] {
+     1  {
+       set alias $spec
+       set language TCL
+     }
       2 {
 	set alias [lindex $spec 0]
 	set language [lindex $spec 1]
-
+	
       }
-    }
-    ::xo::db::sql::acs_sc_impl_alias new \
-	-impl_contract_name $contractName \
-	-impl_name $implName \
-	-impl_operation_name $operation \
-	-impl_alias $alias \
-	-impl_pl $language
-  }
+   }
+   ::xo::db::sql::acs_sc_impl_alias new \
+       -impl_contract_name $contractName \
+       -impl_name $implName \
+       -impl_operation_name $operation \
+       -impl_alias $alias \
+       -impl_pl $language
+ }
 
   # / / / / / / / / / / / / / / / / / /
   # save / delete / update are know realised
@@ -2834,6 +3054,7 @@ ad_after_server_initialization synchronise_contracts {
     Attribute arguments -default {}
     Attribute skeleton
     Attribute protocol
+    Attribute context
   }
 
   Invoker instproc resolve {objectId} {
@@ -2842,18 +3063,18 @@ ad_after_server_initialization synchronise_contracts {
 
   Invoker instproc init args {
     my instvar impl call arguments \
-	skeleton protocol
+	skeleton protocol context
     # / / / / / / / / / / / / / / / / / /
     # 1) invocation data
-    set impl [my resolve [::xo::cc virtualObject]]
-    set call [::xo::cc virtualCall]
-    set protocol [::xo::cc protocol]
+    set impl [my resolve [$context virtualObject]]
+    set call [$context virtualCall]
+    set protocol [$context protocol]
     set arguments [list]
 
     # / / / / / / / / / / / / / / / / / /
     # 1a) handle anythings
     
-    foreach any [::xo::cc virtualArgs] {
+    foreach any [$context virtualArgs] {
       lappend arguments -[$any name__] $any
     }
     

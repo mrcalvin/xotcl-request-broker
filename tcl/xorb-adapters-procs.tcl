@@ -64,6 +64,7 @@ namespace eval ::xorb {
 				 -for [self]::$adapteeCall\n}]
       }
       my superclass [array names superclass]
+      my debug PROCSEARCH=[my procsearch slots]
       if {[info exists slots]} {my slots $slots}
     }
     next;#ServiceImplementation->init

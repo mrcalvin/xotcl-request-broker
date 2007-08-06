@@ -1,3 +1,32 @@
+2007-08-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/admin/regression-test.tcl: Fixed for new separation
+	of connection vs. invocation context. 
+
+	* tcl/xorb-stub-procs.tcl: Added inline documentation for
+          ProxyObject, ProxyClass, Object->glue/ad_glue.
+
+	* tcl/xorb-package-procs.tcl: The role of packages has been
+          pitched quite strongly, ProtocolPackage hosts some new
+          shared functionality for protocol plug-in package types,
+	  path resolution, generic dispatcher etc.
+
+	* tcl/xorb-deployment-procs.tcl: Minor bug fix in
+          isImplementation condition which was not aware of
+	  the internal replacement of :: delimiters by "__".
+
+	* tcl/xorb-context-procs.tcl: The request broker amends
+          xotcl-core's connection context by an attribute 'httpMethod'
+          (method would be conflicting with
+          ::xotcl::Object->method). InvocationContext is now
+          independent from ::xo::ConnectionContext
+
+	* tcl/20-xorb-procs.tcl: Re-introduced separation of concern
+          between connection contexts (as re-used from xotcl-core) and
+          invocation contexts. this required a major rewrite. Added
+          inline documentation for ServiceContract, Abstract,
+          ServiceImplementation, Delegate, Method.
+
 2007-08-02  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-deployment-procs.tcl: Fixed another bug introduced

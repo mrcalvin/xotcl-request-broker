@@ -88,13 +88,14 @@ ad_library {
 	eval set cName $$cMiddle
       } elseif {[info exists $iMiddle] && [subst $$iMiddle] ne {}} {
 	eval set iName $$iMiddle
-	set iObj [IRepository resolve -name $iName]
+	set iObj [::xorb::manager::IRepository resolve -name $iName]
 	set cName [$iObj implements]
       }
       # / / / / / / / / / / / / 
       if {[info exists cName] && $cName ne {}} {
 	my debug  cName=$cName
-	set grep($cMiddle) [CRepository resolve -name $cName]
+	set grep($cMiddle) [::xorb::manager::CRepository resolve \
+				-name $cName]
       }
       my debug next=[self next]
       next 
@@ -108,7 +109,7 @@ ad_library {
       if {[info exists $iMiddle]} {
 	# 3.
 	eval my debug iName=$$iMiddle
-	set grep($iMiddle) [eval IRepository resolve -name $$iMiddle]
+	set grep($iMiddle) [eval ::xorb::manager::IRepository resolve -name $$iMiddle]
       }
       my debug next=[self next]
       next
@@ -128,7 +129,7 @@ ad_library {
       } elseif {[array size grep] == 1 && [info exists grep(impl)]} {
 	set iid [$grep(impl) object_id]
 	set contract [$grep(impl) implements]
-	set cObj [CRepository resolve -name $contract]
+	set cObj [::xorb::manager::CRepository resolve -name $contract]
 	my debug "STREAM-CHECK: cid=[$cObj object_id],iid=$iid,binds=[array get bindings]"
 	set verified [expr {
 			    [info exists bindings([$cObj object_id])] 
@@ -187,6 +188,7 @@ ad_library {
       set c [my info class]
       if {[lsearch -exact [$c info instprocs] $call] != -1} {
 	my debug "==calling==> $call $args"
+	my debug "==info==> [my procsearch $call],[my serialize]"
 	eval my $call $args
       }
     }
@@ -216,7 +218,7 @@ ad_library {
 	  set refresh 0
 	  foreach iid $binds {
 	    # TODO:introduce conformance check here
-	    set i [IRepository resolve -id $iid]
+	    set i [::xorb::manager::IRepository resolve -id $iid]
 	    set ok [$i check]
 	    my debug OK($iid)=$ok
 	    if {$ok} {
