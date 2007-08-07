@@ -42,11 +42,13 @@ ad_library {
 	select contract_id, impl_id
 	from acs_sc_bindings;
       } {
-	set l [list]
-	if {[info exists bindings($contract_id)]} {
-	  set l $bindings($contract_id)
-	}
-	set bindings($contract_id) [lappend l $impl_id] 
+
+	lappend bindings($contract_id) $impl_id
+	# 	set l [list]
+	# 	if {[info exists bindings($contract_id)]} {
+	# 	  set l $bindings($contract_id)
+	# 	}
+	#set bindings($contract_id) [lappend l $impl_id]
       }
       my debug AFTER-REFRESH-BINDINGS=[array get bindings]
     }

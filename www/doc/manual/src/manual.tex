@@ -16,7 +16,7 @@
 %body
 
      \section{Introduction}
-        \textbf{xorb}, the X(OTcl) R(equest) B(roker) (OpenACS package key: xotcl-request-broker), is an 
+        \textbf{xorb}, the X(OTcl) R(equest) B(roker), is an 
 infrastructure package for the web development toolkit OpenACS and OpenACS-based frameworks that 
 provides for generic means of call abstraction.  Call abstraction, hereby, refers to both distributed and 
 non-distributed scenarios. In a non-distributed scenario, xorb is an object-oriented refinement of the well 
@@ -24,7 +24,7 @@ established OpenACS facilities also referred to as 'service contracts'. In a dis
 provides a remoting infrastructure for OpenACS. xorb was designed in a protocol-agnostic manner, i.e. 
 our primary intention is to provide support for a variety of remoting protocols. Protocol support is, 
 therefore, realised in terms of protocol plug-ins for xorb. So far, we have realised a feature-rich SOAP 
-protocol plug-in referred to as \textbf{xosoap} (OpenACS package key: xotcl-soap).
+protocol plug-in referred to as \textbf{xosoap}.
 
 This guide, in its current shape, aims at providing the fundamentals of using call abstractions in a 
 distributed scenario. We restrict ourselves, for the moment, to the remoting capabilities and therefore 
@@ -38,7 +38,7 @@ Beyond this manual, the following materials are currently available.
 publicly and writing ahead.
 \item We aim at documenting elements of the public interfaces by means of the OpenACS in-code 
 documentation facility and the API Browser. References will be given throughout the manual where 
-appropriate.
+appropriate. For inline documentation, watch out the OpenACS API Browser for \filelink{xotcl-soap/tcl/xosoap-client-procs.tcl}{xosoap's} and \filelink{xotcl-request-broker/tcl/xorb-stub-procs.tcl}{xorb's interface}.
 \item Tutorial prepared for the \href{http://oacs-dotlrn-conf2007.wu-wien.ac.at/}{OpenACS Spring 
 Conference 2007} (up-to-date):
 \begin{itemize} 
@@ -74,6 +74,9 @@ started with integrating SOAP in your OpenACS application in terms of consuming 
 service and providing your own as quick as possible. We provide ready-made and take-away code 
 snippets and discuss the important steps in further detail. At some point, we might refer to further 
 readings or more advanced concepts. 
+\begin{hints}
+\item By referring to "SOAP" throughout the quick start section, we, more precisely, take into consideration SOAP 1.1 \cite{w3c:2000}. Moreover, we exclusively refer to RPC as messaging or rather (de-)marshaling style. So, any occurrence of "SOAP" should actually be read as "SOAP-RPC 1.1".
+\end{hints}
   \subsubsection{How to glue to ...?}\label{sec:xosoap:quickstart:glueto}
   Say, you want to realise a scenario as depicted in Figure \ref{fig:quickstart:xosoap:1}, i.e. you want to 
 use the simple echo functionality provided by a remote object or remote procedure through SOAP. In this 
@@ -83,6 +86,9 @@ Remoting and the like. Further, we assume that  EchoService features a call 'ech
 single argument of type 'float' (as defined as 'built-in' simple type by the XML schema specification) as 
 input and promises to return a value of the very same type. How do you call and consume this little 
 example SOAP service by means of xosoap?
+\begin{hints}
+\item As for data type declarations to be used on OpenACS Service Contracts or remoting protocols, there is a section in this manual dedicated to this issue (see Section \ref{sec:avanced:template}). For the scope of this quick start section, all (data) types refer to what is known as 'built-in' primitive types as defined by  XML schema specification 1.0 \cite{w3c:2004}. In xorb, there is a distinction between data types tags you can use in specifying contracts and the type handler behind the scenes. The former, e.g. xsFloat in the below example, are called \emph{type codes}, the actual handler  (an XOTcl object) is an \emph{anything}.
+\end{hints}
 \begin{figure}[htbp]
 \begin{center}
 \includegraphics[width=0.5\textwidth]{img/consumer.png}
@@ -106,10 +112,10 @@ important bits of information:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=6,lastline=10]{../examples/xosoap/example-01-soap-consumer.tcl}
 In these four lines, we create and initiate an instance of the glue object class and provide three 
-information items to it. In line 2, we pass the actual endpoint address. In a conventional setting, the 
+information bits to it. In line 2, we pass the actual endpoint address. In a conventional setting, the 
 transport endpoint corresponds to a valid unique resource identifier (URL) as required by the HTTP 
 protocol as transport provider. Line 4 also meets an information requirement at the HTTP level, i.e. the 
-value assigned to a specific HTTP header field prescribed by SOAP 1.1/1.2 specifications: the 
+value assigned to a specific HTTP header field prescribed by SOAP 1.1 \cite{w3c:2000} (and 1.2) specifications: the 
 SOAPAction header field. Line 2 and the setter call on callNamespace, on the contrary, refers to a higher 
 protocol level, i.e. the SOAP level. The value of callNamespace will be used to set the namespace 
 attached to the method-describing element. This is used by a few SOAP frameworks, e.g. .NET 
@@ -124,17 +130,13 @@ Want to learn more?
 % concatenation of shadow information
 \end{hints}
 
-\item Create a local proxy of the remote object or remote procedure, a so called \emph{client proxy}
-\index{Clientproxy}. This client proxy object holds a proxy method for the remote method or procedure to 
+\item Create a local proxy of the remote object or remote procedure, a so called \emph{client proxy}. This client proxy object holds a proxy method for the remote method or procedure to 
 call. There are a few flavours for specifying such a client proxy, the most straight forward, however, is by 
-instantiating \objlink{::xorb::stub::ProxyObject} and thus creating a proxy object (\objlink{::xorb::stub::ProxyObject} might be resolved as 'G
-(lueing)Object' which introduces a subtle difference between glue object and glueing object).
+instantiating \objlink{::xorb::stub::ProxyObject} and thus creating a proxy object.
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=13,lastline=13]{../examples/xosoap/example-01-soap-consumer.tcl}
-The only significant action here is to associate the previously defined glue object to the client proxy. The 
-information encapsulated by the glue object is then used by the underlying infrastructure to form remote 
-calls out of the combined information of the glue object and the client proxies interface. The latter is 
-defined in the third step.
+The only significant step here is to associate the previously defined glue object to the client proxy. The 
+information encapsulated by the glue object is then used by the underlying infrastructure to perform the actual remote call out of the combined information of the glue object and the client proxies interface. So, there it is, what we are still missing is the very client proxy.
 \item Specify and realise the interface of your client proxy. The notion of object interfaces, to keep it 
 simple, refers to the set methods and their method signatures defined on the object. When looking at 
 Figure \ref{fig:quickstart:xosoap:1}, we learn that the interface of the remote object EchoService is quite 
@@ -142,15 +144,11 @@ simplistic: There is a single method echoFloat that takes a single argument flag
 argument is, apart from a concrete label, further qualified by a type constraint called xsFloat. These type 
 constraints are realised as \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check 
 options on non-positional arguments}, in XOTcl terms. Besides, the interface promises a specific return 
-value type, stipulated by setting "-returns" on ad\_proc.
+value type, stipulated by passing a type code value as non-positional argument "returns" to ad\_proc.
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=16,lastline=21]{../examples/xosoap/example-01-soap-consumer.tcl}
 The method ad\_proc that comes with \objlink{::xorb::ProxyObject} overloads ad\_proc as defined 
-on ::xotcl::Object and allows for declarations of the following term structure: \\\begin{footnotesize}\textbf
-{<ProxyObject>} \textbf{ad\_proc} [-returns \textit{Anything}] \textbf{<name>} \textbf{<arguments>} \textbf
-{<documentation>} \textbf{<body>}\end{footnotesize}\\
-For a detailed description see \proclink{::xorb::ProxyObject}{instproc}{ad\_proc}.
-%\href{http://openacs-dotlrn.wu-wien.ac.at/api-doc/proc-view?proc=::xorb::ProxyObject+instproc+ad_proc}{::xorb::ProxyObject->ad\_proc}.
+on ::xotcl::Object, see \proclink{::xorb::ProxyObject}{instproc}{ad\_proc} a detailed description.
 \item Invoke the proxy method to perform the remote call
 \lstinputlisting[breaklines=true,numbers=left,label=lst:quickstart:xosoap:1,frame=single,basicstyle=\footnotesize,firstline=23,lastline=23]{../examples/xosoap/example-01-soap-consumer.tcl}
 \end{enumerate}
@@ -178,8 +176,8 @@ method:
 \end{enumerate}
 
  \begin{hints}
-\item See the complete example: Listing \ref{lst:quickstart:xosoap:3}.
-\item See: \nameref{sec:advanced:interface:what}
+\item See the complete example: Listing \ref{lst:quickstart:xosoap:3}. All examples are dumped into the following directory, ready to pick them up: xotcl-soap/www/manual/examples.
+\item See (also for more example walk-throughs): \nameref{sec:advanced:interface:what}
 \end{hints}
 
   
@@ -198,25 +196,30 @@ achieve this?
 \item Declare and deploy an \emph{interface description}. In OpenACS, interface descriptions have a long-standing tradition, however, sometimes neglected. You might be familiar with or, at least, you might have heart of \emph{service contracts} as provided by the OpenACS core. If not, don't panic! For the time being, you just need to know that there is something called "service contract" in OpenACS, that xorb builds upon this core feature of OpenACS and that you now need to create such a service contract, weird enough. Think of an interface description as a fundamental sketch of an object interface that lays down how the interface of a remote object and the interfaces of client proxies mimicking this remote object are to be construed. As for the EchoService in Figure \ref{fig:quickstart:xosoap:2}, a description might look the following way:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=9,lastline=23]{../examples/xosoap/example-07-soap-provider-init.tcl}
-The above statement is, in the very literal sense of the word, a "blue print" for the EchoService service. Apart from a few bits of information targeting you as developer, it outlines that any servant or client proxy is meant to implement a method called "echoFloat", accepting a single argument and, in particular, throwing back a return value of a specific type. Don't forget to "deploy" your newly created service contract by calling:
+The above statement is, in the very literal sense of the word, a descriptive cast of a concrete EchoService service. Apart from a few bits of information targeting you as developer, it outlines that any servant or client proxy is meant to implement a method called "echoFloat", accepting a single argument and, in particular, throwing back a return value of a specific type. Don't forget to "deploy" your newly created service contract by calling:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=26,lastline=26]{../examples/xosoap/example-07-soap-provider-init.tcl}
 This separate step of deployment might seem an overhead in this simple example, but it renders useful when considering more complex scenarios of designing and lifecycling interface descriptions.
+\begin{hints}
+\item There is a shrinking violet of an inline documentation available, see in particular, \objlink{::xorb::ServiceContract} and \objlink{::xorb::Abstract}.
+\end{hints}
 \item Provide servant code and register it with the invocation mechanism. The lines above are, as the notion of "interface description" implies, are mere description of something. What about the realisation of that something, i.e. the actual code block that is executed when the service is called. We refer to this code artefact as servant code or \emph{servant}, in short. But simply creating servant code is not enough, you still have to let xorb know which code block to invoke when calls from client proxies occur. The latter is referred to as providing a "service implementation", i.e. registering your code piece as realisation of a specific service contract! Behind the scenes and in some use cases, it might be more appropriate to deal with these two steps separately, however, in a straight-forward "get-me-a-soap-service" scenario, xorb provides a short cut to accomplish both in a single step:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=30,lastline=38]{../examples/xosoap/example-07-soap-provider-init.tcl}
-\lstinline[frame=single]!-implements! identifies the service contract realised by the underlying servant code, while \lstinline[frame=single]!-using! allows for specifying the intended delegations, which concrete code block is meant to be called for which abstract call. In our concrete example, we both provide a servant method called echoFloat and, behind the scenes, this servant method is registered as callee for abstract calls on echoFloat as defined by the contract. Note that the facility  \lstinline[frame=single]!Method! is actually an XOTcl object (i.e. a slot object, to be more precise) that mimics the declaration of instprocs and procs as known from XOTcl. Finally, also deploy your service implementation:
+The non-positional argument \lstinline[frame=single]!-implements! identifies the service contract realised by the underlying servant code, while \lstinline[frame=single]!-using! allows for specifying the intended delegations, which concrete code block is meant to be called for which abstract call. In our concrete example, we both provide a servant method called echoFloat and, behind the scenes, this servant method is registered as callee for abstract calls on echoFloat as defined by the contract. Note that the facility  \objlink{::xorb::Method} is actually an XOTcl object (i.e. a slot object, to be more precise) that mimics the declaration of instprocs and procs as known from XOTcl. Finally, also deploy your service implementation:
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,firstline=41,lastline=41]{../examples/xosoap/example-07-soap-provider-init.tcl}
 At this point, you have accomplished most of the work needed to provide your EchoService. Two things remain to be done:
 \begin{hints}
 \item Interested in some background reading on OpenACS's service contracts? See the section on \nameref{sec:internal:contracts}.
-\item See the complete Listing \ref{}.
+\item See the complete Listing \ref{lst:quickstart:xosoap:7}.
+\item Again, you might also want to watch out the API Browser for information on \objlink{::xorb::ServiceImplementation}, \objlink{::xorb::Delegate}, and \objlink{::xorb::Method}.
 \end{hints}
 \item You might have asked yourself, while going through step 1 and 2, where to actually put your the code outline above. Well, there are several answers to this question, you may choose between the following options:
 \begin{itemize}
 \item Your package's library files (*-procs.tcl, *-init.tcl): Preferably, drop your code in files situated in the tcl-subdirectory of your package. In either case, whether you choose a *-procs or a *-init file, make sure that you place the following line before the actual code block depicted in step 1 and 2:
-\lstinline!::xo::db::package require xotcl-request-broker!. Besides, there is a subtle difference between the *-procs and *-init files. The latter are evaluated only once, during server start-up. This means, contracts and implementations are only evaluate once. If you constantly develop, let's say, the servant code declared by your implementation, and you want your modifications/ improvements to take effect without a dedicated server re-start, go for the *-procs option. This way, you can take advantage of xorb's reload and watch features.
+
+\lstinline[breaklines=true]!::xo::db::package require xotcl-request-broker!. Besides, there is a subtle difference between the *-procs and *-init files. The latter are evaluated only once, during server start-up. This means, contracts and implementations are only evaluate once. If you constantly develop, let's say, the servant code declared by your implementation, and you want your modifications/ improvements to take effect without a dedicated server re-start, go for the *-procs option. This way, you can take advantage of xorb's reload and watch features.
 \item Your package's W(eb) U(user) I(nterface) files: In principle, you can specify a contract (::xorb::ServiceContract) in one of your www-subdirectory files as well. While it limits their usage, it does not break any functionality. Implementations (::xorb::ServiceImplementation) might as well be specified in WUI files, however, only the most basic variant makes sense in this context. The code of step 2 would not make sense as it defines servant code as well which should be available for all connections, i.e. in the context of all connection threads, and not only the one you specified it in by calling the WUI file.
 \item Developer shell: You can also drop the code in the shell as provided by the Developer Support package, however, the limitations for WUI scripts apply here as well.
 \end{itemize}
@@ -286,7 +289,7 @@ properties of glue objects and proxy clients in one. This allows for an abbrevia
 SOAP client code, with all facilities introduced by lower interface levels. For an introductory example see 
 the quick start section on xosoap (see Section \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref
 {lst:quickstart:xosoap:3}.
-
+\subsection{Data type infrastructure}\label{sec:avanced:template}
  \subsection{Proxy templates}\label{sec:advanced:template}
 Proxy templates or rather template methods on proxy objects follow an primary intention: Extending the 
 use of pure interface descriptors to full-featured methods that allow to pack program logic along with a 

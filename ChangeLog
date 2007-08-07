@@ -1,3 +1,13 @@
+2007-08-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/admin/index.tcl: added some fine features
+	to make the admin interface slightly more appealing, 
+	completed implementation state display, register/unregister
+	of implementations
+
+	* tcl/xorb-broker-procs.tcl: minor change to make
+	the (re-)init of binding state more elegant.
+
 2007-08-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/regression-test.tcl: Fixed for new separation
