@@ -26,12 +26,23 @@
 # / / / / / / / / / / / / 
 # TODO: Might change once 
 # an AcsObjectType AcsScBinding
-# is introduced.
+# is introduced. all current
+# steps could so be encapsulated
+# in the AcsObject delete step.
 # TODO: permission check, again!
 
+# 1-) clear backend
 ::xo::db::sql::acs_sc_binding delete \
     -contract_name $contract_name \
     -impl_name $impl_name
+# 2-) re-init binding state in Broker
 ::XorbManager do ::xorb::manager::Broker init
+
+# 3-) clear Skeleton cache for
+# implementation, contract
+# could potentially still be
+# in use.
+::xorb::SkeletonCache remove \
+    [::xorb::Object canonicalName $impl_name] 
 
 ad_returnredirect $return_url

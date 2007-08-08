@@ -54,7 +54,7 @@ namespace eval xorb::exceptions {
       }
       
       if {[info exists __classDoc__]} {
-	set message "\[[self class]\] $__classDoc__ (run-time message: $message)"
+	set message "[self class]: $__classDoc__ (run-time message: $message)"
       }
       my set __message__(text/plain) $message
       next $message
@@ -70,6 +70,16 @@ namespace eval xorb::exceptions {
   # Exception types + documentation
   LoggableException SkeletonGenerationException -ad_doc {
     The generation of a skeleton (implementation plus contract) failed.
+  }
+  
+  LoggableException InterfaceDescriptionNotFound -ad_doc {
+    There was no interface description (service contract) 
+    found for this name.
+  }
+  
+  LoggableException CalleeInterfaceNotFound -ad_doc {
+    There was no calle interface (service implementation) found 
+    for this name.
   }
 
   LoggableException InvocationException -ad_doc {
@@ -137,5 +147,6 @@ namespace eval xorb::exceptions {
   #   An unspecified exception was caught
   # }
   namespace export SkeletonGenerationException LoggableException\
-      InvocationException NoTransportProvider TypeViolationException
+      InvocationException NoTransportProvider TypeViolationException \
+      InterfaceDescriptionNotFound CalleeInterfaceNotFound
 }

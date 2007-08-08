@@ -1,3 +1,23 @@
+2007-08-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/doc/manual/src/manual.tex: Added some more infos on
+          service implementations (per-object), compiled section on
+          data types supported, revised quickstart section and minor
+          fixes.  
+
+	* www/admin/index.tcl: State icons now visually identify
+          xorb-based implementations.
+
+	* tcl/10-xorb-exceptions-procs.tcl: Fixed a minor issue with
+          exceptions in general. some of them contained characters
+          such as squared brackets etc. yielding some xml compat
+          problems. just removed those in general. when revising the
+          logging scheme, we may switch to pcdata or similar for
+          marshaling exceptions. Added to new exception types that more
+          verbosely catch the very circumstance of not finding a
+          contract or an implementation (InterfaceDescriptionNotFound,
+          CalleeInterfaceNotFound).
+
 2007-08-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/index.tcl: added some fine features

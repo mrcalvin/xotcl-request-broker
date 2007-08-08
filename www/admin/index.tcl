@@ -157,7 +157,7 @@ switch -- $view_type {
 			    }] \
 	  -delete.condition \$is_xorb_object \
 	  -view.href $nameHref \
-	  -status.src /request-broker/resources/state-\$status.png \
+	  -status.src /request-broker/resources/state-\$status-\$is_xorb_object.png \
 	  -status.alt \$states(\$status,info) \
 	  -status.title \$states(\$status,info) \
 	  -change.condition [expr {\$status != 0}] \

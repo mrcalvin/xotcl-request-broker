@@ -24,7 +24,7 @@ established OpenACS facilities also referred to as 'service contracts'. In a dis
 provides a remoting infrastructure for OpenACS. xorb was designed in a protocol-agnostic manner, i.e. 
 our primary intention is to provide support for a variety of remoting protocols. Protocol support is, 
 therefore, realised in terms of protocol plug-ins for xorb. So far, we have realised a feature-rich SOAP 
-protocol plug-in referred to as \textbf{xosoap}.
+protocol plug-in referred to as \textbf{xosoap}. Both, xorb and its protocol plug-ins are realised in \href{http://media.wu-wien.ac.at/}{XOTcl}, a powerful OO extension to standard Tcl.
 
 This guide, in its current shape, aims at providing the fundamentals of using call abstractions in a 
 distributed scenario. We restrict ourselves, for the moment, to the remoting capabilities and therefore 
@@ -54,6 +54,13 @@ Please, note that these resources reflect and document various stages of develop
 necessarily reflect the current state. The only source of information that is kept up-to-date is this manual 
 document and its wiki mirror. Moreover, some of them might focus advanced concepts that are properly 
 elaborated in the realm of this general-purpose documentation.
+
+Besides, we assume some familiarity with basic XOTcl concepts and its syntax. There is an increasing number of resources available on this nifty language, you might want to check out the following resources to get started:
+
+\begin{itemize}
+\item There is a comprehensive \href{http://media.wu-wien.ac.at/doc/tutorial.html}{XOTcl manual} available.
+\item A reading tailored to OpenACS developers is to be found in \href{http://www.matuska.org/martin/doc/xotcl-openacs-2007.pdf}{XOTcl for OpenACS Developers}. There is also a \href{http://www.matuska.org/martin/doc/xotcl-openacs-2007-p.pdf}{podcast} on this topic available.
+\end{itemize}
 \subsection{Copyright terms}
 The XOTcl Request Broker (xorb) and all protocol plug-in packages, i.e. currently xosoap, are provided 
 under the provisions of the \href{http://creativecommons.org/licenses/LGPL/2.1/}{Lesser General Public 
@@ -232,7 +239,32 @@ At this point, you have accomplished most of the work needed to provide your Ech
 \label{fig:quickstart:xosoap:2}
 \end{center}
 \end{figure}
+
+Finally, we want to look at two further nifty features for writing the callee interface, i.e. the service implementation, and servants. The first one refers to what is known as \objlink{::xorb::Delegate}, yet another way of linking abstract definitions to concrete servant code blocks. First, the above example could be rewritten in a probably common scenario. Just imagine, you previously created a piece of code (e.g., a proc) and you simply want to expose this artefact as servant instead of creating one by using \objlink{::xorb::Method} as shown above.
+Or, you simply articulate the requirement that you keep prospective servant code and mere registration or binding code neatly seperated. In either case, you can revert to the use of little forwarding feature, i.e. \objlink{::xorb::Delegate}. Let's rewrite Listing \ref{lst:quickstart:xosoap:7} accordingly:
+
+The starting point is the assumption that there is an existing code block that we want taking the role of a servant for the abstract echoFloat method defined by our example contract. This particular proc might take the following form:
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=6,lastline=10]{../examples/xosoap/example-10-soap-provider-init.tcl}
+ 
+In view of our code base, we could then rewrite our service implementation the following way, using \objlink{::xorb::Delegate}.
+
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=39,lastline=47]{../examples/xosoap/example-10-soap-provider-init.tcl}
+
+Let's, for a second, neglect some minor varations we introduced in the above lines and that might distract. Key to the example is that the service implementation now, once the specification has been successfully processed, won't host any callable method on its own, it rather acts as forwarder to your candidate proc. This delegation step is realised by providing an absolute and qualified reference to the target proc to the non-positional argument \lstinline!-for!. Apart from the changed semantics, it will produce the same result as Listing \ref{lst:quickstart:xosoap:7}. Some refinements are also shown in the above snippet that did not show up in the introductory listing.
+You might have spotted that \objlink{::xorb::Delegate} takes a couple of extra parameters. The same set is available for \objlink{::xorb::Method}. In fact, both support all parameters known from ad\_proc (or ad\_instproc). In addition, they come with an optional parameter \lstinline!-per-object!. If you are familiar with XOTcl, you will have noticed that methods, and beyond, can be declared directly on objects or for instances of the declaring object. Therefore, the distinction between "proc" and "instproc", just to name the most prominent one. Similarily, you define the \objlink{::xorb::Delegate} and \objlink{::xorb::Method} either at the per-object or per-instance level. Behind the scenes, xorb's invocation mechanism detects either way and will handle dispatches accordingly.
+\begin{hints}
+\item You might want to check out the API Browser for \objlink{::xorb::Delegate} and \objlink{::xorb::Method}.
+\end{hints}
+As you just learnt, \objlink{::xorb::Delegate} provides for rather simple delegating dispatch of abstract calls. A thorough look at the above example of a serving proc, i.e. "servantProc", might have created some suspicion: Tcl procs allow for positional argument passing, if we neglect the ad\_proc facility of OpenACS for a second. However, xorb is primarily built around non-positional arguments. We briefly mentioned this fact while describing the semantics of \objlink{::xorb::Abstract}. This is due to the fact that xorb heavily uses XOTcl check options that are (at least up to the 1.5.x generation) exclusively available to non-positional arguments. Besides, most remoting protocols, including SOAP and XML-RPC adopted this pattern of argument passing \cite{zdun:2005b}. 
+
+Be that as it may, it leaves xorb with servants that do not take non-positional arguments. However, thanks to (XO)Tcl's introspective capabilities, xorb provides for \emph{argument bridging}. It will identify the type of servant code block and adapt the pending call dispatch accordingly, including the rewrite of the passed argument-value list. Note, there are of course limitations to this approach, namely if you consider mixed signatures, containing both positional and non-positional arguments.
+
+
   \section{Advanced usage}\label{sec:advanced}
+  \subsection{How to test your services}
     \subsection{Public interface}\label{sec:interface}
   \subsubsection{What is the structure of xorb's and xosoap's public interfaces?}\label{sec:advanced:interface:what}
   As can be seen from Figure \ref{fig:advanced:interface:1}, the interface available is organised in three 
@@ -290,6 +322,73 @@ SOAP client code, with all facilities introduced by lower interface levels. For 
 the quick start section on xosoap (see Section \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref
 {lst:quickstart:xosoap:3}.
 \subsection{Data type infrastructure}\label{sec:avanced:template}
+Providing framework support for data type handling, especially in a cross-language and multi-protocol setup is an ingenious task. Nevertheless, framework designers and developers may revert to well documented experiences on these issues and do not have to start from scratch. By these documented experiences, we primarily refer to a set of design patterns, some of them to be found in \cite{zdun:2005b,sommerlad:1998,maetzel:1996}. For the very moment, we do not want to go into details of the framework implementation, rather provide a quick overview on, first, terminology and, second, facilities to be used by you, the developer.
+
+As for terminology, there are just very few concepts to remember. If you recall the examples in specifying client proxies or service contracts (see Section \ref{sec:quickstart:xosoap}), the way you specified the signature of a proxy method or \objlink{::xorb::Abstract} always involved specific check options. These might look familar: 
+
+ \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,,firstline=17,lastline=17]{../examples/xosoap/example-01-soap-consumer.tcl}
+
+     \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,firstline=10,lastline=13]{../examples/xosoap/example-07-soap-provider-init.tcl}
+
+Check options, again, are a native XOTcl concept to formulate constraints of various types on non-positional arguments. In xorb, however, we use this native XOTcl mechanism to specify special, i.e. protocol-specific type constraints. "xsFloat", as used and shown in the above examples, is referred to as \emph{type code}, i.e. a short-cut identifier for a specific type handler. The actual type handler, i.e. \objlink{::xosoap::xsd::Float} is named \emph{anything type}, or simply \emph{anything}. The main idea of anythings are nicely elaborated on by \cite{sommerlad:1998,maetzel:1996}, however, the main idea is to provide a generic and uniform value container that comes with an on-demand casting facility. 
+\begin{hints}
+\item Note, some clarifying side notes might be required at this point: The term casting may not be mistaken for what it refers to in compiled and statically typed languages. In the realm of xorb, it simply refers to exposing a value in accordance with some value space and representation constraints.
+\item Another side note might be appropriate. The term "type code" is prominently used in another, pure-SOAP framework written in and for Python, i.e. the Zolera SOAP infrastructure (ZSI, \cite{zsi:2007}). However, type codes though realising a comparable aim, are properties to Python objects later used by type-specific (de-)marshallers. In xorb, type code serve a more declarative purpose, simply by hijacking the check option mechanism of XOTcl.
+\end{hints}
+The third and last concept realises what is need to provide for multi-protocol support. Just imagine, you want to re-use, or rather, expose a service contract originally defined for the local use in an OpenACS instance as interface description for a SOAP-based service. Type codes such as string, integer, etc. need to be resolved for the scope of SOAP and WSDL handling. Therefore, xorb comes with the idea of \emph{type sponsorships}. A \emph{type sponsor} is a data type handler, i.e. an anything, that comes with a protocol plug-in and announces, upon initialisation, itself as sponsor to a xorb general-purpose anything. The xorb-specific anything then, upon being processed during the handling of invocationd dispatches, resolves its sponsor for the requested protocol. 
+
+Find below a list of currently supported types, providing the type codes at hand and the anythings acting in the background. Sponsorship relationships are indicated where realised.
+
+\begin{center}
+\begin{footnotesize}
+  \begin{longtable}{p{0.3\textwidth}p{0.3\textwidth}p{0.3\textwidth}}
+    \toprule
+    xorb types \begin{tiny}(type code / anything)\end{tiny} & xosoap types \begin{tiny}(type code / anything)\end{tiny} & comments \\ 
+    \midrule
+    void |~\objlink{::xorb::datatypes::Void} & xsVoid |~\objlink{::xosoap::xsd::XsVoid} & Void is a particular type	descriptor (not featured in XML schema or the like), more or less, making explicit when fire-go scenarios in explicit invocation can not be expressed by language means, as in Tcl. \\
+    \midrule
+    string | \objlink{::xorb::datatypes::String}  & xsString | \objlink{::xosoap::xsd::XsString}  & See \xsd{string} \\ 
+    \midrule
+    integer | \objlink{::xorb::datatypes::Integer} & xsInt | \objlink{::xosoap::xsd::XsInt}  & See \xsd{int}. Note, XOTcl actually comes with a native "integer" checkoption, this is, however, overdefined in the realm of xorb. The sponsorship of xsd:int for a Tcl integer is not yet quite decided, but it has been proven useful in known scenarios.\\ 
+    \midrule
+boolean |~\objlink{::xorb::datatypes::Boolean} &  xsBoolean |~\objlink{::xosoap::xsd::XsBoolean}  & See \xsd{boolean}\\
+\midrule
+timestamp |~\objlink{::xorb::datatypes::Timestamp} &  n/a  & We assumed, at the xorb side, a correspondence to the SQL:1999  data type 'timestamp' WITHOUT timezone\\
+uri |~\objlink{::xorb::datatypes::Uri} &  n/a & We provide for some RFC 3986 validation.\\
+version |~\objlink{::xorb::datatypes::Version} &  n/a & Uses regular expression taken from OpenACS package manager.\\
+\midrule
+float |~\objlink{::xorb::datatypes::Float} &   xsFloat |~\objlink{::xosoap::xsd::XsFloat} & See \xsd{float}\\
+bytearray |~\objlink{::xorb::datatypes::Bytearray} & n/a & At the xorb-side, it is not clear to us what is actually labelled 'bytearray' and which particular forms of Tcl strings are meant to be ruled by this type description.\\
+\midrule
+object |~\objlink{::xorb::datatypes::Object} & soapStruct |~\objlink{::xosoap::xsd::soapStruct}  & This sponsor relationship might change in the near future, as soon as the marshaling styles in xosoap are consolidated. The use of ::xotcl::Objects in xorb is not quite clarified, but shown here for the sake of completeness.\\
+\midrule
+n/a & xsDecimal |~\objlink{::xosoap::xsd::XsDecimal} & See \xsd{decimal} \\
+\midrule
+n/a & xsInteger |~\objlink{::xosoap::xsd::XsInteger} & See \xsd{integer} \\
+\midrule
+n/a & xsLong |~\objlink{::xosoap::xsd::XsLong} & See \xsd{long} \\
+\midrule
+n/a & xsDouble |~\objlink{::xosoap::xsd::XsDouble} & See \xsd{double} \\
+\midrule
+n/a & xsDate |~\objlink{::xosoap::xsd::XsDate} & See \xsd{date} \\
+\midrule
+n/a & xsTime |~\objlink{::xosoap::xsd::XsTime} & See \xsd{time} \\
+\midrule
+n/a & xsDateTime |~\objlink{::xosoap::xsd::XsDateTime} & See \xsd{dateTime} \\
+\midrule
+n/a & xsBase64Binary |~\objlink{::xosoap::xsd::XsBase64Binary} & See \xsd{base64Binary} \\
+\midrule
+n/a & xsHexBinary |~\objlink{::xosoap::xsd::XsHexBinary} & See \xsd{hexBinary} \\
+\midrule
+n/a & soapArray |~\objlink{::xosoap::xsd::SoapArray} & Depending on the message/marshaling
+style we either go for the SOAP encoded array or the WS-I compliant array notation. \\
+    \bottomrule
+\end{longtable}
+\end{footnotesize}
+\end{center}
+
  \subsection{Proxy templates}\label{sec:advanced:template}
 Proxy templates or rather template methods on proxy objects follow an primary intention: Extending the 
 use of pure interface descriptors to full-featured methods that allow to pack program logic along with a 
@@ -498,6 +597,9 @@ Context objects are also applied as solution to another design problem in xorb, 
 
 \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
 \footnotesize,caption=Shared scope,label=lst:quickstart:xosoap:9]{../examples/xosoap/example-09-soap-consumer.tcl}
+
+     \lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
+\footnotesize,label=lst:quickstart:xosoap:10]{../examples/xosoap/example-10-soap-provider-init.tcl}
 
  \newpage
  \bibliography{/Users/ssoberni/Documents/doc/diss/thesis}

@@ -1276,7 +1276,7 @@ ad_after_server_initialization synchronise_contracts {
     my instvar name domain for {__doc__ doc} \
 	{private_p private} {deprecated_p deprecated} {warn_p warn} \
 	{debug_p debug}
-    my debug DOC2=$doc
+    #my debug DOC2=$doc
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}forward servant=$name $for
     $domain __api_make_forward_doc $scope $name
@@ -1284,7 +1284,7 @@ ad_after_server_initialization synchronise_contracts {
 
   Delegate instproc init {{doc {}}} {
     my instvar name domain manager
-    my debug DOC1=$doc
+    #my debug DOC1=$doc
     my set __doc__ $doc
     set forwarder [expr {[my per-object] ? "forward" : "instforward"}]
     if {$domain eq ""} {
@@ -2445,6 +2445,16 @@ ad_after_server_initialization synchronise_contracts {
       if {[my isobject [self]::$name]} {
 	[self]::$name destroy
       }
+      # / / / / / / / / / / / / / / / / /
+      # We introduce an explicit check
+      # whether a contract could be retrieved.
+      # A dedicated exception will help
+      # and is more informative
+      if {![info exists stream(contract)]} {
+	error [::xorb::exceptions::InterfaceDescriptionNotFound new \
+		   "look-up name: $name"]
+      }
+
       # contract obj
       Abstract instmixin add [self]
       eval $stream(contract)
@@ -2496,13 +2506,22 @@ ad_after_server_initialization synchronise_contracts {
 			      -conditions Boundness \
 			      -impl $name]
       }
-      #my log "stream=[array get stream]"
+      my log "LOCALSTREAM=[array get stream]"
       my set lightweight $lightweight
       set name [::xorb::Object canonicalName $name]
       # / / / / / / / / / / / / / / / / /
       # clear the floor ...
       if {[my isobject [self]::$name]} {
 	[self]::$name destroy
+      }
+      # / / / / / / / / / / / / / / / / /
+      # We introduce an explicit check
+      # whether a contract could be retrieved.
+      # A dedicated exception will help
+      # and is more informative
+      if {![info exists stream(impl)]} {
+	error [::xorb::exceptions::CalleeInterfaceNotFound new \
+		   "look-up name: $name"]
       }
       my debug iname=$name
       # impl obj

@@ -238,7 +238,7 @@
 %
 \usepackage{enumerate}  % Optionen [a)], [i)] usw. 
 %
-\usepackage{array}
+%\usepackage{array}
 \usepackage{tabularx}   % Erweiterte Tabellen Optionen
 \usepackage{multirow} 
 %
@@ -278,6 +278,9 @@
 \usepackage[nofancy]{svninfo}
 \cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}
 
+% booktabs, longtable
+\usepackage{booktabs}
+\usepackage{longtable}
 
 \newenvironment{hints}{\begin{itemize}\renewcommand\labelitemi{$\hookrightarrow$}\footnotesize}{\end{itemize}}
 %\newcommand{\apilink}[3]{\href{{http://localhost:8000/api-doc/proc-view?proc=}#1+#2+#3}{#1\rightarrow#3}}
@@ -289,6 +292,7 @@
 \newcommand{\objlink}[1]{\href{\xotclapi/show-object?object=#1}{#1}}
 \newcommand{\xotclref}[2]{\href{\xotcl\##1}{#2}}
 \newcommand{\filelink}[2]{\href{\acsapi/procs-file-view?path=packages/#1}{#2}}
+\newcommand{\xsd}[1]{\href{http://www.w3.org/TR/xmlschema-2/\##1}{xsd:#1}}
 
 
 

@@ -482,6 +482,8 @@ namespace eval ::xorb::aux {
   AcsObjectType instproc query {
     -subtypes:switch 
     {-selectClauses {}}
+    {-whereClauses {}}
+    {-from {}}
     what 
   } {
     my instvar object_type table_name id_column abstract_p \
@@ -499,8 +501,10 @@ namespace eval ::xorb::aux {
 	    select $table_name.[join $attrs ",$table_name."]
 	    [expr {$selectClauses ne {}?",[join $selectClauses ,]":""}]
 	    from acs_objects,$table_name 
+	    [expr {$from ne {}?",[join $from ,]":""}]
 	    where acs_objects.object_type $typeClause
 	    and acs_objects.object_id = $table_name.$id_column
+	    [expr {$whereClauses ne {}?"and [join $whereClauses and]":""}]
 	  }]
 	}
       }
