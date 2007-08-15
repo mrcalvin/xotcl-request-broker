@@ -172,12 +172,12 @@ namespace eval ::xorb::datatypes {
       set value [$object set $s]
       my log CLASS=[$ar any],object=$value,isobject?[my isobject $value]
       if {[my isobject $value]} {
-	my add -parse [[$ar any] new \
+	my add -parse true [[$ar any] new \
 			   -childof [self] \
 			   -name__ $tagName \
 			   -parseObject $ar $value]
       } else {
-	my add -parse [[$ar any] new \
+	my add -parse true [[$ar any] new \
 			   -childof [self] \
 			   -name__ $tagName \
 			   -set __value__ $value]
@@ -185,7 +185,7 @@ namespace eval ::xorb::datatypes {
     }
   }
   
-  Anything instproc add {-parse:switch any} {
+  Anything instproc add {{-parse false} any} {
     my lappend __ordinary_map__ $any
     my log ANYPARSE=[$any serialize]
     if {$parse} {my set [$any name__] $any} 

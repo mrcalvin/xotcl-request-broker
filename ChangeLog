@@ -1,3 +1,15 @@
+2007-08-15  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Amended the manual: Added a section on data type
+          infrastructure (type codes, anythings, type sponsors), an
+          introductory section on the idea of call abstractions, a
+          first revision of early sections. 
+
+	* tcl/20-xorb-procs.tcl: Changed a couple of switch-type
+          checkoptions to ordinary non-pos args due to a bug in a
+          release candidate version of xotcl 1.5.4. It is resolved by
+          now, remaining uses of "switch" should be fine.
+
 2007-08-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/doc/manual/src/manual.tex: Added some more infos on

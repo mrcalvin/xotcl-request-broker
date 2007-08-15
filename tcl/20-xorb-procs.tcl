@@ -46,7 +46,7 @@ namespace eval xorb {
 	       [Configuration allinstances] *$config]
     if {$c ne {}} {
       [self]::RequestFlow mixin [$c unfold $context]
-      [self]::ResponseFlow mixin [$c unfold -reverse $context]
+      [self]::ResponseFlow mixin [$c unfold -reverse true $context]
     }
   }
 
@@ -134,7 +134,7 @@ namespace eval xorb {
     set h [concat [self] [my info heritage]]
     return [[self class] reverse $h]
   }
-  Configuration instproc unfold {-reverse:switch ctx} {
+  Configuration instproc unfold {{-reverse false} ctx} {
     array set mixins [list]
     set l [my reversedHeritage]
     set interceptors [list]
