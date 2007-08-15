@@ -1,0 +1,57 @@
+package req XOTcl
+namespace import ::xotcl::*
+
+# / / / / / / / / / / / / / / /
+# t0: introduce generic,
+# extensible framework feature
+::xotcl::Object Indexer
+Indexer proc index {} {
+  foreach instance [Indexable allinstances] {
+    puts [$instance getContent]
+    # dump the 'content' into the full-text index
+  }
+}
+
+Class Indexable
+Indexable abstract instproc getContent {}
+
+Class ForumEntry -superclass Indexable
+ForumEntry instproc render {} {
+  # return markup'ed content
+  return [self]([my info class])
+}
+
+ForumEntry instproc getContent {} {
+  return [my render]
+}
+
+ForumEntry entry1
+ForumEntry entry2
+ForumEntry entry3
+
+
+# / / / / / / / / / / / / / / /
+# t1: introduce generic,
+# extensible framework feature
+
+Class XowikiPage -superclass Indexable
+XowikiPage instproc render {} {
+  # return markup'ed content
+  return [self]([my info class])
+}
+XowikiPage instproc getContent {} {
+  return [my render]
+} 
+
+
+XowikiPage page1
+XowikiPage page2
+XowikiPage page3
+
+# / / / / / / / / / / / / / / /
+# t3: Indexer runs
+# at regular intervals
+
+Indexer index
+
+
