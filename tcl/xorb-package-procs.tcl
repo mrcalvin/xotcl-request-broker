@@ -14,6 +14,24 @@ namespace eval ::xorb {
   # request broker itself
 
   ::xo::PackageMgr Package -superclass ::xo::Package
+  Package proc require {-url {package_id -1}} {
+    # / / / / / / / / / / / /
+    # -1 indicates a dependent
+    # require call, for instance,
+    # from within a plugin 
+    # protocol package context
+    # in such a case, resolve
+    # the package_id from
+    # singleton instance:
+    if {$package_id == -1} {
+      set frag [site_node::get_package_url \
+		    -package_key xotcl-request-broker]
+      array set n [site_node::get_from_url -url $frag]
+      set package_id $n(package_id)
+    }
+    next $package_id;# ::xo::PackageMgr->require
+    return ::$package_id
+  }
   # ---
   ::xotcl::Class PackageMgr -superclass ::xo::PackageMgr
   PackageMgr instproc initialize args {
@@ -44,11 +62,17 @@ namespace eval ::xorb {
       ::xo::cc export_vars -level 2
     }
   }
+  # / / / / / / / / / / / / / 
+  # Class common to protocol
+  # packages ...
+
   ::xotcl::Class ProtocolPackage -slots {
     Attribute node
     Attribute baseUrl
     Attribute protocol
     Attribute listener
+    Attribute xorb
+    Attribute policy
   } -superclass ::xo::Package
   ProtocolPackage instproc init args {
     my instvar node
@@ -64,14 +88,45 @@ namespace eval ::xorb {
   ProtocolPackage instproc onUnmount {} {
     next
   }
-
+  ProtocolPackage instproc getPolicy {} {
+    return [my get_parameter \
+		invocation_access_policy \
+		::xorb::deployment::Default]
+  }
+  ProtocolPackage instproc requireXorb {} {
+    my instvar xorb
+    # / / / / / / / / / /
+    # initialize package
+    # object for request
+    # broker and provide
+    # reference to plugin
+    # package attribute
+    set xorb [::xorb::Package require]
+    
+  }
+  ProtocolPackage ad_instproc get_parameter {
+    attribute 
+    {default ""}
+  } {
+    We resolve configuration parameters in the following
+    order of precedence:
+    -1- parameters specific to the protocol plug-in
+    -2- parameters specific to the request broker
+    (and, therefore, all plugin packages)
+  } {
+    my requireXorb
+    my instvar xorb
+    set value [next]
+    if {$value eq {} && [info exists xorb]} {
+      $xorb get_parameter $attribute $default
+    }
+    return $value
+  }
+  ProtocolPackage instforward check_permissions {%my getPolicy} %proc
   # / / / / / / / / / / / / / / / /
   # cross-protocol commons
 
   ProtocolPackage instproc getPackagePath {} {
-
-
-
     set package_id [namespace tail [self]]
     set key [apm_package_key_from_id $package_id]
     return [acs_package_root_dir $key]
@@ -95,5 +150,10 @@ namespace eval ::xorb {
   }
 
 
-  namespace export ProtocolPackage PackageMgr
+  # / / / / / / / / / / / / / / / /
+  # a temporary package for
+  # the native ca plugin
+  PackageMgr AcsSc -superclass ProtocolPackage
+
+  namespace export ProtocolPackage PackageMgr AcsSc
 }

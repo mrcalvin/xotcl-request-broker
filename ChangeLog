@@ -1,3 +1,28 @@
+2007-08-19  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Changed the package parameter "per_instance_policy" to
+          "invocation_access_policy". 
+
+	* www/admin/regression-test.tcl: Adjusted test cases related
+          to policies etc. 
+
+	* tcl/xorb-package-procs.tcl: Invocation access policies are
+          now integrated with protocol packages. Besides, protocol
+          packages can initialize a xorb package object at any
+          time, in order to use parameters of the request broker in
+          their own realm, for instance.
+
+	* tcl/xorb-deployment-procs.tcl: The invocation context is now
+          available to the policy subject during evaluation (as object
+          variable). It can be used from within conditions, privilege
+          etc. definitions.
+
+	* tcl/20-xorb-procs.tcl: The enforcement of invocation access
+          policies (check_permissions) moved from the skeleton to the
+          invoker, which yields much more flexibility (especially when
+          needing the invocation context to be passed further
+          down). Conception-wise, this is more straight anyway. 
+
 2007-08-15  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Amended the manual: Added a section on data type

@@ -2774,40 +2774,19 @@ ad_after_server_initialization synchronise_contracts {
 	      $s __activate__ $__type__;
 	    }]:""}]
 	  
-	    # enforce ruling deployment policy
-	    # TODO: when called from protocol plug-in
-	    # package, it cannot resolve the context
-	    # of the broker package and therefore
-	    # not retrieve the package parameters!
-	    # set rulingPolicy \[parameter::get -parameter "per_instance_policy"\]
-	    # simple solution: add package param to xotcl-soap etc.
-	    # but what does this mean for brokerage in general
-	    # (when a simple acs::sc::invoke is called from within the sphere
-	    # of other packages?)
-	    set rulingPolicy ::xorb::deployment::Default
-	    my debug rulingPolicy=\$rulingPolicy
-	    set p \[\$rulingPolicy check_permissions $__skeleton__ [my name]\]
-	    if {\$p} {  
-	      ::xoexception::try {
-		my log indirection=\[my serialize\]
-		set r \[eval my xorb=__[my name] \[expr { 
+	    ::xoexception::try {
+	      my log indirection=\[my serialize\]
+	      set r \[eval my xorb=__[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
-		}\]\] 
-	      } catch {Exception e} {
-		error \$e
-	      } catch {error e} {
-		global errorInfo
-		error \[::xorb::exceptions::ServantDispatchException new \
-		    "Dispatching call [my name] to servant failed: \$errorInfo"\]
-	      }
-	      
-	    } else {
-	      error \[::xorb::exceptions::BreachOfPolicyException new "[subst {
-		Invoking on '$qservant' through '${__skeleton__}->[my name]' is
-		not permitted under the ruling access policy ('\$rulingPolicy').
-	      }]"\]
+	      }\]\] 
+	    } catch {Exception e} {
+	      error \$e
+	    } catch {error e} {
+	      global errorInfo
+	      error \[::xorb::exceptions::ServantDispatchException new \
+		  "Dispatching call [my name] to servant failed: \$errorInfo"\]
 	    }
-	    
+	      
 	    [expr {$isLifecycled?[subst {
 	      # deactivate
 	      $s __deactivate__ $__type__;
@@ -3127,21 +3106,34 @@ ad_after_server_initialization synchronise_contracts {
   }
 
   Invoker instproc invoke {} {
-    my instvar skeleton call arguments
+    my instvar skeleton call arguments context
     try {
       # / / / / / / / / / / / / /
       # TODO: set context for actual
       # invocation
       my debug "NEXT=[$skeleton procsearch $call],arguments=$arguments"
-      ::xotcl::nonposArgs mixin add \
-	  ::xorb::datatypes::Anything::CheckOption+Uplift
-      set result [eval $skeleton xorb=$call $arguments]
-      # provide for cleanup from checkoption+uplift mixin
-      # in case it has failed before:
-      if {[lsearch [::xotcl::nonposArgs info mixin] \
-	       ::xorb::datatypes::Anything::CheckOption+Uplift] ne "-1"} {
-	::xotcl::nonposArgs mixin delete \
+      # / / / / / / / / / / / / /
+      # enforce ruling deployment policy
+      # - - - - - - - - - - - - -
+      set pkg [$context package]
+      my debug rulingPolicy=[$pkg getPolicy]
+      set granted [$pkg check_permissions [$skeleton info class] $context]
+      if {$granted} {
+	::xotcl::nonposArgs mixin add \
 	    ::xorb::datatypes::Anything::CheckOption+Uplift
+	set result [eval $skeleton xorb=$call $arguments]
+	# provide for cleanup from checkoption+uplift mixin
+	# in case it has failed before:
+	if {[lsearch [::xotcl::nonposArgs info mixin] \
+		 ::xorb::datatypes::Anything::CheckOption+Uplift] ne "-1"} {
+	  ::xotcl::nonposArgs mixin delete \
+	      ::xorb::datatypes::Anything::CheckOption+Uplift
+	}
+      } else {
+	error [::xorb::exceptions::BreachOfPolicyException new [subst {
+	  Invoking on '[$context virtualObject]->[$context virtualCall]' 
+	  is not permitted under the ruling access policy ('[$pkg getPolicy]').
+	}]]
       }
       #::xotcl::nonposArgs mixin delete \
 	  #::xorb::datatypes::Anything::CheckOption+Uplift

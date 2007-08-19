@@ -87,6 +87,7 @@ namespace eval ::xorb::context {
     virtualCall
     virtualArgs
     {protocol ::xorb::protocols::Tcl}
+    package
   }
  
   InvocationContext instproc getProtocolTree {} {

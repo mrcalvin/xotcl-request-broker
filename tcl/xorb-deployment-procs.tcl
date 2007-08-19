@@ -18,10 +18,11 @@ namespace eval ::xorb::deployment {
     {default_permission {}}
   }
   
-  Policy instproc check_permissions {object method} {
+  Policy instproc check_permissions {object context} {
     set granted 0
     set is [catch {
       set implementation [namespace tail $object]
+      $object set context $context
       #set pClass [::xorb::PluginClass set registry([::xo::ic protocol])]
       set hasPolicyLevelDefaults [expr {![my isobject [self]::$implementation] \
 					    && [my default_permission] ne {}}]
@@ -37,10 +38,10 @@ namespace eval ::xorb::deployment {
       }
       
       $object mixin add [self class]::Subject
-      set granted [next]
-      my log "---6,GRANTED($object,$method)=$granted"
+      set granted [next $object [$context virtualCall]]
+      my log "---6,GRANTED($object,[$context virtualCall])=$granted"
       $object mixin delete [self class]::Subject
-      
+      $object unset context
       if {$hasPolicyLevelDefaults} {
 	# cleanup
 	[self]::$implementation destroy
@@ -370,8 +371,10 @@ namespace eval ::xorb::deployment {
 	query_context
 	value
       } {
+	my instvar context
 	set oughttobe $value
-	set is [::xo::cc protocol]
+	#set is [::xo::cc protocol]
+	set is [$context protocol]
 	set compareWith [concat $is [$is info heritage]]
 	#my log "compareWith=$compareWith, ought=$oughttobe"
 	return [expr {[lsearch $compareWith $oughttobe] != -1}]
@@ -382,7 +385,8 @@ namespace eval ::xorb::deployment {
   ::xotcl::Class Policy::PolicyLevelSubject
   Policy::PolicyLevelSubject instproc condition=isImplementation {
     query_context 
-    value} {
+    value
+  } {
       my debug "[namespace tail [self]] eq [::xorb::Object canonicalName $value]? [expr {[namespace tail [self]] eq [::xorb::Object canonicalName $value]}]"
     return [expr {[namespace tail [self]] eq [::xorb::Object canonicalName $value]}]
   }

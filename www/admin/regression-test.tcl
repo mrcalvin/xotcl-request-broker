@@ -631,7 +631,12 @@ test case "xorb test cases"
 	  }
   } "Deploying ServiceImplementation (per-implementation interceptors, access policy"
 
-  set p [parameter::get -parameter "per_instance_policy"]
+  # # # # # # # # # # # # # # # 
+  # requiring a package
+  # object
+  ?+ {::xorb::AcsSc initialize} "Requiring a package object (xorb acs sc)."
+  
+  set p [::$package_id get_parameter "invocation_access_policy"]
   ? {::xotcl::Object isobject ${p}::[CalleeInterface canonicalName]} 1 \
       "Verifying existance of per-implementation policy object"
 
@@ -837,6 +842,7 @@ test case "xorb test cases"
   ::xorb::deployment::Default default_permission none
 
   ?+ {InvocationContext ::xorb::ic} "Requiring invocation context object"
+  ::xorb::ic package ::$package_id
   ?+ {::xo::ConnectionContext require -user_id "-5"} "Requiring a xo connection object"
   # / / / / / / / / / / / / / 
   # a little helper to translate
