@@ -56,9 +56,9 @@ namespace eval ::xorb::deployment {
 	#re-throw
 	error $e
       } else {
-	global errorInfo
-	my log "---ERROR=$errorInfo,msg=$e message"
-	error [::xorb::exceptions::PolicyException new $errorInfo]
+	#global errorInfo
+	my debug "---ERROR=$errorInfo,msg=$e message"
+	error [::xorb::exceptions::PolicyException new $e]
       }
     }
     return $granted
@@ -87,8 +87,8 @@ namespace eval ::xorb::deployment {
     } catch {Exception e} {
       $e write
     } catch {error e} {
-      global errorInfo
-      [::xorb::exceptions::UnknownNonConformanceException new $errorInfo] write
+      #global errorInfo
+      [::xorb::exceptions::UnknownNonConformanceException new $e] write
     }
     return $verified
   }
@@ -270,7 +270,7 @@ namespace eval ::xorb::deployment {
       ::xorb::Extended contains $cmds
     }
     
-    set rulingPolicy [parameter::get -parameter "per_instance_policy"]
+    set rulingPolicy [parameter::get -parameter "invocation_access_policy"]
     # TODO: no per-instance policy available at the time of server init!
     # solution: introduce PkgMgr, register the rule object there
     # and inject into per-instance default policy upon mount

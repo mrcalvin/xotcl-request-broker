@@ -1,3 +1,25 @@
+2007-08-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/10-xorb-exceptions-procs.tcl: We bound the verbosity
+          level of exception messages to the server run level
+          (production vs. debug, see aolserver parameter
+          "debug"). Whenever we are in run level "debug", we get more
+          verbose exception messages. Removed old in-place calls to
+          global errorInfo.
+
+	* tcl/00-xoexception/01-throwable-procs.tcl: change parameter
+          trace of Throwable to stack, as this would otherwise be
+          conflicting to ::xotcl::Object->trace.
+
+2007-08-25  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-context-procs.tcl: Cleared for legacy code,
+          i.e. ContextClass.
+
+	* tcl/xorb-stub-procs.tcl: Disable asynchrony support for the
+          release candidate and till the moment, the general
+          infrastructure (thread extension) is stabilised.
+
 2007-08-19  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Changed the package parameter "per_instance_policy" to

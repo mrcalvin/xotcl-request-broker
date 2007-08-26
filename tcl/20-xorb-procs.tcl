@@ -2471,9 +2471,9 @@ ad_after_server_initialization synchronise_contracts {
       [self]::$name destroy_on_cleanup
 
     } catch {error e} {
-      global errorInfo
+      #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
-		 "contract: $name, msg: $errorInfo"]
+		 "contract: $name, msg: $e"]
     }
 
     return [self]::$name
@@ -2543,9 +2543,9 @@ ad_after_server_initialization synchronise_contracts {
       #rethrow
       error $e
     } catch {error e} {
-      global errorInfo
+      #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
-		 "impl: $name, msg: $errorInfo"]
+		 "impl: $name, msg: $e"]
     }
     return [self]::$name
   }
@@ -2567,9 +2567,9 @@ ad_after_server_initialization synchronise_contracts {
       error [::xorb::exceptions::SkeletonGenerationException new \
  		 "contract: $contract, impl: $impl, msg: [$e message]"]
     } catch {error e} {
-      global errorInfo
+      #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
- 		 "contract: $contract, impl: $impl, msg: $errorInfo"]
+ 		 "contract: $contract, impl: $impl, msg: $e"]
     }
 
     if {[info exists skeletonObj]} {
@@ -2633,8 +2633,8 @@ ad_after_server_initialization synchronise_contracts {
 		   ::xotcl::nonposArgs mixin delete \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
 		 } catch {error e} {
-		   global errorInfo
-		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$errorInfo\]
+		   #global errorInfo
+		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$e\]
 		 }}]:""}]
       my debug "r=\$r"
       return \$r
@@ -2782,9 +2782,9 @@ ad_after_server_initialization synchronise_contracts {
 	    } catch {Exception e} {
 	      error \$e
 	    } catch {error e} {
-	      global errorInfo
+	      #global errorInfo
 	      error \[::xorb::exceptions::ServantDispatchException new \
-		  "Dispatching call [my name] to servant failed: \$errorInfo"\]
+		  "Dispatching call [my name] to servant failed: \$e"\]
 	    }
 	      
 	    [expr {$isLifecycled?[subst {
@@ -2797,9 +2797,9 @@ ad_after_server_initialization synchronise_contracts {
 	    my debug "---PERROR=\[\$e message\]"
 	    error \$e
 	  } catch {error e} {
-	    global errorInfo
+	    #global errorInfo
 	    error \[::xorb::exceptions::ArgumentTransformationException\
-		new \$errorInfo\]
+		new \$e\]
 	  }
 	  if {\[info exists r\]} {
 	    # return result
@@ -3145,11 +3145,11 @@ ad_after_server_initialization synchronise_contracts {
       my debug "---IERROR: [$e message]"
       error $e
     } catch {error e} {
-      global errorInfo
+      #global errorInfo
       error [::xorb::exceptions::InvocationException new \
 		 [subst {
 		   Call '$call' on '$skeleton' ([$skeleton info class]) 
-		   with args '$arguments' failed due to '$errorInfo'}]]
+		   with args '$arguments' failed due to '$e'}]]
     } finally {
       if {[lsearch [::xotcl::nonposArgs info mixin] \
 	       ::xorb::datatypes::Anything::CheckOption+Uplift] ne "-1"} {

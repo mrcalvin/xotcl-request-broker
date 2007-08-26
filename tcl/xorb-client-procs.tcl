@@ -61,9 +61,9 @@ namespace eval xorb::client {
       # rethrow 
       error $e
     } catch {error e} {
-      global errorInfo
+      #global errorInfo
       error [::xorb::exceptions::TransportProviderFailed new \
-		"Reason: $errorInfo"]
+		"Reason: $e"]
     }
     
     if {[info exists r]} {

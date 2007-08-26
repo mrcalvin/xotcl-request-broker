@@ -44,7 +44,12 @@ namespace eval ::xorb::stub {
     Attribute virtualObject
     Attribute virtualCall
     Attribute virtualArgs
-    Attribute callback
+    # / / / / / / / / / / / / /
+    # For the release candidate
+    # we temporarily disable
+    # asynchrony handling
+    # - - - - - - - - - - - - - 
+    # Attribute callback
     Attribute protocol -default ::xorb::protocols::Tcl
   } -ad_doc {
     <p>The class ContextObject realises a specific pattern
@@ -96,6 +101,16 @@ namespace eval ::xorb::stub {
     # realised decoration
   }
 
+  ContextObject instproc getSubstified {attribute} {
+    # / / / / / / / / / /
+    # This escapes
+    # procentage chars
+    # specified like: '%%'
+    set value [my set $attribute]
+    set value [string map {%% % % \$} $value]
+    return [my subst $value]
+  }
+
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
   # A context object class
@@ -133,37 +148,42 @@ namespace eval ::xorb::stub {
     # at the application level
     # (program flow)
     my instvar contextObj
-    if {[$contextObj exists callback]} {
-      set cbObj [$contextObj callback]
-      my mixin add [self class]::NonBlocking
-      my instvar worker attach
-      set attach ::Requestor
-      if {[$cbObj exists worker]} {
-	set worker [$cbObj set worker]
-      } else {
-	set worker [::xorb::WorkerPool acquire]
-      }
-      $contextObj callback [list [$cbObj getCallback]]
-      ns_log notice HERE2
-      set script [subst {
-	set context \[[$contextObj info class] new [join [my stream $contextObj]]\]
-	[my info class] $attach [join [my stream]] -set contextObj \$context
-	$attach proc call args {
-	  my instvar callback callName contextObj
-	  if {\[catch {
-	    set r \[next\]
-	    eval \$callback \$callName.onComplete \$r
-	  } msg\]} {
-	    ns_log notice CALL-INNER=\$msg
-	  } 
-	       
-	  \$contextObj destroy
-	  my destroy
-	}
-      }]
-      my debug SCRIPT=$script
-      $worker do $script
-    }
+    # / / / / / / / / / / / / /
+    # For the release candidate
+    # we temporarily disable
+    # asynchrony handling
+    # - - - - - - - - - - - - - 
+    #     if {[$contextObj exists callback]} {
+    #       set cbObj [$contextObj callback]
+    #       my mixin add [self class]::NonBlocking
+    #       my instvar worker attach
+    #       set attach ::Requestor
+    #       if {[$cbObj exists worker]} {
+    # 	set worker [$cbObj set worker]
+    #       } else {
+    # 	set worker [::xorb::WorkerPool acquire]
+    #       }
+    #       $contextObj callback [list [$cbObj getCallback]]
+    #       ns_log notice HERE2
+    #       set script [subst {
+    # 	set context \[[$contextObj info class] new [join [my stream $contextObj]]\]
+    # 	[my info class] $attach [join [my stream]] -set contextObj \$context
+    # 	$attach proc call args {
+    # 	  my instvar callback callName contextObj
+    # 	  if {\[catch {
+    # 	    set r \[next\]
+    # 	    eval \$callback \$callName.onComplete \$r
+    # 	  } msg\]} {
+    # 	    ns_log notice CALL-INNER=\$msg
+    # 	  } 
+    
+    # 	  \$contextObj destroy
+    # 	  my destroy
+    # 	}
+    #       }]
+    #       my debug SCRIPT=$script
+    #       $worker do $script
+    #     }
   }
 
   ::xotcl::Class Requestor::NonBlocking -slots {
@@ -190,98 +210,106 @@ namespace eval ::xorb::stub {
   } -superclass Requestor  
   
   CallAbstractionRequestor instproc call args {
-    my instvar earlyBoundContext stubObject callName \
-	    signatureMask returntype contextObj protocol
-    # / / / / / / / / / / / / /
-    # derive from context object
-    # prototype!
-    
-    $contextObj copy [self]::co
-    set contextObj [self]::co
-    
-    # / / / / / / / / / / / / /
-    # turn context object into
-    # proper invocation context?
-    # populate invocation context
-    
-    $contextObj virtualCall $callName
-    # / / / / / / / / / / / / /
-    # simulate xotcl nonposArgs
-    # parser, i.e. enforce both
-    # typing (checkoption-enhanced)
-    # signature
-    # - upon init of requestor?
-    # - upon handle call?
-    my log signatureMask=$signatureMask
-    my proc __parse__ [lindex $signatureMask 0] {
-      #foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
-      my debug INNER-PARSE=[info vars]
-      if {[info exists returnObjs]} {
-	return $returnObjs
+
+    if {[catch {
+      my instvar earlyBoundContext stubObject callName \
+	  signatureMask returntype contextObj protocol
+      # / / / / / / / / / / / / /
+      # derive from context object
+      # prototype!
+      
+      $contextObj copy [self]::co
+      set contextObj [self]::co
+      
+      # / / / / / / / / / / / / /
+      # turn context object into
+      # proper invocation context?
+      # populate invocation context
+      
+      $contextObj virtualCall $callName
+      # / / / / / / / / / / / / /
+      # simulate xotcl nonposArgs
+      # parser, i.e. enforce both
+      # typing (checkoption-enhanced)
+      # signature
+      # - upon init of requestor?
+      # - upon handle call?
+      my log signatureMask=$signatureMask
+      my proc __parse__ [lindex $signatureMask 0] {
+	#foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
+	my debug INNER-PARSE=[info vars]
+	if {[info exists returnObjs]} {
+	  return $returnObjs
+	}
+      }
+      # call parser
+      # / / / / / / / / / / / / /
+      # set client protocol and
+      # mix into requesthandler
+      set contextClass [$contextObj info class]
+      set plugin [$contextClass clientPlugin]
+      set protocol [$contextClass clientProtocol]
+
+      my debug ARGS-TO-PARSE=[lindex $args 0]
+      ::xotcl::nonposArgs mixin add \
+	  ::xorb::datatypes::Anything::CheckOption+Uplift
+      set r [eval my __parse__ [lindex $args 0]]
+      ::xotcl::nonposArgs mixin delete \
+	  ::xorb::datatypes::Anything::CheckOption+Uplift
+      
+      $contextObj virtualArgs $r
+      my debug REQUEST-CTX=[$contextObj serialize]
+
+      try {
+	::xorb::client::crHandler mixin add $plugin
+	::xorb::client::crHandler handleRequest $contextObj
+	::xorb::client::crHandler mixin delete $plugin
+      } catch {Exception e} {
+	# -- re-throw
+	error $e
+      } catch {error e} {
+	#global errorInfo
+	error [::xorb::exceptions::ClientRequestHandlerException new $e]
+      }
+
+      # / / / / / / / / / / / / /
+      # verify returntype constraint
+      # introducing anythings:
+      # unmarshalledResponse is of 
+      # type Anything
+      set any [$contextObj unmarshalledResponse]
+      if {![$any isVoid__] && $returntype eq "void"} {
+	set value [$contextObj unmarshalledResponse]
+	error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
+		   "We expected a void return value, but got: $value"]
+      }
+
+      # / / / / / / / / / / / / / / /
+      # TODO: Validation of non-void types
+      # / / / / / / / / / / / / / / /
+      # TODO: support for two return modes:
+      # 1) returns -> <type> as conventional proc return
+      # 2) returns -> <name>:<type> set a variable
+      # in upper scope
+      my log isvoid=[$any isVoid__]
+      if {![$any isVoid__] && $returntype ne "void"} {
+	# / / / / / / / / / / / / /
+	# clear context obj
+	# before new request 
+	# procedure
+	# options: manual clearance
+	# our recreate mechanism
+	#$contextObj reset
+	#return
+	return [$any as -protocol $protocol $returntype]
+      }
+    } e]} {
+      if {[::xoexception::Throwable isThrowable $e]} {
+	error $e
+      } else {
+	error [::xorb::exceptions::RequestorException new $e]
       }
     }
-    # call parser
-    # / / / / / / / / / / / / /
-    # set client protocol and
-    # mix into requesthandler
-    set contextClass [$contextObj info class]
-    set plugin [$contextClass clientPlugin]
-    set protocol [$contextClass clientProtocol]
-
-    my debug ARGS-TO-PARSE=[lindex $args 0]
-    ::xotcl::nonposArgs mixin add \
-	::xorb::datatypes::Anything::CheckOption+Uplift
-    set r [eval my __parse__ [lindex $args 0]]
-    ::xotcl::nonposArgs mixin delete \
-	::xorb::datatypes::Anything::CheckOption+Uplift
-    
-    $contextObj virtualArgs $r
-    my debug REQUEST-CTX=[$contextObj serialize]
-
-    try {
-      ::xorb::client::crHandler mixin add $plugin
-      ::xorb::client::crHandler handleRequest $contextObj
-      ::xorb::client::crHandler mixin delete $plugin
-    } catch {Exception e} {
-      ns_log notice HERE1
-      error $e
-    } catch {error e} {
-      global errorInfo
-      error $errorInfo
-    }
-
-    # / / / / / / / / / / / / /
-    # verify returntype constraint
-    # introducing anythings:
-    # unmarshalledResponse is of 
-    # type Anything
-    set any [$contextObj unmarshalledResponse]
-    if {![$any isVoid__] && $returntype eq "void"} {
-      set value [$contextObj unmarshalledResponse]
-      error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
-		 "We expected a void return value, but got: $value"]
-    }
-
-    # / / / / / / / / / / / / / / /
-    # TODO: Validation of non-void types
-    # / / / / / / / / / / / / / / /
-    # TODO: support for two return modes:
-    # 1) returns -> <type> as conventional proc return
-    # 2) returns -> <name>:<type> set a variable
-    # in upper scope
-    my log isvoid=[$any isVoid__]
-    if {![$any isVoid__] && $returntype ne "void"} {
-      # / / / / / / / / / / / / /
-      # clear context obj
-      # before new request 
-      # procedure
-      # options: manual clearance
-      # our recreate mechanism
-      #$contextObj reset
-      #return
-      return [$any as -protocol $protocol $returntype]
-    }
-
   }
   CallAbstractionRequestor instproc setup {} {
     my instvar earlyBoundContext stubObject \
@@ -533,8 +561,8 @@ namespace eval ::xorb::stub {
 	  [\$e message]
 	}]
       } catch {error e} {
-	global errorInfo
-	ns_log notice ERROR=\$errorInfo
+	#global errorInfo
+	#ns_log notice ERROR=\$errorInfo
 	error \$e
       }
     }]

@@ -25,7 +25,14 @@ namespace eval ::xorb::transport {
     [self]::listener destroy
   }
   ListenerClass instproc initialise {} {
-    ad_conn -reset
+    # / / / / / / / / / / / / / / / /
+    # NOTE: as long as we want to stick
+    # with major compatibility to OpenACS
+    # (templating etc.), we cannot reset
+    # ad_conn here. For references, look
+    # at returnPage of ::xosoap::Package.
+    # - - - - - - - - - - - - - - - -
+    # ad_conn -reset
     if {![my isobject [self]::listener]} {
       my create [self]::listener 
     } 

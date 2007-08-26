@@ -19,7 +19,7 @@ namespace eval xorb::exceptions {
     {category {}}
     contentType
   }
-  Loggable instproc write {} {
+  Loggable instproc write args {
     foreach p [[self class] info parameter] {
       if {[my exists $p]} {
 	my instvar $p
@@ -51,6 +51,15 @@ namespace eval xorb::exceptions {
       # as message: extract message
       if {[::xoexception::Throwable isThrowable $message]} {
 	set message [$message message]
+      } elseif {[ns_config "ns/parameters" debug]} {
+	# / / / / / / / / / / / / / / / / / / /
+	# Depending on the run mode (production vs. debug)
+	# we replace the run-time message by 
+	# the global errorInfo
+	global errorInfo
+	if {$errorInfo ne {}} {
+	  set message $errorInfo
+	}
       }
       
       if {[info exists __classDoc__]} {
@@ -138,6 +147,15 @@ namespace eval xorb::exceptions {
     The call return a value of type different to the expected/ 
     required returntype
   }
+
+  LoggableException RequestorException -ad_doc {
+    Requestor failed dispatching your invocation request
+  }
+
+  LoggableException ClientRequestHandlerException -ad_doc {
+    Passing invocation request through client request handler
+    failed
+  }
   
   LoggableException TypeViolationException -ad_doc {
     The value supplied violates the type constraint
@@ -148,5 +166,6 @@ namespace eval xorb::exceptions {
   # }
   namespace export SkeletonGenerationException LoggableException\
       InvocationException NoTransportProvider TypeViolationException \
-      InterfaceDescriptionNotFound CalleeInterfaceNotFound
+      InterfaceDescriptionNotFound CalleeInterfaceNotFound RequestorException \
+      ClientRequestHandlerException
 }

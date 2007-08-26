@@ -88,7 +88,7 @@ namespace eval ::xoexception {
 
     Throwable parameter {
         message
-        trace
+        stack
     }
 
     Throwable ad_instproc init { { message "" } } { 
@@ -98,7 +98,7 @@ namespace eval ::xoexception {
     } {
 
         ::xotcl::my message $message
-        ::xotcl::my trace [ ::xotcl::my stackTrace ]
+        ::xotcl::my stack ""
     }
 
     #Throwable # isThrowable 
