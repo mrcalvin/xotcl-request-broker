@@ -2137,8 +2137,12 @@ ad_after_server_initialization synchronise_contracts {
     my debug "==orig-stream==> [my stream]"
     set sig [my getSignature]
     my debug class=[my info class],SER=[my serialize]
-    return [::XorbManager do ::xorb::manager::Repository getAction \
-		[my info class] [my name] $sig] 
+    return [eval ::XorbManager do ::xorb::manager::Repository getAction \
+		-type [my info class] \
+		-name [my name] \
+		-sig $sig \
+		[expr {[my exists impl_contract_name]?\
+			   "-contract [my implements]":""}]] 
   }
   Synchronizable instproc setState {key value} {
     my instvar __state__
@@ -2382,15 +2386,17 @@ ad_after_server_initialization synchronise_contracts {
     # / / / / / / / / / / / / / / / / / /
     # set new repository item -> items array
     $repos instvar items
-    my debug "==repository-update==> item '[$obj name],$oldId' replaced by '[$obj name],[$obj object_id]'"
+    #my debug "==repository-update==> item '[$obj name],$oldId' replaced by '[$obj name],[$obj object_id]'"
     set items([$obj name],[$obj object_id]) $obj
+    #my debug "ITEMS-WITH-NEW:[array get items]"
     # / / / / / / / / / / / / / / / / / /
     # re-inject bindings (TODO: re-publish -> conformance check?)
     # foreach <i> conforms <yes> | <no> => <yes> => update 
-    ::xorb::manager::Broker event update [$obj info class] $oldId $newId
     # / / / / / / / / / / / / / / /  
     # clear items from old entry
     unset items([$obj name],$oldId)
+    #my debug "ITEMS-WITHOUT-OLD:[array get items]"
+    ::xorb::manager::Broker event update [$obj info class] $oldId $newId
     # / / / / / / / / / / / / / / /
     # clear skeleton cache; new skeleton
     # will be acquired lazily
@@ -2475,14 +2481,13 @@ ad_after_server_initialization synchronise_contracts {
       error [::xorb::exceptions::SkeletonGenerationException new \
 		 "contract: $name, msg: $e"]
     }
-
     return [self]::$name
-    
   }
 
   Skeleton proc getImplementation {
 	-lightweight:switch 
 	-name:required
+	{-contract ""}
       } {
     try { 
       # / / / / / / / / / / / / / / / / / 
@@ -2498,13 +2503,15 @@ ad_after_server_initialization synchronise_contracts {
 	array set stream [::xorb::manager::Broker stream \
 			      -what ServiceImplementation \
 			      -conditions Boundness \
-			      -impl $name]
+			      -impl $name \
+			      -contract $contract]
       } else {
 	array set stream [XorbManager do \
 			      ::xorb::manager::Broker stream \
 			      -what ServiceImplementation \
 			      -conditions Boundness \
-			      -impl $name]
+			      -impl $name \
+			      -contract $contract]
       }
       my log "LOCALSTREAM=[array get stream]"
       my set lightweight $lightweight
@@ -2528,22 +2535,21 @@ ad_after_server_initialization synchronise_contracts {
       Delegate instmixin add [self]
       eval $stream(impl)
       Delegate instmixin delete [self]
-      
       if {$lightweight} {
 	my clearVars [self]::$name
 	[self]::${name}::slot destroy
       }
-      
       #/ / / / / / / / / / /
       # provide for cleanup
       [self]::$name mixin {}
       [self]::$name destroy_on_cleanup
-
+      
     } catch {Exception e} {
       #rethrow
       error $e
     } catch {error e} {
-      #global errorInfo
+      global errorInfo
+      my debug LOG4=$errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
 		 "impl: $name, msg: $e"]
     }
@@ -2552,12 +2558,10 @@ ad_after_server_initialization synchronise_contracts {
 
   Skeleton proc generate {{-contract ""} -impl:required} {
     try {
-
-      #set implObj [my getImplementation -lightweight -name $impl]
-      set implObj [my getImplementation -name $impl]
-      #my log "ser=[$implObj serialize]"
-      #set contractObj [my getContract -lightweight -name [$implObj implements]]
+      set implObj [my getImplementation -name $impl -contract $contract]
+      #set cName [expr {$contract ne {}?$contract:[$implObj implements]}]
       set contractObj [my getContract -name [$implObj implements]]
+      
       my debug "SER=[$contractObj serialize]"
       
       # TODO: contract class as mixin or instmixin?
@@ -2662,33 +2666,40 @@ ad_after_server_initialization synchronise_contracts {
     # / / / / / / / / / / / / / /
     # provide for return value
     # verification
-    
-    if {[my returns] ne {} && ![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
-			  [my returns] _ 1 label tc]} {
-      error "Return value specification invalid." 
+    set rvc [ReturnValueChecker __require__ $__skeleton__]
+    switch -- [llength [my returns]] {
+      0		{;}
+      1		{
+	if {![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
+		  [my returns] _ 1 label tc]} {
+	  error "Return value specification invalid." 
+	}
+      }
+      default	{
+	set slots ""
+	foreach r [my returns] {
+	  if {![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
+		    $r _ 1 label tc]} {
+	    error "Return value specification invalid." 
+	  }
+	  append slots "::xorb::datatypes::AnyAttribute $label -anyType $tc\n"
+	} 
+	set tc object([::xotcl::Class ${rvc}::OutputType.[my name] \
+			   -slots $slots \
+			   -destroy_on_cleanup])
+      }
     }
+    
+#     if {[my returns] ne {} && ![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
+# 			  [my returns] _ 1 label tc]} {
+#       error "Return value specification invalid." 
+#     }
     
     # -- defaults
     if {![info exists label] || $label eq {}} {set label returnValue}
     if {![info exists tc] || $tc eq {}} {set tc void}
-    #     switch [llength $l] {
-    #       0	{ 
-    # 	set label returnValue
-    # 	set tc void
-    #       }
-    #       1 {
-    # 	set label returnValue
-    # 	set tc $l
-    #       }
-    #       2 {
-    # 	set label [lindex $l 0]
-    # 	set tc [lindex $l 1]
-    #       }
-    #       default { error "Return value specification invalid."}
-    #     }
-    #set declaration [expr {[my returns] eq {}?"returnValue:void":"[my returns]"}]
     set declaration ${label}:${tc}
-    set rvc [ReturnValueChecker __require__ $__skeleton__]
+#    set rvc [ReturnValueChecker __require__ $__skeleton__]
     $rvc __add__\
 	-call [my name]\
 	-declaration $declaration
@@ -2775,7 +2786,7 @@ ad_after_server_initialization synchronise_contracts {
 	    }]:""}]
 	  
 	    ::xoexception::try {
-	      my log indirection=\[my serialize\]
+	      my log indirection=\[my serialize\],args=\$args
 	      set r \[eval my xorb=__[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
 	      }\]\] 
@@ -2818,6 +2829,7 @@ ad_after_server_initialization synchronise_contracts {
 	set type [my identify $servant]
 	set obj [namespace qualifiers $servant]
 	set p [namespace tail $servant]
+	my debug type=$type
 	switch -- $type {
 	  0 { return [info args $servant] }
 	  1 {
@@ -2850,6 +2862,7 @@ ad_after_server_initialization synchronise_contracts {
 	set servant [my getCanonical $servant]
 	set parent [namespace qualifiers $servant]
 	set tail [namespace tail $servant]
+	if {$parent eq {}} {set servant ::$servant}
 	if {[info procs $servant] ne {} \
 		&& ![::xotcl::Object isobject $parent]} {
 	  # servant is pure tcl proc or ad_proc
@@ -2997,13 +3010,18 @@ ad_after_server_initialization synchronise_contracts {
     }
     
   }
-   SkeletonCache instproc getImplementation {
+  SkeletonCache instproc getImplementation {
     -lightweight:switch
     -name:required
+    {-contract ""}
   } {
     #set suffix -[expr {$lightweight?"light":"heavy"}]
     #my log "CACHE-BEFORE: [ns_cache names xorb_skeleton_cache]"
+    if {$contract ne {}} {
+      set contract ${contract}__
+    }
     set qname [::xorb::Object canonicalName $name]
+    set cacheName $contract$qname
     set value [ns_cache eval xorb_skeleton_cache [self]::$qname {
       set obj [next]
       set cl [$obj info class]
@@ -3048,6 +3066,7 @@ ad_after_server_initialization synchronise_contracts {
   
   ::xotcl::Class Invoker -slots {
     Attribute impl
+    Attribute contract
     Attribute call
     Attribute arguments -default {}
     Attribute skeleton
@@ -3061,7 +3080,7 @@ ad_after_server_initialization synchronise_contracts {
 
   Invoker instproc init args {
     my instvar impl call arguments \
-	skeleton protocol context
+	skeleton protocol context contract
     # / / / / / / / / / / / / / / / / / /
     # 1) invocation data
     set impl [my resolve [$context virtualObject]]
@@ -3084,7 +3103,8 @@ ad_after_server_initialization synchronise_contracts {
     # / / / / / / / / / / / / / / / / / /
     # 2) resolve skeleton
     Skeleton mixin add ::xorb::SkeletonCache
-    set skeleton [Skeleton generate -impl $impl]
+    set skeleton [eval Skeleton generate -impl $impl \
+		      [expr {[info exists contract]?"-contract $contract":""}]]
     if {![::xotcl::Object isobject $skeleton]} {
       error [::xorb::exceptions::InvocationException new \
 		 "Skeleton for '$impl' could not be materialised"]

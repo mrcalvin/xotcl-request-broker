@@ -86,7 +86,11 @@ namespace eval ::xorb::context {
     virtualObject
     virtualCall
     virtualArgs
-    {protocol ::xorb::protocols::Tcl}
+    marshalledRequest
+    marshalledResponse
+    unmarshalledRequest
+    unmarshalledResponse
+    {protocol ::xorb::AcsSc}
     package
   }
  
@@ -105,11 +109,6 @@ namespace eval ::xorb::context {
 
   ::xotcl::Class RemotingInvocationContext -parameter {
     method
-    marshalledRequest
-    marshalledResponse
-    unmarshalledRequest
-    unmarshalledResponse
-    {protocol {}}
     {transport {}}
   } -superclass InvocationContext
 

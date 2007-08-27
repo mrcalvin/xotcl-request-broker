@@ -39,7 +39,7 @@ namespace eval ::xorb::deployment {
       
       $object mixin add [self class]::Subject
       set granted [next $object [$context virtualCall]]
-      my log "---6,GRANTED($object,[$context virtualCall])=$granted"
+      my debug "---6,GRANTED($object,[$context virtualCall])=$granted"
       $object mixin delete [self class]::Subject
       $object unset context
       if {$hasPolicyLevelDefaults} {
@@ -47,17 +47,17 @@ namespace eval ::xorb::deployment {
 	[self]::$implementation destroy
 	$object mixin delete [self class]::PolicyLevelSubject
       }
-      my log "---7,FINISH"
+      my debug "---7,FINISH"
       
     } e]
-    my log "===is=$is"
+    my debug "===is=$is"
     if {$is} {
       if {[::xoexception::Throwable isThrowable $e]} {
 	#re-throw
 	error $e
       } else {
 	#global errorInfo
-	my debug "---ERROR=$errorInfo,msg=$e message"
+	#my debug "---ERROR=$errorInfo,msg=$e message"
 	error [::xorb::exceptions::PolicyException new $e]
       }
     }

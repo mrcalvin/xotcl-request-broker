@@ -300,7 +300,16 @@ test case "xorb test cases"
   } 0 "Creating custom CoI Configuration, including custom interceptor"
 
   # / / / / / / / / / / / / / / / / /
-  ?- { ::xorb::rhandler load ::template::DummySub } 0 \
+  # environment set-up
+  # - - - - - - - - - - - - - - - - -
+  # requiring a package
+  # object
+  ?+ {::xorb::AcsScPackage initialize} "Requiring a package object (xorb acs sc)."
+  ?+ {InvocationContext ::xorb::ic} "Requiring invocation context object"
+  ::xorb::ic package ::$package_id
+  ?+ {::xo::ConnectionContext require -user_id "-5"} "Requiring a xo connection object"
+  # - - - - - - - - - - - - - - - - -
+  ?- { ::xorb::rhandler load ::template::DummySub ::xorb::ic } 0 \
       "Loading custom configuration into request and response flow"
 
   # / / / / / / / / / / / / / / / / /
@@ -322,7 +331,7 @@ test case "xorb test cases"
       "Validating ResponseFlow configuration ($resMixins=$compare)" 
 
   # / / / / / / / / / / / / / / / / /
-  ?- { ::xorb::rhandler load Standard } 0 \
+  ?- { ::xorb::rhandler load Standard ::xorb::ic} 0 \
       "Re-establishing STANDARD configuration into request and response flow"
 
 
@@ -631,10 +640,6 @@ test case "xorb test cases"
 	  }
   } "Deploying ServiceImplementation (per-implementation interceptors, access policy"
 
-  # # # # # # # # # # # # # # # 
-  # requiring a package
-  # object
-  ?+ {::xorb::AcsSc initialize} "Requiring a package object (xorb acs sc)."
   
   set p [::$package_id get_parameter "invocation_access_policy"]
   ? {::xotcl::Object isobject ${p}::[CalleeInterface canonicalName]} 1 \
@@ -841,9 +846,6 @@ test case "xorb test cases"
 
   ::xorb::deployment::Default default_permission none
 
-  ?+ {InvocationContext ::xorb::ic} "Requiring invocation context object"
-  ::xorb::ic package ::$package_id
-  ?+ {::xo::ConnectionContext require -user_id "-5"} "Requiring a xo connection object"
   # / / / / / / / / / / / / / 
   # a little helper to translate
   # arguments to anythings
@@ -1048,6 +1050,8 @@ test case "xorb test cases"
 
   ?+ {set i [Invoker new -context ::xorb::ic]} \
       "Creating invoker instance for dispatch to per-object implementation (per-instance delegate"
+ # set x [$i invoke]
+#  ns_write $x,isobj=[::xotcl::Object isobject $x],[$x serialize]
   ?++ {[$i invoke] set __value__} {} [subst {
     Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
 	([::xorb::ic virtualArgs]).
@@ -1677,7 +1681,7 @@ test case "xorb test cases"
 
   # positive test 2
   ::xo::cc user_id 0
-  ::xorb::ic protocol ::xorb::protocols::Tcl
+  ::xorb::ic protocol ::xorb::AcsSc
   ?+ {$i invoke}  [subst {
     Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
 	([::xorb::ic virtualArgs]), positive (granting) policy check

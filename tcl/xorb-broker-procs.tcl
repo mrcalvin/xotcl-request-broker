@@ -90,7 +90,8 @@ ad_library {
 	eval set cName $$cMiddle
       } elseif {[info exists $iMiddle] && [subst $$iMiddle] ne {}} {
 	eval set iName $$iMiddle
-	set iObj [::xorb::manager::IRepository resolve -name $iName]
+	set iObj [::xorb::manager::IRepository resolve \
+		      -name $iName]
 	set cName [$iObj implements]
       }
       # / / / / / / / / / / / / 
@@ -110,8 +111,12 @@ ad_library {
       my debug "[self proc] called"
       if {[info exists $iMiddle]} {
 	# 3.
-	eval my debug iName=$$iMiddle
-	set grep($iMiddle) [eval ::xorb::manager::IRepository resolve -name $$iMiddle]
+	eval set iName $$iMiddle
+	set obj [::xorb::manager::IRepository resolve \
+		     -name $iName \
+		     -contract $contract]
+	my debug IMPLOBJ=$obj
+	set grep($iMiddle) $obj
       }
       my debug next=[self next]
       next
@@ -272,10 +277,18 @@ ad_library {
 	eval $target $call $args
       }
     }
-    Repository proc getAction {type name sig} {
+    Repository proc getAction {
+	-type:required 
+	-name:required 
+	-sig:required 
+	args
+      } {
       set target [my which $type]
       if {$target ne {}} {
-	return [$target [self proc] $name $sig]
+	return [$target [self proc] \
+		    -name $name \
+		    -sig $sig \
+		    $args]
       }
     }
     Repository instproc init args {
@@ -288,12 +301,13 @@ ad_library {
 	error "One accessor element, either 'name' or 'id', must be given."
       }
       
-      set item [array get items $name,$id]
-      my debug query=$name,$id/ITEM=$item/ITEMS=[array get items]
-      if {$item ne {}} {
-	my debug "==item==> $item"
-	return [lindex $item 1]
-      }  
+      set pairs [array get items $name,$id]
+      my debug query=$name,$id/ITEM=$pairs/ITEMS=[array get items]
+      set r [list]
+      foreach {key object} $pairs {
+	lappend r $object
+      }
+      return $r
     }
     Repository instproc update {oldId newId} {
       # recreate existing one
@@ -325,8 +339,21 @@ ad_library {
       # notify Broker >> bindings
       Broker event [self proc] [my itemType] $id
     }
-    Repository instproc getAction {name sig} {
-      set o [my resolve -name $name]
+    Repository instproc getAction {
+      -name:required 
+      -sig:required 
+      args
+    } {
+      foreach {label value} $args break;
+      switch -- $label {
+	"-contract" {
+	  set o [my resolve -name $name -contract $contract]
+	}
+	default {
+	  set o [my resolve -name $name]
+	}
+      }
+
       my debug "o=$o, name=$name, orig-sig: $sig"
       array set status [list]
       # 1> does not exist?
@@ -361,6 +388,35 @@ ad_library {
     # # # # # # # # # # # # # # # #	
     
     Repository IRepository -itemType ::xorb::ServiceImplementation
+    IRepository proc resolve {{-name *} {-id *} -contract} {
+      set items [next -name $name -id $id];# Repository->resolve
+      my debug RES-ITEMS=$items;
+      if {[llength $items] > 0 && \
+	      [info exists contract] && \
+	      $contract ne {}} {
+	foreach i $items {
+	  my debug RES-i=$i,[$i implements]==$contract
+	  if {[$i implements] eq $contract} {
+	    return $i
+	  }
+	}
+	error "Cannot resolve implementation unambiguously."
+      } else {
+	return $items
+      }
+      # if {[llength $items] > 1} {
+# 	# multiple impls retrieved
+# 	if {![info exists contract] || $contract eq {}} {
+# 	  error "Cannot resolve implementation unambiguously."
+# 	}
+# 	foreach i $items {
+# 	  if {[$i implements] eq $contract} return $i;
+# 	}
+# 	return ""
+#       } else {
+# 	return $items
+#       } 
+    }
     
     # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # #

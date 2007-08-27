@@ -44,6 +44,10 @@ namespace eval ::xorb::stub {
     Attribute virtualObject
     Attribute virtualCall
     Attribute virtualArgs
+    Attribute marshalledRequest
+    Attribute marshalledResponse
+    Attribute unmarshalledRequest
+    Attribute unmarshalledResponse
     # / / / / / / / / / / / / /
     # For the release candidate
     # we temporarily disable
@@ -110,18 +114,6 @@ namespace eval ::xorb::stub {
     set value [string map {%% % % \$} $value]
     return [my subst $value]
   }
-
-  # # # # # # # # # # # # #
-  # # # # # # # # # # # # #
-  # A context object class
-  # for local Tcl invocations /
-  # call abstractions
-  # # # # # # # # # # # # #
-  # # # # # # # # # # # # #
-
-  ::xotcl::Class TclGlueObject -slots {
-    Attribute contract
-  } -superclass ContextObject
 
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
@@ -265,7 +257,7 @@ namespace eval ::xorb::stub {
 	::xorb::client::crHandler handleRequest $contextObj
 	::xorb::client::crHandler mixin delete $plugin
       } catch {Exception e} {
-	# -- re-throw
+	# -- re-throws
 	error $e
       } catch {error e} {
 	#global errorInfo
@@ -301,7 +293,8 @@ namespace eval ::xorb::stub {
 	# our recreate mechanism
 	#$contextObj reset
 	#return
-	return [$any as -protocol $protocol $returntype]
+	set r [$any as -protocol $protocol $returntype]
+	#my debug RESULT=[$r serialize]
       }
     } e]} {
       if {[::xoexception::Throwable isThrowable $e]} {
@@ -309,6 +302,8 @@ namespace eval ::xorb::stub {
       } else {
 	error [::xorb::exceptions::RequestorException new $e]
       }
+    } else {
+      return $r
     }
   }
   CallAbstractionRequestor instproc setup {} {

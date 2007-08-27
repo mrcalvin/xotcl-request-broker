@@ -1,3 +1,60 @@
+2007-08-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/admin/regression-test.tcl: The regression test now runs
+          smoothly and counts 149 test cases. 
+
+	* tcl/xosc-procs.tcl: We now provide a first (not yet
+          complete) proxy implementation for acs service contracts. We
+          merged all facilities in this one library file for
+          convenience and clarity. It is basically capable of
+          declaring static client proxies, a dynamic form (as with
+          acs_sc::invoke or acs::sc::call) will follow in a more
+          general solution, along with dynamic client proxies in an
+          upcoming version.
+
+	* tcl/xorb-stub-procs.tcl: Shifted some attribute slots to
+          the base class ContextObject: marshalledRequest,
+          marshalledResponse, unmarshalledRequest,
+          unmarshalledResponse; assuming that they will be required
+          (in one or the other way) by protocol plug-ins. Some fixing
+          to exception handling.
+
+	* tcl/xorb-package-procs.tcl: acquireInvocationContext is now
+          supported at the base class level (ProtocolPackage).
+
+	* tcl/xorb-datatypes-procs.tcl: Changed remaining entries from
+          ::xorb::protocols::Tcl to ::xorb::AcsSc. Extended support
+          for ::xorb::datatypes::Object (still tentative and not
+          entirely complete, but operative; added unwrap etc.).
+
+	* tcl/xorb-context-procs.tcl: Shifted some attribute slots to
+          the base class InvocationContext: marshalledRequest,
+          marshalledResponse, unmarshalledRequest,
+          unmarshalledResponse; assuming that they will be required
+          (in one or the other way) by protocol plug-ins.
+
+	* tcl/xorb-broker-procs.tcl: Implementations are now (more
+          accurately) resolvable in dependence of their implementing/
+          ruling contract. This required major changes to the overall
+          broker implementation, especially Repository->resolve.
+
+	* tcl/20-xorb-procs.tcl: Major changes to the xorb manager
+          interface and interaction. Implementations are now treated
+          more accurately in terms of their unambiguity as given by
+          the implemented contract. Committed a bug fix to the
+          recreation logic (Recreate) which resolved multiple
+          contracts when re-checking existing bindings. Amended the
+          return value checker to support ::xorb::datatypes::Object
+          for multi-item return values (and multiples) as required by
+          ACS service contracts.
+
+	* tcl/10-xorb-exceptions-procs.tcl: Fixed some typos in
+          documentation strings and re-adjusted the way, errorInfo
+          information is appended to exception messages in debug
+          mode. We are still not completely satisified with the
+          latter, but for the time being, it should be fine (and
+          verbose enough).
+
 2007-08-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/10-xorb-exceptions-procs.tcl: We bound the verbosity

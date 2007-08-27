@@ -25,7 +25,7 @@ namespace eval ::xorb::datatypes {
   
   ::xotcl::Class MetaPrimitive -slots {
     Attribute checkoption
-    Attribute protocol -default {::xorb::protocols::Tcl}
+    Attribute protocol -default {::xorb::AcsSc}
   } -superclass ::xotcl::Class
   
   # / / / / / / / / / / / / / / / / /
@@ -151,7 +151,11 @@ namespace eval ::xorb::datatypes {
     }
   }
 
-  Anything instproc marshal args {next}
+  Anything instproc marshal args {
+    if {[my isPrimitive]} {
+      return "-[my set name__] [my set __value__]"
+    }
+  }
 
   Anything instproc containsResultNode {} {
     my instvar isRoot__
@@ -161,7 +165,7 @@ namespace eval ::xorb::datatypes {
 
   Anything instproc parseObject {reader object} {
     $reader instvar cast
-    my log ANYINPARSE=$cast
+    my log ANYINPARSE=$cast,[$cast serialize]
     foreach s [$cast info slots] {
       set type [$s anyType]
       set ar [AnyReader new \
@@ -169,7 +173,14 @@ namespace eval ::xorb::datatypes {
 		  -protocol [$reader protocol]]
       $s instvar tagName
       set s [namespace tail $s]
-      set value [$object set $s]
+      if {[my isobject $object]} {
+	set value [$object set $s]
+      } else {
+	if {[catch {array set tmp $object} e]} {
+	  error "Casting associative array into anything failed."
+	}
+	set value $tmp($s)
+      }
       my log CLASS=[$ar any],object=$value,isobject?[my isobject $value]
       if {[my isobject $value]} {
 	my add -parse true [[$ar any] new \
@@ -215,7 +226,7 @@ namespace eval ::xorb::datatypes {
   }
 
   Anything instproc as {
-    {-protocol  ::xorb::protocols::Tcl}
+    {-protocol  ::xorb::AcsSc}
     -object:switch
     -default
     typeKey
@@ -231,10 +242,14 @@ namespace eval ::xorb::datatypes {
       my class [$ar any]
       
       # 4) process anything further: validation + unwrapping
+      my debug --x1
       if {[my validate $ar]} {
+	my debug --x2
 	if {$object} {
+	  my debug --x3
 	  return [self]
 	} else {
+	  my debug --x4
 	  return [my unwrap]
 	}
       } elseif {[info exists default]} {
@@ -295,7 +310,7 @@ namespace eval ::xorb::datatypes {
   # # # # # # # # # # # # # # #
 
   ::xotcl::Class AnyReader -slots {
-    Attribute protocol -default "::xorb::protocols::Tcl"
+    Attribute protocol -default "::xorb::AcsSc"
     Attribute typecode
     Attribute observer
     Attribute name
@@ -557,6 +572,8 @@ namespace eval ::xorb::datatypes {
     eval my unknown [self proc] $args
     if {[info exists returnObjs]} {
       uplevel [list set returnObjs $returnObjs]
+    } elseif {[array exists uplift]} {
+      uplevel [list array set uplift [array get uplift]]
     }
   }
   Anything::CheckOption+Uplift instproc unknown {checkoption args} {
@@ -595,13 +612,15 @@ namespace eval ::xorb::datatypes {
 	  foreach {argName argValue} $args break
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
+	    my debug ===1,[$argValue serialize],[my stackTrace]
 	    uplevel [list set uplift(-$argName) \
 			 [eval $argValue as \
 			      [expr {[$p exists protocol]?\
 					 "-protocol [$p set protocol]":""}] \
 			      $checkoption]]
-	    my debug ===1
-	  } elseif {[my isobject $argValue] && $isObj} {
+
+	  } elseif {([my isobject $argValue] || \
+			 ![catch {array set tmp $argValue} msg]) && $isObj} {
 	    #if {$class eq {}} {
 	    #  set class [$argValue info class]
 	    #} else {
@@ -811,13 +830,46 @@ namespace eval ::xorb::datatypes {
 	my instvar __value__
 	return 1
       }
-
-  MetaComposite Object -superclass Anything \
-      -instproc validate args {
-	my instvar __value__
-	return [::xotcl::Object isobject $__value__]
+	
+  MetaComposite Object -slots {
+    Attribute template
+  } -superclass Anything
+  Object instproc validate {reader} {
+    my instvar template
+    set template [$reader cast]
+    # TODO: is validate for complex types
+    # or structs needed? Handled by 'as' anyway!
+    return true
+  } 
+  Object instproc unwrap args {
+    my instvar template
+    if {![my isclass $template]} {
+      error "No such class '$template' declared/ available."
+    }
+    set anyObj [self]
+    
+    if {$template eq {}} {
+      error "type key specification '$typeKey' invalid."
+    } 
+    foreach s [$template info slots] {
+      set type [$s anyType]
+      set s [namespace tail $s]
+      $anyObj instvar __ordinary_map__
+      if {![string is integer $s] && [$anyObj exists $s]} {
+	set any [$anyObj set $s]
+      } elseif {[string is integer $s]} {
+	set any [lindex $__ordinary_map__ $s]
+      } else {
+	error "Cannot resolve accessor '$s' to nested element in Anything object."
       }
-  
+      my debug any=$any,typeKey=$type
+      set unwrapped [$any as -protocol ::xorb::AcsSc $type]
+      my debug unwrapped=$unwrapped
+      $anyObj set $s $unwrapped
+    }
+    $anyObj class $template
+    return $anyObj
+  }
   namespace export Anything MetaPrimitive AnyReader String \
       Integer MetaComposite Boolean
 }

@@ -54,36 +54,7 @@ namespace eval ::xorb::transport {
   TransportListener instproc terminate {} {
     [my info class] terminate
   }
-  
-  # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # #
-  # # TransportListener for
-  # # internal abstract calls
-  # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # #
-  
-  ListenerClass TclListener -superclass TransportListener \
-      -protocol "Tcl" \
-      -plugin "::xorb::protocols::Tcl"
-  TclListener proc intialise {envelope} {
-    # protocol-specific init instructions?
-    next --noArgs;# ListenerClass->initialise
-    ::xo::cc marshalledRequest $envelope
-  }
-  TclListener proc redirect {} {
-    # TODO: move to ListenerClass->redirect?
-    [my plugin] plug -listener [self]::listener
-    next;#ListenerClass->redirect
-    my terminate;
-  }
-  TclListener instproc processRequest {} {
-    # marshalledRequest -> ArrayList?
-    next [::xo::cc marshalledRequest];#TransportListener->processRequest
-  }
-  TclListener instproc dispatchResponse {payload} {
-    return $payload
-  }
-  
-  namespace export ListenerClass TransportListener TclListener
+    
+  namespace export ListenerClass TransportListener
 
 }

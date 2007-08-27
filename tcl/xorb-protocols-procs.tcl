@@ -77,35 +77,7 @@ namespace eval ::xorb::protocols {
   
   PluginClass RemotingPlugin -superclass Plugin -prettyName "remote"
   PluginClass LocalPlugin -superclass Plugin -prettyName "local"
-  
-  # # # # # # # # # # # # # 
-  # # # # # # # # # # # # # 
-  # # Tcl Protocol-Plugin
-  # # # # # # # # # # # # # 
-  # # # # # # # # # # # # # 
-  
-  PluginClass Tcl -superclass LocalPlugin
-  
-  Tcl instproc handleRequest {requestObj} {
-    array set call $requestObj
-    # # # # # # # # # # # #
-    # populate call context
-    ::xo::cc virtualObject [expr {$call(impl_id) ne {}?\
-				      $call(impl_id):$call(impl)}]
-    ::xo::cc virtualCall $call(operation)
-    ::xo::cc virtualArgs $call(call_args)
     
-    next;#::xorb::RequestHandler->handleRequest
-  }
-  
-  Tcl instproc handleResponse {requestObj responseObj} {
-    set r [next];#::xorb::RequestHandler->handleResponse
-    [my listener] dispatchResponse $r
-  }
-  
-  # / / / / / / / / / / / /
-  # interceptors?
-  
   namespace export PluginClass Plugin RemotingPlugin LocalPlugin Tcl
 }
 

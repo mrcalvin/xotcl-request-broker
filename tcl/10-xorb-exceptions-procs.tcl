@@ -58,7 +58,8 @@ namespace eval xorb::exceptions {
 	# the global errorInfo
 	global errorInfo
 	if {$errorInfo ne {}} {
-	  set message $errorInfo
+	  append message \n errorInfo: \n $errorInfo
+	  set errorInfo ""
 	}
       }
       
@@ -96,7 +97,7 @@ namespace eval xorb::exceptions {
   }
 
   LoggableException ReturnValueTypeMismatch -ad_doc {
-    The value(s) returned from the invocatio call do not
+    The value(s) returned from the invocation call do not
     correspond to the type constraints stipulated by the
     contract
   }

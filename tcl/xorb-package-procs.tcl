@@ -142,6 +142,13 @@ namespace eval ::xorb {
     }
   }
   
+  ProtocolPackage instproc acquireInvocationContext {} {
+    my instvar protocol
+    set ctxClass [$protocol contextClass]
+    return [$ctxClass new \
+		-destroy_on_cleanup]
+  }
+
   ProtocolPackage instproc solicit=invocation {context} {
     my instvar listener protocol
     $protocol plug -listener $listener
@@ -149,11 +156,5 @@ namespace eval ::xorb {
     $protocol unplug
   }
 
-
-  # / / / / / / / / / / / / / / / /
-  # a temporary package for
-  # the native ca plugin
-  PackageMgr AcsSc -superclass ProtocolPackage
-
-  namespace export ProtocolPackage PackageMgr AcsSc
+  namespace export ProtocolPackage PackageMgr
 }
