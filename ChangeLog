@@ -1,3 +1,17 @@
+2007-08-30  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Added first release version of manual, both in the
+          authoritive pdf and xhtml version. A Makefile (and tex4ht
+          config) are provided as well to generate either or both
+          target formats upon request.
+
+	* tcl/20-xorb-procs.tcl: "Method slot" support is now more
+          narrowly scoped: It is limited to slot calls on
+          ServiceImplementation objects. This prevents a faulty
+          streaming in new thread environments, i.e. object variables
+          not being set as "set" calls are not allowed due to the
+          revised configure etc.
+
 2007-08-27  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/regression-test.tcl: The regression test now runs

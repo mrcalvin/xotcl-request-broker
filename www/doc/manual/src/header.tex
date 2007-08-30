@@ -1,5 +1,3 @@
-
-
 % ------------------------------------------------------------------------
 % Latex - Einstellungen ***************************************************
 % ------------------------------------------------------------------------
@@ -14,17 +12,17 @@
 % Klassen: scrartcl, scrreprt, scrbook, scrletter
 %  
 \documentclass[%
- 10pt,%           Schriftgröße
+ 10pt,%           SchriftgrÃ¶Ãe
  a4paper,%	      Papier
- %DIV12,%           Seitengröße (siehe Koma Skript Dokumentation !)
- %BCOR5mm,%        Zusätzlicher Rand auf der Innenseite 
+ %DIV12,%           SeitengrÃ¶Ãe (siehe Koma Skript Dokumentation !)
+ %BCOR5mm,%        ZusÃ¤tzlicher Rand auf der Innenseite 
  english,%		      Sprache
- %twoside,%	      Seitenränder werden an doppelseitig angepasst
- %fleqn,%          Formeln werden linksbündig (und nicht zentriert) angezeigt 
+ %twoside,%	      SeitenrÃ¤nder werden an doppelseitig angepasst
+ %fleqn,%          Formeln werden linksbÃ¼ndig (und nicht zentriert) angezeigt 
  %openleft,%       (openright) Ein neues Kapitel beginnt immer auf einer rechten/linken Seite
  %titlepage,%      Titel wird in einer 'titlepage' Umgebung gesetzt
- %bigheadings,%    Große Überschriften (normal, small- headings)
- %halfparskip-%   Absatz wird nicht eingerückt, dafür aber um eine halbe Zeile nach unten gerückt
+ %bigheadings,%    GroÃe Ãberschriften (normal, small- headings)
+ %halfparskip-%   Absatz wird nicht eingerÃ¼ckt, dafÃ¼r aber um eine halbe Zeile nach unten gerÃ¼ckt
  %liststotoc,%     Tabellen & Abbildungsverzeichnis ins Inhaltsverzeichnis
  %bibtotoc,%       LitVerzeichnis ins Inhaltsverzeichnis
  %tablecaptionsbelow, %	Caption wird bei table unter die Tabelle gesetzt
@@ -33,7 +31,7 @@
  ]{scrartcl}%     Klassen: scrartcl, scrreprt, scrbook, scrletter 
 % ----------------------------------------------------------------------------------------------
 
-%% Alles was vor alles andere gehört.... =======================================================
+%% Alles was vor alles andere gehÃ¶rt.... =======================================================
 %
 %
 \usepackage{calc} % Zum Rechnen innerhalb von Latex
@@ -69,10 +67,10 @@
 %\renewcommand*{\pnumfont}{\bfseries\sffamily}             % Seitenzahl
 %\setkomafont{chapter}{\sffamily\Huge}                     % Chapter
 %\renewcommand*{\sectfont}{\sffamily} %\rmfamily\bfseries  % Titelzeilen
-%\renewcommand*{\capfont}{\small}                          % Schrift für Caption
-%\renewcommand*{\caplabelfont}{\sffamily\bfseries\small}   % Schrift für 'Abbildung' usw.
+%\renewcommand*{\capfont}{\small}                          % Schrift fÃ¼r Caption
+%\renewcommand*{\caplabelfont}{\sffamily\bfseries\small}   % Schrift fÃ¼r 'Abbildung' usw.
 %
-% -- Schriften für Caption's von _nicht_- Koma kompatiblen Paketen
+% -- Schriften fÃ¼r Caption's von _nicht_- Koma kompatiblen Paketen
 %
 % Bei verwendung von Caption2 treten Komplikationen mit Koma auf. 
 % Diese Korrekturren sind hier noch nicht implementiert !
@@ -83,7 +81,7 @@
 %\captionstyle{flushleft}
 %
 % -- Setzen der Titelzeile --
-%\renewcommand*{\raggedsection}{\raggedright} % linksbündig, hängend
+%\renewcommand*{\raggedsection}{\raggedright} % linksbÃ¼ndig, hÃ¤ngend
 %\renewcommand*{\raggedsection}{} % Blocksatz (Latex-Standart)
 %
 % ----------------------------------------------------------------------------------------------
@@ -97,7 +95,7 @@
 %\bibliographystyle{dinat}
 %% Seitenlayout ================================================================================
 %
-% Layout laden um im Dokument den Befehl \layout nutzen zu können
+% Layout laden um im Dokument den Befehl \layout nutzen zu kÃ¶nnen
 %\usepackage[verbose]{layout} 
 %
 % Optischer Randausgleich (geht nur mit pdflatex, ansonsten hat es keine Auswirkung)
@@ -129,12 +127,12 @@
 % Seite mit Headern
 \pagestyle{scrheadings}
 %
-% löscht voreingestellte Stile
+% lÃ¶scht voreingestellte Stile
 %\clearscrheadings 
 %\clearscrplain
 %
 % Was steht wo...
-%\ohead{\pagemark} % Oben außen: Seitenzahlen
+%\ohead{\pagemark} % Oben auÃen: Seitenzahlen
 %\ihead{\headmark} % Oben innen: Setzt Kapitel und Section automatisch
 %\rehead{\leftmark} %Oben links: Kapitel
 %\lohead{\rightmark} %Oben rechts: Section
@@ -156,7 +154,7 @@
 % Schriftformatierung der Kopfzeile
 %\setkomafont{pagehead}{\normalfont\normalcolour\small}
 %\setkomafont{pagenumber}{\normalfont\normalcolour\small}
-% -- Fußnoten ---
+% -- FuÃnoten ---
 %\deffootnote{1.5em}{1em}{
 %\textsuperscript{\thefootnotemark}
 %------------------------------------------
@@ -167,7 +165,7 @@
 %
 %-- Alternativer Absatz --
 %\setlength{\parindent}{0pt} % Einzug = 0
-% Siehe auch KOMA Skript zu den dortigen M�glichkeiten !!
+% Siehe auch KOMA Skript zu den dortigen Mï¿½glichkeiten !!
 
 % -- Setzen von Abbildungsbeschreibungen --
 %\setcapindent*{1em} % siehe Komadokumentation Abschnitt 3.5
@@ -175,13 +173,13 @@
 \addtokomafont{caption}{\scriptsize}
 %
 % *** Inhaltsverzeichnis ******************
-\setcounter{secnumdepth}{2}  % Abbildungsnummerierung mit größerer Tiefe
-\setcounter{tocdepth}{3}		 % Inhaltsverzeichnis mit größerer Tiefe
+\setcounter{secnumdepth}{3}  % Abbildungsnummerierung mit grÃ¶Ãerer Tiefe
+\setcounter{tocdepth}{3}		 % Inhaltsverzeichnis mit grÃ¶Ãerer Tiefe
 %------------------------------------------
 %
-% -- Ändern von Titeln --
+% -- Ãndern von Titeln --
 %\usepackage{titlesec}
-%\titlelabel{\thetitle.\quad} % Einen Punkt an alle Nummerierungen anfügen
+%\titlelabel{\thetitle.\quad} % Einen Punkt an alle Nummerierungen anfÃ¼gen
 %
 % ----------------------------------------------------------------------------------------------
 
@@ -189,21 +187,21 @@
 
 % *** Bilder ******************************
 % Grundlegendes
-\usepackage[final]{graphicx}  % enth�lt \includegraphics !!
-%\usepackage[draft]{graphicx} % Option: 'draft' für das _nicht_ Einbinden von Bildern
+\usepackage[final]{graphicx}  % enthï¿½lt \includegraphics !!
+%\usepackage[draft]{graphicx} % Option: 'draft' fÃ¼r das _nicht_ Einbinden von Bildern
 %\usepackage{subfigure}        % Bilder nebeneinander 
 %
 % Erweiterungen
 %\usepackage{picinpar}         % Befehl: 'window' zum Setzen von Bildern neben Text
 %
-\usepackage{float}            % Stellt die Option [H] für Floats zur Verf�gung 
-%\usepackage[rflt]{floatflt}   % Stellt Befehlt 'floatingfigure' zur Verf�gung
+\usepackage{float}            % Stellt die Option [H] fÃ¼r Floats zur Verfï¿½gung 
+%\usepackage[rflt]{floatflt}   % Stellt Befehlt 'floatingfigure' zur Verfï¿½gung
                               % [rflt] - Standard float auf der rechten Seite
 %-------------------------------------------
 %
-% - Color Paket für farbigen Text --> _VOR_ pstricks/pst-plot !! ---
+% - Color Paket fÃ¼r farbigen Text --> _VOR_ pstricks/pst-plot !! ---
 \usepackage{color} 
-% Beispiel für neue Farbe: \definecolor{meingrau}{gray}{0.90}
+% Beispiel fÃ¼r neue Farbe: \definecolor{meingrau}{gray}{0.90}
 % ------------------------------------------------------------------
 
 % *** Graphen ******************************
@@ -226,7 +224,7 @@
 % -- Symbole ---------
 %\usepackage{amssymb}
 \usepackage{latexsym} 
-%\usepackage{wasysym} % (für \varangle)
+%\usepackage{wasysym} % (fÃ¼r \varangle)
 %---------------------
 %
 % ----------------------------------------------------------------------------------------------
@@ -242,7 +240,7 @@
 \usepackage{tabularx}   % Erweiterte Tabellen Optionen
 \usepackage{multirow} 
 %
-%\usepackage{fancybox}   % für shadowbox, ovalbox
+%\usepackage{fancybox}   % fÃ¼r shadowbox, ovalbox
 \usepackage{ulem}       % Zum Unterstreichen (z.B. Tensor)
 \usepackage{textcomp}
 \renewcommand{\familydefault}{\sfdefault}  % Symbole - z.B. \copyright
@@ -254,16 +252,14 @@
 
 % tex4ht settings
 %\usepackage[xhtml]{tex4ht} 
-\usepackage{hyperref} % generates in-document hyper references from \ref and \label
-\definecolor{darkblue}{rgb}{0,0,.5}
-\hypersetup{pdftex=true, colorlinks=true, breaklinks=true, linkcolor=darkblue, menucolor=darkblue, pagecolor=darkblue, urlcolor=darkblue, citecolor=darkblue}
+
 \usepackage{listings} % allows for including code listings similar to \verbatim and \verb
 
 
 %
 % ----------------------------------------------------------------------------------------------
 
-% -- Auszuführende Befehle (vor Dokument Beginn) ----
+% -- AuszufÃ¼hrende Befehle (vor Dokument Beginn) ----
 %\makeindex
 %\dominitoc
 % ---------------------------------------------------
@@ -272,11 +268,20 @@
 \bibliographystyle{plainnat}
 
 % support for embedded xmp
-\usepackage{xmpincl}
+\ifpdfoutput{
+  \usepackage{hyperref}% generates in-document hyper references from \ref and \label
+  \definecolor{darkblue}{rgb}{0,0,.5}
+  \hypersetup{colorlinks=true, breaklinks=true, linkcolor=darkblue,
+    menucolor=darkblue, pagecolor=darkblue, urlcolor=darkblue,
+    citecolor=darkblue}
+  \usepackage{xmpincl}
+  \usepackage[nofancy]{svninfo}
+  \cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}}{
+  % \DeclareGraphicsRule{.png}{png}{.bb}{}%
+}
 
 % display svn info
-\usepackage[nofancy]{svninfo}
-\cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}
+
 
 % booktabs, longtable
 \usepackage{booktabs}

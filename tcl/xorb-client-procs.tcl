@@ -209,7 +209,7 @@ namespace eval xorb::client {
       # powerful checker at some point
       set pKeys [join [RemotingProtocolPlugin getProtocolKeys] "|"]
       set rExpr [subst {^($pKeys)://\[^ \].+}]	
-      my log pKeys=$pKeys,rExpr=$rExpr
+      my debug pKeys=$pKeys,rExpr=$rExpr
       if {[regexp -nocase $rExpr [string trim $bind]]} {
 	RemotingStubBuilder new -volatile -bind $bind -args [list $args]
       } else {
@@ -225,7 +225,7 @@ namespace eval xorb::client {
     array set info [list]
     if {[my exists __lastcall__]} { 
       my instvar __lastcall__ stubHandlers
-      my log lastcall=$__lastcall__,stubHandlers=[array get stubHandlers]
+      my debug lastcall=$__lastcall__,stubHandlers=[array get stubHandlers]
       set handler $stubHandlers($__lastcall__)
       if {$method ne {} && [info exists stubHandlers($method)]} {
 	set handler $stubHandlers($method)
@@ -269,7 +269,7 @@ namespace eval xorb::client {
     # overwritten by operation-specific settings
     if {[$__my__ istype Stub]} {
       if {![info exists __config__]} {
-	my log "params=[[$__my__ info class] info parameter]"
+	my debug "params=[[$__my__ info class] info parameter]"
 	foreach p [[$__my__ info class] info parameter] {
 	  if {[$__my__ exists $p]} {
 	    set __config__(-$p) [$__my__ $p]
@@ -326,7 +326,7 @@ namespace eval xorb::client {
     set handler $stubHandlers([my method])
     # goes to filter instproc for protocol identifaction
     $handler bindingURI [my bind]
-    my log +++args=[my args]
+    my debug +++args=[my args]
     $handler configuration [my args]
     $__my__ instforward [my method] $handler requests
   }
@@ -364,7 +364,7 @@ namespace eval xorb::client {
   ProtocolPlugin instproc getProtocolKeys {} {
     set keys [list]
 
-    my log self=[self],subcl=[my info subclass]
+    my debug self=[self],subcl=[my info subclass]
     foreach c [my info subclass] {
       lappend keys [string tolower [string trimright [namespace tail $c] "Plugin"] 0 0]
     }
@@ -408,7 +408,7 @@ namespace eval xorb::client {
       set r [next]
       set endTime [clock clicks]
       # notify parent
-      my log lastcall-set=[my operation]
+      my debug lastcall-set=[my operation]
       [my info parent] set __lastcall__ [my operation]
       my totalTime [expr {($endTime-$startTime)/1000000.0}]
       # cleanup

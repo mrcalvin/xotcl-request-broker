@@ -226,7 +226,7 @@ namespace eval ::xorb::stub {
       # signature
       # - upon init of requestor?
       # - upon handle call?
-      my log signatureMask=$signatureMask
+      my debug signatureMask=$signatureMask
       my proc __parse__ [lindex $signatureMask 0] {
 	#foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
 	my debug INNER-PARSE=[info vars]
@@ -283,7 +283,7 @@ namespace eval ::xorb::stub {
       # 1) returns -> <type> as conventional proc return
       # 2) returns -> <name>:<type> set a variable
       # in upper scope
-      my log isvoid=[$any isVoid__]
+      my debug isvoid=[$any isVoid__]
       if {![$any isVoid__] && $returntype ne "void"} {
 	# / / / / / / / / / / / / /
 	# clear context obj
@@ -348,7 +348,7 @@ namespace eval ::xorb::stub {
     # i.e. call or message (document)
     # style, for instance and return
     # specific instance of subclass
-    my log REQUIRE:args=$args
+    my debug REQUIRE:args=$args
     return [eval CallAbstractionRequestor new $args]
   }
 
@@ -538,7 +538,7 @@ namespace eval ::xorb::stub {
     }
     #set argList [expr {[llength $argList] == 1?"{{$argList}}":[list $argList]}]
     #set argList [list [list $argList]]
-    my log "argList=argList"
+    my debug "argList=argList"
 
     set body [subst -nocommands {
       set requestor [::xorb::stub::Requestor require \

@@ -1,3 +1,41 @@
+# / / / / / / / / / / / / / / / /
+# We currently need this hack
+# to allow xorb libraries to
+# be sourced on-demand during
+# first-time initialisation
+# of the server instance.
+# This could be handled by 
+# a more powerful package require
+# facility in the xotcl-core.
+# if {[apm_first_time_loading_p]} {
+#   set self [info script]
+#   set segs [split [string trim $self /] /]
+#   set package_key [lindex $segs end-2]
+#   set script [lindex $segs end]
+#   ns_log debug HERE(packages/$package_key/tcl/$script)
+#   if {![nsv_exists apm_library_mtime packages/$package_key/tcl/$script]} {
+#     #set prefix [acs_root_dir]/packages/$package_key
+#     set prefix [ns_info tcllib]/../packages/$package_key
+#     set files [apm_get_package_files \
+# 		   -package_key $package_key \
+# 		   -file_types tcl_procs]
+# #     nsv_set apm_library_mtime packages/$package_key/tcl/$script \
+# # 	[file mtime $self]  
+#     ns_log debug files=$files
+#     foreach file $files {
+#       ns_log debug $prefix/$file==$self=>[expr {"$prefix/$file" eq $self}]
+#       if {"$prefix/$file" eq $self} { 
+# 	ns_log debug BREAKING
+# 	break
+#       } 
+#       ns_log debug PASSTHROUGH
+#       apm_source $prefix/$file
+#       ns_log debug SOURCED=$file
+#     }
+#   }
+# } 
+
+
 ad_library {
     
   xorb-specific exception types,
@@ -8,6 +46,8 @@ ad_library {
   @cvs-id $Id$
   
 }
+
+
 
 namespace eval xorb::exceptions {
 
@@ -27,7 +67,18 @@ namespace eval xorb::exceptions {
 	[my info class] instvar $p
       }
     }
-    eval $logCmd $mode [list [my message]]
+    set msg [my message]
+    if {[ns_config "ns/parameters" debug]} {
+      # / / / / / / / / / / / / / / / / / / /
+      # Depending on the run mode (production vs. debug)
+      # we replace the run-time message by 
+      # the global errorInfo
+      global errorInfo
+      if {$errorInfo ne {}} {
+	append msg \n errorInfo: \n $errorInfo
+      }
+    }
+    eval $logCmd $mode [list $msg]
     next
   }
   
@@ -51,18 +102,8 @@ namespace eval xorb::exceptions {
       # as message: extract message
       if {[::xoexception::Throwable isThrowable $message]} {
 	set message [$message message]
-      } elseif {[ns_config "ns/parameters" debug]} {
-	# / / / / / / / / / / / / / / / / / / /
-	# Depending on the run mode (production vs. debug)
-	# we replace the run-time message by 
-	# the global errorInfo
-	global errorInfo
-	if {$errorInfo ne {}} {
-	  append message \n errorInfo: \n $errorInfo
-	  set errorInfo ""
-	}
       }
-      
+
       if {[info exists __classDoc__]} {
 	set message "[self class]: $__classDoc__ (run-time message: $message)"
       }

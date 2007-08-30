@@ -7,7 +7,7 @@ ad_library {
     @cvs-id $Id$
     
 }
-
+ns_log debug LOADING
 namespace eval ::xorb::aux {
 
   # # # # # # # # # # # # # # 
@@ -168,7 +168,7 @@ namespace eval ::xorb::aux {
   }
   AcsObjectType instproc getConstructor {{style plpgsql}} {
     my acquireConstructor
-    my log GETCONST=[my serialize]
+    my debug GETCONST=[my serialize]
     my instvar dbPackage dbConstructor __relation_attributes__ supertype \
 	abstract_p
     if {!$abstract_p} {
@@ -199,7 +199,7 @@ namespace eval ::xorb::aux {
       set dbPackage [my canonise [my set object_type]]
     }
     set m ${dbPackage}__$dbConstructor
-    my log m=$m,exists=[db_string [my qn ""] [subst [[self class] set procExists]]]
+    my debug m=$m,exists=[db_string [my qn ""] [subst [[self class] set procExists]]]
 
     if {[db_string [my qn ""] [subst [[self class] set procExists]]]} {
       set types_declaration [my getRelationAttributes record]
@@ -218,7 +218,7 @@ namespace eval ::xorb::aux {
       # TODO: unify acs_function_args calls procExists + numArgs to a s
       # single, namely the latter to avoid db polling!!!!
       set nargs [db_string [my qn ""] [subst [[self class] set numArgs]]]
-      my log c=$c,nargs=$nargs
+      my debug c=$c,nargs=$nargs
       if {$nargs eq $c} {
 	db_dml [my qn clear_from_function_tbl] \
 	    "delete from acs_function_args where function = '$mUpper'"
@@ -311,7 +311,7 @@ namespace eval ::xorb::aux {
 	  $body
 	  ' language 'plpgsql';
 	}]
-	my log CONSTRUCTOR=$statement
+	my debug CONSTRUCTOR=$statement
 	db_dml [my qn create_constructor] $statement
 	
 	# / / / / / / / / / / / / / / / / / / / /
@@ -347,7 +347,7 @@ namespace eval ::xorb::aux {
       # resolve supertype table
       if {[my isobject $supertype] && [$supertype istype [self class]]} {
 	set supertable [$supertype table_name]
-	my log supertype=[$supertype serialize],supertable1=$supertable
+	my debug supertype=[$supertype serialize],supertable1=$supertable
       } else {
 	# resolve it from the db
 	set supertable [db_string [my qn get_supertable] {
@@ -355,7 +355,7 @@ namespace eval ::xorb::aux {
 	  from   acs_object_types
 	  where  object_type = :supertype
 	}]
-	my log supertable2=$supertable
+	my debug supertable2=$supertable
       }
       # TODO: Oracle manko ...
       ::xo::db::require table $table_name [subst {
@@ -617,7 +617,7 @@ namespace eval ::xorb::aux {
     [my domain] instvar __requireRefresh__
     set object_type [[my domain] object_type]
     #[my domain] lappend __relation_attributes__ $name
-    my log ---2,ot=$object_type
+    my debug ---2,ot=$object_type
     if {![db_0or1row [my qn check_att] {
       select 1 from acs_attributes 
       where attribute_name = :name 
@@ -636,7 +636,7 @@ namespace eval ::xorb::aux {
           -pretty_name $pretty_name \
           -min_n_values $min_n_values \
           -max_n_values $max_n_values
-       my log ---4
+       my debug ---4
       # materialise attribute also as attribute
       # to the object type specific relation!
       if {[[my domain] lazilyAcquireTable]} {
@@ -795,8 +795,8 @@ namespace eval ::xorb::aux {
   }
 
   OrderedComposite instproc children {} {
-    #my log "children?[my exists __children]"
-    #my log "ser=[my serialize]"
+    #my debug "children?[my exists __children]"
+    #my debug "ser=[my serialize]"
     set children [expr {[my exists __children] ? [my set __children] : ""}]
     if {[my exists __orderby]} {
       set order [expr {[my exists __order] ? [my set __order] : "increasing"}]
@@ -825,7 +825,7 @@ namespace eval ::xorb::aux {
   OrderedComposite instproc contains cmds {
     my requireNamespace ;# legacy for older xotcl versions
     set m [Object info instmixin]
-    #my log "---CONTAINS-CALLED:[my info class]"
+    #my debug "---CONTAINS-CALLED:[my info class]"
     if {[lsearch $m [self class]::ChildManager] == -1} {
       set insert 1
       Object instmixin add [self class]::ChildManager
@@ -840,9 +840,9 @@ namespace eval ::xorb::aux {
   }
   Class OrderedComposite::ChildManager -instproc init args {
     set r [next]
-    #my log "---OUTER-CONTAINS([self callingobject]):[my info class]"
+    #my debug "---OUTER-CONTAINS([self callingobject]):[my info class]"
     if {![my istype ::xotcl::ScopedNew]} {
-      #my log "---INNER-CONTAINS([self callingobject]):[my info class]"
+      #my debug "---INNER-CONTAINS([self callingobject]):[my info class]"
       [self callingobject] lappend __children [self]
       my set __parent [self callingobject]
     }

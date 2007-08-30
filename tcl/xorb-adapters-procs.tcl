@@ -116,7 +116,7 @@ namespace eval ::xorb {
       set reversed($adapteeCall) $adaptee
     }
     if {[array exists reversed]} {
-      my log "adapts=$adapts"
+      my debug "adapts=$adapts"
       my adapts [array get reversed]
     }
     if {[info exists slots]} {my slots $slots}

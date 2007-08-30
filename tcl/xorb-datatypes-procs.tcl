@@ -165,7 +165,7 @@ namespace eval ::xorb::datatypes {
 
   Anything instproc parseObject {reader object} {
     $reader instvar cast
-    my log ANYINPARSE=$cast,[$cast serialize]
+    my debug ANYINPARSE=$cast,[$cast serialize]
     foreach s [$cast info slots] {
       set type [$s anyType]
       set ar [AnyReader new \
@@ -181,7 +181,7 @@ namespace eval ::xorb::datatypes {
 	}
 	set value $tmp($s)
       }
-      my log CLASS=[$ar any],object=$value,isobject?[my isobject $value]
+      my debug CLASS=[$ar any],object=$value,isobject?[my isobject $value]
       if {[my isobject $value]} {
 	my add -parse true [[$ar any] new \
 			   -childof [self] \
@@ -198,7 +198,7 @@ namespace eval ::xorb::datatypes {
   
   Anything instproc add {{-parse false} any} {
     my lappend __ordinary_map__ $any
-    my log ANYPARSE=[$any serialize]
+    my debug ANYPARSE=[$any serialize]
     if {$parse} {my set [$any name__] $any} 
   }
   
@@ -237,7 +237,7 @@ namespace eval ::xorb::datatypes {
       set ar [AnyReader new \
 		  -protocol $protocol \
 		  -typecode $typeKey]
-      my log "+++3:typeKey=[$ar any]"
+      my debug "+++3:typeKey=[$ar any]"
       # 3) recast anything into concrete anything implementation
       my class [$ar any]
       
@@ -325,7 +325,7 @@ namespace eval ::xorb::datatypes {
     my instvar any cast suffix
     # a) tokenise
     set tc [my enbrace]
-    my log tc=$tc
+    my debug tc=$tc
     switch [llength $tc] {
       1 { set tokens any;}
       2 { set tokens [list any cast]}
@@ -380,7 +380,7 @@ namespace eval ::xorb::datatypes {
 	$any mixin add ${style}::${hstripped}
       }
     }
-    my log MIXINS=$mixins
+    my debug MIXINS=$mixins
     if {[$any info methods expand=$what] ne {}} {
       set result [$any expand=$what [self]] 
     }
@@ -511,7 +511,7 @@ namespace eval ::xorb::datatypes {
       my anyType $type
       my type "$type validate"
     }
-    my log tagName?[info exists tagName]
+    my debug tagName?[info exists tagName]
     if {![info exists tagName]} {
       set tagName [namespace tail [self]]
     }

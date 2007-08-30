@@ -7,7 +7,7 @@ ad_library {
   @cvs-id $Id$
   
 }
-
+ns_log debug XORB-SOURCED
 namespace eval xorb {
 
   namespace import -force ::xoexception::try
@@ -25,7 +25,7 @@ namespace eval xorb {
     # nest an object into [self] that represents 
     # the mixin-hook for request interceptors ("request flow")
     ::xotcl::Object [self]::RequestFlow -proc handleRequest {context} {
-      #my log "---requestObj-4:$requestObj"
+      #my debug "---requestObj-4:$requestObj"
       set r $context
       next 
       return $r
@@ -55,7 +55,7 @@ namespace eval xorb {
     # initialise a configuration, i.e. linearised sequence,
     # of interceptors
     set config [parameter::get -parameter "interceptor_config"]
-    #my log "---reqestObj-3:$requestObj"
+    #my debug "---reqestObj-3:$requestObj"
     my load [string toupper $config 0 0] $context
     return [[self]::RequestFlow handleRequest $context]
   }
@@ -475,7 +475,7 @@ namespace eval xorb {
       my debug "DEPLOYMENT: lazy"
       [my info class] lappend __syncees__(names) [my name]
       [my info class] lappend __syncees__(objects) [self]
-      
+      my debug DEPLOY-SYNCEES([my info class])=[[my info class] array get __syncees__]
     }
   }
   Object abstract instproc stream {}
@@ -753,6 +753,7 @@ namespace eval xorb {
   ServiceContract proc sync {} {
     foreach sub [concat [self] [my getAllSubClasses]] {
       $sub instvar __syncees__
+      my debug SYNC-SYNCEES=[$sub array get __syncees__]
       if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
 	foreach object $__syncees__(objects) {
 	  my debug "SYNC'ING: $object (ofType: $sub)"
@@ -1282,6 +1283,15 @@ ad_after_server_initialization synchronise_contracts {
     $domain __api_make_forward_doc $scope $name
   }
 
+  
+  ::xotcl::Class Delegate::SideKick \
+    -instproc init args {
+      my debug PROCSEARCH(manager)=[self next]
+      next;# init
+      my debug MIXIN-SLOT-INIT
+      my declareServant
+    }
+
   Delegate instproc init {{doc {}}} {
     my instvar name domain manager
     #my debug DOC1=$doc
@@ -1410,7 +1420,7 @@ ad_after_server_initialization synchronise_contracts {
 	{debug_p debug}
     set scope [expr {[my per-object] ? "" : "inst"}]
     $domain ${scope}proc servant=$name $__arguments__ $__body__
-     my for ${domain}::servant=$name
+    my for ${domain}::servant=$name
     # / / / / / / / / / / / / / 
     # TODO: due to the inner magic
     # of the doc builders, we need
@@ -1422,29 +1432,27 @@ ad_after_server_initialization synchronise_contracts {
     $domain __api_make_doc $scope servant=$name
   }
 
-  Method instproc configure args {
-    foreach {flag value} $args {
-      switch -- $flag {
-	-mixin	 	{my mixin $value}
-	-set		{my set $value}
-	-array		{my array $value}
-	-per-object 	{my per-object $value}
-	-private_p	{my private_p $value}
-	-deprecated_p	{my deprecated_p $value}
-	-warn_p		{my warn_p $value}
-	-debug_p	{my debug_p $value}
-	default break
+  ::xotcl::Class Method::SideKick \
+    -instproc configure args {
+      foreach {flag value} $args {
+	switch -- $flag {
+	  -mixin 	{my mixin $value}
+	  -per-object 	{my per-object $value}
+	  -private_p	{my private_p $value}
+	  -deprecated_p	{my deprecated_p $value}
+	  -warn_p	{my warn_p $value}
+	  -debug_p	{my debug_p $value}
+	  default break
+	}
       }
+    } \
+    -instproc init args {
+      foreach {arguments doc body} [lrange $args end-2 end] break
+      my set __arguments__ $arguments
+      #my set __doc__ $doc
+      my set __body__ $body
+      next $doc;#Delegate->init
     }
-  }
-
-  Method instproc init args {
-    foreach {arguments doc body} [lrange $args end-2 end] break
-    my set __arguments__ $arguments
-    #my set __doc__ $doc
-    my set __body__ $body
-    next $doc;#Delegate->init
-  }
 
   # Method instproc init {arguments doc body args} {
 #     my instvar domain
@@ -1595,30 +1603,24 @@ ad_after_server_initialization synchronise_contracts {
   # method/delegate slots is such 
   # an example (see below)
 
- ::xotcl::Class ServantManager
- ServantManager instproc init args {
-   my debug PROCSEARCH(manager)=[self next]
-   next;# init
-   my debug MIXIN-SLOT-INIT
-   my declareServant
- }
-
  ServiceImplementation instproc slots args {
   #if {[::xotcl::Slot info instmixin ::xotcl::Slot::Optimizer] ne {}} {
   #  my log SLOT-CLEAR
   #  ::xotcl::Slot instmixin delete ::xotcl::Slot::Optimizer
   #}
    ::xotcl::Object instmixin add ::xorb::NamespaceHandler
-   ::xorb::Delegate instmixin add ::xorb::ServantManager
+   ::xorb::Delegate instmixin add ::xorb::Delegate::SideKick
+   ::xorb::Method instmixin add ::xorb::Method::SideKick
    next;#Class->slots
-   ::xorb::Delegate instmixin delete ::xorb::ServantManager
+   ::xorb::Method instmixin delete ::xorb::Method::SideKick
+   ::xorb::Delegate instmixin delete ::xorb::Delegate::SideKick
    ::xotcl::Object instmixin delete ::xorb::NamespaceHandler
    # / / / / / / / / / / 
    # TODO: take precautious
    # measures to avoid 
    # object system corruption
    # upon local failure
-   my log SLOT-RESET
+   my debug SLOT-RESET
    #::xotcl::Slot instmixin add ::xotcl::Slot::Optimizer
    
  }
@@ -1731,6 +1733,7 @@ ad_after_server_initialization synchronise_contracts {
   ServiceImplementation proc sync {} {
     foreach sub [concat [self] [my getAllSubClasses]] {
       $sub instvar __syncees__
+      my debug SYNC-SYNCEES=[$sub array get __syncees__]
       if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
 	foreach s $__syncees__(objects) {
 	  my debug "SYNC'ING: $s"
@@ -2513,7 +2516,7 @@ ad_after_server_initialization synchronise_contracts {
 			      -impl $name \
 			      -contract $contract]
       }
-      my log "LOCALSTREAM=[array get stream]"
+      my debug "LOCALSTREAM=[array get stream]"
       my set lightweight $lightweight
       set name [::xorb::Object canonicalName $name]
       # / / / / / / / / / / / / / / / / /
@@ -2786,7 +2789,7 @@ ad_after_server_initialization synchronise_contracts {
 	    }]:""}]
 	  
 	    ::xoexception::try {
-	      my log indirection=\[my serialize\],args=\$args
+	      my debug indirection=\[my serialize\],args=\$args
 	      set r \[eval my xorb=__[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
 	      }\]\] 

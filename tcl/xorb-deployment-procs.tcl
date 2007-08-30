@@ -32,7 +32,7 @@ namespace eval ::xorb::deployment {
 	  ::xotcl::Object $implementation \
 	      -set default_permission [my default_permission]
 	}]
-	my log "policy=[self],dp=[my default_permission],cmd=$cmd"
+	my debug "policy=[self],dp=[my default_permission],cmd=$cmd"
 	my contains $cmd
 	$object mixin add [self class]::PolicyLevelSubject
       }
@@ -333,7 +333,7 @@ namespace eval ::xorb::deployment {
     my instvar registry
     # implies that servant have to be declared using ad_proc/
     # ad_instproc notation (if using the modifier tag)!
-    my log "---subject-self=[self]([my info class])"
+    my debug "---subject-self=[self]([my info class])"
     #my log "ser=[my serialize]"
     
     foreach {servant t} $registry($method) break
@@ -348,7 +348,7 @@ namespace eval ::xorb::deployment {
     #my log "---4,index=$index"
     if {[nsv_exists api_proc_doc $index]} {
       array set doc [nsv_get api_proc_doc $index]
-      my log "---5,index=$index"
+      #my debug "---5,index=$index"
       return $doc(${type}_p)
     } else {
       return 0
