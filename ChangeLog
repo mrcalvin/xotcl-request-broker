@@ -1,5 +1,9 @@
 2007-08-31  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
+	* tcl/xorb-callback-procs.tcl: The install routine was missing
+          the sourcing of the acs_function_args patches to
+          acs-service-contract < 5.4.0d1.  
+
 	* Pitched dependencies to xotcl-core 0.57, expecting the
           needed package-require patch being incorporated in the HEAD
           version.
