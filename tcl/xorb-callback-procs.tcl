@@ -15,7 +15,7 @@ namespace eval ::xorb {
     set dbtype [db_driverkey ""]
     set f $packageRoot/sql/$dbtype/$sourceScript
     if {[file exists $f]} {
-      db_source_sql_file $path
+      db_source_sql_file $f
     } else {
       my log "Could not source '$f'"
     }
