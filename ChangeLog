@@ -3,6 +3,10 @@
 	* tcl/xorb-callback-procs.tcl: The install routine was missing
           the sourcing of the acs_function_args patches to
           acs-service-contract < 5.4.0d1.  
+	  In addition, we need to call ::xo::db::DbPackage again, as
+          xorb requires upon first-time sourcing some db stubs in
+          place. This should be handled more nicely, by an update call
+          to DbPackage in xotcl-core, for instance.
 
 	* Pitched dependencies to xotcl-core 0.57, expecting the
           needed package-require patch being incorporated in the HEAD

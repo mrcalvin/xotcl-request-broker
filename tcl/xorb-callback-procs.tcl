@@ -46,6 +46,14 @@ namespace eval ::xorb {
     if {[apm_version_names_compare $current "5.4.0d1"] == -1} {
       ConfigurationManager sourceSql acs-service-contract-function-args.sql
     }
+    # -- we need to provide the new 
+    # ::xo::db::sql stubs at the first
+    # time 
+    # TODO: An incremental way of updating
+    # DbPackage would be great, cannot be
+    # done from xorb, as it does not exist
+    # at this point!
+    ::xo::db::DbPackage create_all_functions
   }
 
   proc after-upgrade {
@@ -86,7 +94,15 @@ namespace eval ::xorb {
        if {[apm_version_names_compare $current "5.4.0d1"] == -1} {
 	 ConfigurationManager sourceSql acs-service-contract-function-args.sql
        }
-
+       
+       # -- we need to provide the new 
+       # ::xo::db::sql stubs at the first
+       # time 
+       # TODO: An incremental way of updating
+       # DbPackage would be great, cannot be
+       # done from xorb, as it does not exist
+       # at this point!
+       ::xo::db::DbPackage create_all_functions
      }
    }
 }
