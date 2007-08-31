@@ -1,3 +1,14 @@
+2007-08-31  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Pitched dependencies to xotcl-core 0.57, expecting the
+          needed package-require patch being incorporated in the HEAD
+          version.
+
+	* tcl/15-xorb-aux-procs.tcl: Adjusted to recent xotcl-core
+          versions that shifted DbPackage to the ::xo::db namespace
+          instead of ::xo::db::sql; its instances are still placed in
+          the old namespace.
+
 2007-08-30  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Added first release version of manual, both in the

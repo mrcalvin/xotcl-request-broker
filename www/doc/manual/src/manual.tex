@@ -86,9 +86,15 @@ Share-alike (by-sa) licence}.
 	\subsection{The XOTcl Request Broker (xorb)}
  	\subsubsection{Installation}
 	\begin{enumerate}
+	\item Verify the dependencies indicated above. Make sure that XOTcl is available in your AOLServer environment and that the xotcl-core package is in place. As for the latter, you might grab the most recent version from OpenACS's cvs by issueing the call 
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
+cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r xotcl-core-0-56-final xotcl-core
+	\end{lstlisting}
+	\begin{hints}
+	\item The actual version of xotcl-core that is strictly required will always be given in the above section on dependencies. Also watch out for mandatory patches indicate above that might apply to the xotcl-core.
+	\end{hints}
 	\item Get and install the APM package: You may grab the trunk or tag version directly from svn, by calling either
-	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
-\footnotesize]
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
 	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/trunk xotcl-request-broker
 	\end{lstlisting}
 	or
