@@ -17,6 +17,7 @@
 \author{Stefan Sobernig}
 \date{July 2007}
 \maketitle
+\renewcommand{\contentsname}{}
 \tableofcontents 
 %body
 
@@ -78,21 +79,31 @@ Share-alike (by-sa) licence}.
 	\subsubsection{Dependencies}
 	\begin{itemize}
 	\item \emph{XOTcl module}: We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
-	\item \emph{xotcl-core}: xorb/ xosoap are built upon version 0.51 (or higher).
-	\item \emph{acs-service-contract}: xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). Since version 5.4.0d1, postgresql-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1 is not mandatory, as we provide for a generic upgrade to lower versions of the package. This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation.
+	\item \emph{xotcl-core}: xorb/ xosoap are built upon version 0.70 (or higher).
+	 Please, make sure that you comply with the install instructions specified in the \href{http://openacs.org/forums/message-view?message_id=1165990}{OACS developer forum}.
+	\item \emph{acs-service-contract}: xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). Since version 5.4.0d1, postgresql-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1 is not mandatory, as we provide for a generic upgrade to lower versions of the package. This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation. See the section patches below for details. Provided that you apply the patch, acs-service-contract in any 5.2+ version is considered sufficient.
 	\end{itemize}
 	\subsubsection{Patches}
-	As for the current release version (0.4), no additional patching is needed.
+	\begin{itemize}
+	\item \emph{acs-service-contract}: For versions below 5.4.0d1, we require that you apply the following patch to your PostgreSQL-based backend before proceeding with the actual installation. This means running a SQL script or statements against your data base, for instance, by the following means.
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+\footnotesize]
+	cd <path-to-your-instance>/packages/xotcl-request-broker/www/doc/patches/0.4
+	psql -U <your-db-user> -f acs-service-contract-function-args.sql
+	\end{lstlisting}
+	After having accomplished the above step, please restart your instance to make sure that the added facilities are available to the actual installation of xorb.
+	\end{itemize}
 	\subsection{The XOTcl Request Broker (xorb)}
  	\subsubsection{Installation}
 	\begin{enumerate}
 	\item Verify the dependencies indicated above. Make sure that XOTcl is available in your AOLServer environment and that the xotcl-core package is in place. As for the latter, you might grab the most recent version from OpenACS's cvs by issueing the call 
 	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
-cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r xotcl-core-0-56-final xotcl-core
+	cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r HEAD xotcl-core
 	\end{lstlisting}
 	\begin{hints}
 	\item The actual version of xotcl-core that is strictly required will always be given in the above section on dependencies. Also watch out for mandatory patches indicate above that might apply to the xotcl-core.
 	\end{hints}
+	\item Make sure that you are running the required or a patched version of acs-service-contract (see above).
 	\item Get and install the APM package: You may grab the trunk or tag version directly from svn, by calling either
 	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
 	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/trunk xotcl-request-broker
@@ -100,9 +111,10 @@ cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r xotcl-core-0-56-final xo
 	or
 	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
 \footnotesize]
-	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/tags/release-<version> xotcl-request-broker
+	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/tags/release-<version> \
+	xotcl-request-broker
 	\end{lstlisting}
-	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xotcl-request-broker&path=\%2F&sc=0}{browse the current svn repository} to get a tarball. Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{media.wu-wien.ac.at}
+	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xotcl-request-broker&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{http://media.wu-wien.ac.at}
 	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
 	\item As a first step, you might want to point your browser to \emph{/request-broker/admin} which features a first administrative cockpit for xorb.
 	\end{enumerate}
@@ -121,7 +133,7 @@ cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r xotcl-core-0-56-final xo
 \footnotesize]
 	svn <export | co> http://svn.thinkersfoot.net/xosoap/tags/release-<version> xotcl-soap
 	\end{lstlisting}
-	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xosoap&path=\%2F&sc=0}{browse the current svn repository} to get a tarball. Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{media.wu-wien.ac.at}
+	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xosoap&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{media.wu-wien.ac.at}
 	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
 	\item Go and check out  \emph{/xosoap/services/} where you might find some useful pointers on listening (example) services. 
 	\end{enumerate}
@@ -653,12 +665,12 @@ A final clarification is needed at this point: What has become known as "remote 
 
   % call abstractions
   % interface descriptions
-  \section{Feature sets}
-  \subsection{xorb}
-  \subsection{xosoap}
-  \section{Roadmap}
-   \subsection{xorb}	
-  \subsection{xosoap}
+ % \section{Feature sets}
+  %\subsection{xorb}
+  %\subsection{xosoap}
+  %\section{Roadmap}
+   %\subsection{xorb}	
+  %\subsection{xosoap}
   \section{Appendix} 
   \subsection{Examples - xosoap}
  \lstinputlisting[breaklines=true,label=lst:quickstart:xosoap:2,frame=single,basicstyle=

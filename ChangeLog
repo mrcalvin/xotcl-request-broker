@@ -1,3 +1,15 @@
+2007-09-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Pitched requirement to xotcl-core 0.70. The update for
+          acs-service-contract < 5.4.0d1 can't be handled by the
+          install/ upgrade scripts, therefore it becomes an explicit
+          requirement for the current install procedure to execture
+          acs-service-contract-function-args.sql on the target db
+          before proceeding with the installation.
+	
+	* tcl/15-xorb-aux-procs.tcl: First adjustment to xotcl-core
+          0.70
+
 2007-08-31  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-callback-procs.tcl: The install routine was missing

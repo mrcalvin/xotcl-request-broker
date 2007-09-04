@@ -40,69 +40,62 @@ namespace eval ::xorb {
     ::xorb::datatypes::Void delete
   }
 
-  proc after-install {} {
-    ConfigurationManager sourceSql acs-object-model-function-args.sql
-    set current [apm_highest_version_name acs-service-contract]
-    if {[apm_version_names_compare $current "5.4.0d1"] == -1} {
-      ConfigurationManager sourceSql acs-service-contract-function-args.sql
-    }
-    # -- we need to provide the new 
-    # ::xo::db::sql stubs at the first
-    # time 
-    # TODO: An incremental way of updating
-    # DbPackage would be great, cannot be
-    # done from xorb, as it does not exist
-    # at this point!
-    ::xo::db::DbPackage create_all_functions
-  }
+  proc after-install {} {}
 
   proc after-upgrade {
     {-from_version_name:required}
     {-to_version_name:required}
    } {
-     if {[apm_version_names_compare $from_version_name "0.4"] == -1 &&
-	 [apm_version_names_compare $to_version_name "0.4"] > -1} {
-       
-       # / / / / / / / / / / / / / / / / / / / / /
-       # Upgrading to version 0.4
-
-       # / / / / / / / / / / / / / / / / / / / / /
-       # We also require some other, ACS object model,
-       # related functions to be registered with 
-       # acs_function_args. We did not report it so far
-       # so it is a generic, non-invasive patch.
-       # conditions:
-       # db_driver == postgres
-       ConfigurationManager sourceSql acs-object-model-function-args.sql
-    
-       # / / / / / / / / / / / / / / / / / / / / /
-       # Make sure that we can take of advantage
-       # the ::xo::db::sql::* wrapper facility
-       # for stored procedures. This is required
-       # since version 0.4 of xorb.
-       # Starting with version 5.4.0d1, the
-       # acs-service-contract core package
-       # is supposed to come with the appropriate
-       # install and upgrade scripts. For version
-       # below, we take care of providing this
-       # non-invasive functionality.
-       # conditions:
-       # - acs-service-contract version < 5.4.0d1
-       # - db_driver == postgres
-
-       set current [apm_highest_version_name acs-service-contract]
-       if {[apm_version_names_compare $current "5.4.0d1"] == -1} {
-	 ConfigurationManager sourceSql acs-service-contract-function-args.sql
-       }
-       
-       # -- we need to provide the new 
-       # ::xo::db::sql stubs at the first
-       # time 
-       # TODO: An incremental way of updating
-       # DbPackage would be great, cannot be
-       # done from xorb, as it does not exist
-       # at this point!
-       ::xo::db::DbPackage create_all_functions
-     }
-   }
+#     if {$from_version_name < 0.3} {
+#       ns_log warn {
+# 	Please note that upgrades from versions below 0.3
+# 	is not supported. Consider a complete re-install!
+# 	}
+#       return
+#     }
+#     if {[apm_version_names_compare $from_version_name "0.4"] == -1 &&
+# 	[apm_version_names_compare $to_version_name "0.4"] > -1} {
+      
+#       # / / / / / / / / / / / / / / / / / / / / /
+#       # Upgrading to version 0.4
+      
+#       # / / / / / / / / / / / / / / / / / / / / /
+#       # We also require some other, ACS object model,
+#       # related functions to be registered with 
+#       # acs_function_args. We did not report it so far
+#       # so it is a generic, non-invasive patch.
+#       # conditions:
+#       # db_driver == postgres
+#       ConfigurationManager sourceSql acs-object-model-function-args.sql
+      
+#       # / / / / / / / / / / / / / / / / / / / / /
+#       # Make sure that we can take of advantage
+#       # the ::xo::db::sql::* wrapper facility
+#       # for stored procedures. This is required
+#       # since version 0.4 of xorb.
+#       # Starting with version 5.4.0d1, the
+#       # acs-service-contract core package
+#       # is supposed to come with the appropriate
+#       # install and upgrade scripts. For version
+#       # below, we take care of providing this
+#       # non-invasive functionality.
+#       # conditions:
+#       # - acs-service-contract version < 5.4.0d1
+#       # - db_driver == postgres
+      
+#       set current [apm_highest_version_name acs-service-contract]
+#       if {[apm_version_names_compare $current "5.4.0d1"] == -1} {
+# 	ConfigurationManager sourceSql acs-service-contract-function-args.sql
+#       }
+      
+#       # -- we need to provide the new 
+#       # ::xo::db::sql stubs at the first
+#       # time 
+#       # TODO: An incremental way of updating
+#       # DbPackage would be great, cannot be
+#       # done from xorb, as it does not exist
+#       # at this point!
+#       ::xo::db::DbPackage create_all_functions
+#     }
+  }
 }
