@@ -334,7 +334,7 @@ namespace eval ::xorb::aux {
       # both, for newly created once and those
       # that are already existing ...
       set pkg ::xo::db::sql::$dbPackage
-      if {![my isobject $pkg]} { ::xo::db::Class create $pkg }
+      if {![my isobject $pkg]} { ::xo::db::Class create $pkg -noinit }
       if {[$pkg info methods $dbConstructor] eq {}} {
 	$pkg dbproc_nonposargs $dbConstructor
       }
