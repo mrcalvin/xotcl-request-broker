@@ -1,3 +1,12 @@
+2007-09-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/15-xorb-aux-procs.tcl: Added new ::xo::db::require
+          function_args call for acs-service-contract packages <
+          5.4.0d1
+
+	* Tested for the new ::xo::db::require package as introduced
+          as introduced by xotcl-core 0.70
+
 2007-09-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Pitched requirement to xotcl-core 0.70. The update for

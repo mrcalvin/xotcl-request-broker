@@ -7,7 +7,12 @@ ad_library {
     @cvs-id $Id$
     
 }
-ns_log debug LOADING
+
+::xo::db::require function_args \
+    -package_key_and_version_older_than "acs-service-contract 5.4.0d1" \
+    -check_function "acs_sc_contract__new" \
+    [acs_package_root_dir xotcl-request-broker]/www/doc/patches/0.4/acs-service-contract-function-args.sql
+
 namespace eval ::xorb::aux {
 
   # # # # # # # # # # # # # # 
