@@ -113,13 +113,13 @@ namespace eval ::xorb {
       ns_log notice "Upgrading from $from_version_name to $to_version_name"
       set ctrs [list]
       set msgTypes [list]
-      foreach sc [::xorb::SerivceContract allinstances] {
+      foreach sc [::xorb::ServiceContract allinstances] {
 	set n [$sc set name]
 	lappend ctrs $n
 	lappend msgTypes $n.%
       }
       set impls [list]
-      foreach si [::xorb::SerivceImplementation allinstances] {
+      foreach si [::xorb::ServiceImplementation allinstances] {
 	set n [$si set name]
 	lappend impls $n
       }
