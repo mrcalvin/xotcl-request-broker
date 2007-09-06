@@ -29,6 +29,26 @@ namespace eval ::xorb {
       db_dml [my qn cleanup_msg_types] $sql
     }
   }
+  ConfigurationManager proc deleteContracts ctrs {
+    set sql ""
+    foreach c $ctrs {
+      append sql "delete from acs_sc_contracts where contract_name like '$c';\n"
+    }
+    if {$sql ne {}} {
+      db_dml [my qn cleanup_contracts] $sql
+    }
+  }
+  ConfigurationManager proc deleteImplementations impls {
+    set sql ""
+    foreach i $impls {
+      append sql "delete from acs_sc_impls where impl_name like '$t';\n"
+    }
+    if {$sql ne {}} {
+      db_dml [my qn cleanup_impls] $sql
+    }
+  }
+
+
 
   proc before-uninstall {} {
     # / / / / / / / / / / / / / / / / /
@@ -50,6 +70,8 @@ namespace eval ::xorb {
     # / / / / / / / / / / / / / / / /
     # Starting with 0.4, clearing
     # message types from protocol plug-ins
+    # TODO: This needs to be handled
+    # through proper acs_object_types!!!!
     ConfigurationManager deleteMsgTypes {
       xsVoid
       xsString
@@ -75,5 +97,37 @@ namespace eval ::xorb {
   proc after-upgrade {
     {-from_version_name:required}
     {-to_version_name:required}
-  } { ; }
+  } { 
+      if {$from_version_name < 0.3} {
+	ns_log warn {
+	  Please note that upgrades from versions below 0.3
+	  are not supported. Consider a complete re-install!
+	}
+      return
+      }
+    if {[apm_version_names_compare $from_version_name "0.3"] == 0 &&
+	[apm_version_names_compare $to_version_name "0.4"] > -1} {
+      
+      # / / / / / / / / / / / / / / / / / / / / /
+      # Upgrading from 0.3 to 0.4
+      ns_log notice "Upgrading from $from_version_name to $to_version_name"
+      set ctrs [list]
+      set msgTypes [list]
+      foreach sc [::xorb::SerivceContract allinstances] {
+	set n [$sc set name]
+	lappend ctrs $n
+	lappend msgTypes $n.%
+      }
+      set impls [list]
+      foreach si [::xorb::SerivceImplementation allinstances] {
+	set n [$si set name]
+	lappend impls $n
+      }
+      ns_log notice "Removing ctrs=$ctrs, msgt=$msgTypes, impls=$impls"
+      ConfigurationManager deleteContracts $ctrs
+      ConfigurationManager deleteMsgTypes $msgTypes
+      ConfigurationManager deleteImplementations $impls
+      
+    }
+  }
 }
