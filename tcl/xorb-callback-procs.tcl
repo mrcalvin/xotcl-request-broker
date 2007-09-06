@@ -92,8 +92,6 @@ namespace eval ::xorb {
     }
   }
 
-  proc after-install {} { ; }
-
   ad_proc after-upgrade {
     -from_version_name
     -to_version_name

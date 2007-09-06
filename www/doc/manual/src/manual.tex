@@ -40,8 +40,7 @@ protocol plug-ins available.
 \subsection{Sources of information}
 Beyond this manual, the following materials are currently available.
 \begin{itemize}
-\item A \href{http://openacs-dotlrn.wu-wien.ac.at}{wiki version of this manual}, allowing for commenting 
-publicly and writing ahead.
+\item A \href{http://alice.wu-wien.ac.at:8000/xorb-doc}{wiki} providing for an FAQ section etc.
 \item We aim at documenting elements of the public interfaces by means of the OpenACS in-code 
 documentation facility and the API Browser. References will be given throughout the manual where 
 appropriate. For inline documentation, watch out the OpenACS API Browser for \filelink{xotcl-soap/tcl/xosoap-client-procs.tcl}{xosoap's} and \filelink{xotcl-request-broker/tcl/xorb-stub-procs.tcl}{xorb's interface}.
@@ -78,21 +77,24 @@ Share-alike (by-sa) licence}.
      	\subsection{Prerequisites}
 	\subsubsection{Dependencies}
 	\begin{itemize}
-	\item \emph{XOTcl module}: We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
-	\item \emph{xotcl-core}: xorb/ xosoap are built upon version 0.70 (or higher).
-	 Please, make sure that you comply with the install instructions specified in the \href{http://openacs.org/forums/message-view?message_id=1165990}{OACS developer forum}.
-	\item \emph{acs-service-contract}: xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). Since version 5.4.0d1, postgresql-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1 is not mandatory, as we provide for a generic upgrade to lower versions of the package. This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation. See the section patches below for details. Provided that you apply the patch, acs-service-contract in any 5.2+ version is considered sufficient.
+	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy xorb and its plug-ins on both the 4.0.10 an 4.5 family of AOLServer.
+	\item \emph{AOLServer} (\textbf{2.6.2+}): We have been developing and running xorb under version 2.6.2, 2.6.4 and, recently, 2.6.5; under both AOLServer versions, respectively.
+	\item \emph{XOTcl module} (\textbf{1.5.4+}): We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
+	\item \emph{xotcl-core} (\textbf{0.70+}): xorb/ xosoap are built upon version 0.70 (or higher).
+	 Please, make sure that you comply with the install instructions specified in the \href{http://openacs.org/forums/message-view?message_id=1165990}{OACS developer forum}: In a PostgreSQL environment, there are strict requirements on the completeness and correctness of entries to the acs\_function\_args relation. This will be settled in the near future by patches to the acs-kernel, till then, xotcl-core requires these prior manual backend patch.
+	\item \emph{acs-service-contract} (\textbf{5.2.3+}): xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). This xotcl-core facility (in PostgreSQL environments) requires certain acs\_function\_args entries to be in place. Since versions 5.4.0d1+, PosgreSQL-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1+ is not mandatory, as we provide for a generic upgrade and therefore compatibility to lower versions of the package (at least 5.2.3). This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation.
 	\end{itemize}
 	\subsubsection{Patches}
-	\begin{itemize}
-	\item \emph{acs-service-contract}: For versions below 5.4.0d1, we require that you apply the following patch to your PostgreSQL-based backend before proceeding with the actual installation. This means running a SQL script or statements against your data base, for instance, by the following means.
-	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
-\footnotesize]
-	cd <path-to-your-instance>/packages/xotcl-request-broker/www/doc/patches/0.4
-	psql -U <your-db-user> -f acs-service-contract-function-args.sql
-	\end{lstlisting}
-	After having accomplished the above step, please restart your instance to make sure that the added facilities are available to the actual installation of xorb.
-	\end{itemize}
+	Provided that you meet the above requirements, no manual patching is needed.
+%	\begin{itemize}
+%	\item \emph{acs-service-contract}: For versions below 5.4.0d1, we require that you apply the following patch to your PostgreSQL-based backend before proceeding with the actual installation. This means running a SQL script or statements against your data base, for instance, by the following means.
+%	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+%\footnotesize]
+%	cd <path-to-your-instance>/packages/xotcl-request-broker/www/doc/patches/0.4
+%	psql -U <your-db-user> -f acs-service-contract-function-args.sql
+%	\end{lstlisting}
+%	After having accomplished the above step, please restart your instance to make sure that the added facilities are available to the actual installation of xorb.
+%	\end{itemize}
 	\subsection{The XOTcl Request Broker (xorb)}
  	\subsubsection{Installation}
 	\begin{enumerate}
@@ -297,7 +299,7 @@ At this point, you have accomplished most of the work needed to provide your Ech
 \item You might have asked yourself, while going through step 1 and 2, where to actually put your the code outline above. Well, there are several answers to this question, you may choose between the following options:
 \begin{itemize}
 \item Your package's library files (*-procs.tcl, *-init.tcl): Preferably, drop your code in files situated in the tcl-subdirectory of your package. In either case, whether you choose a *-procs or a *-init file, make sure that you place the following line before the actual code block depicted in step 1 and 2:
-\lstinline[breaklines=true]!::xo::db::package require xotcl-request-broker!. Besides, there is a subtle difference between the *-procs and *-init files. The latter are evaluated only once, during server start-up. This means, contracts and implementations are only evaluate once. If you constantly develop, let's say, the servant code declared by your implementation, and you want your modifications/ improvements to take effect without a dedicated server re-start, go for the *-procs option. This way, you can take advantage of xorb's reload and watch features.
+\lstinline[breaklines=true]!::xo::db::package require xotcl-request-broker!. Besides, there is a subtle difference between the *-procs and *-init files. The latter are evaluated only once, during server start-up. This means, contracts and implementations are only evaluate once. If you constantly develop, let's say, the servant code declared by your implementation, and you want your modifications/ improvements to take effect without a dedicated server re-start, go for the *-procs option. This way, you can take advantage of xorb's reload and watch support.
 \item Your package's W(eb) U(user) I(nterface) files: In principle, you can specify a contract (::xorb::ServiceContract) in one of your www-subdirectory files as well. While it limits their usage, it does not break any functionality. Implementations (::xorb::ServiceImplementation) might as well be specified in WUI files, however, only the most basic variant makes sense in this context. The code of step 2 would not make sense as it defines servant code as well which should be available for all connections, i.e. in the context of all connection threads, and not only the one you specified it in by calling the WUI file.
 \item Developer shell: You can also drop the code in the shell as provided by the Developer Support package, however, the limitations for WUI scripts apply here as well.
 \end{itemize}
