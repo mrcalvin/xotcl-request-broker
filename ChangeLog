@@ -1,5 +1,8 @@
 2007-09-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
+	* tcl/xorb-callback-procs.tcl: Added uninstall logic for 
+	anythings of protocol plug-ins! 
+
 	* tcl/15-xorb-aux-procs.tcl: Some hacking for a non-errorprone
           installation while using ::xo::db::sql::*
 

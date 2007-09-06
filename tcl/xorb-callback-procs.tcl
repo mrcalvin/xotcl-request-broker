@@ -38,6 +38,22 @@ namespace eval ::xorb {
     # which needs to be handled here:
     ::xorb::datatypes::Object delete
     ::xorb::datatypes::Void delete
+    # / / / / / / / / / / / / / / / /
+    # Starting with 0.4, clearing
+    # message types
+    foreach subP [::xorb::datatypes::MetaPrimitive] {
+      if {$subP eq "::xorb::datatypes::MetaComposite"} continue;
+      foreach sp [$subP info instances] {
+	my debug "Deleting primitive=$sp"
+	$sp delete
+      }
+    }
+    foreach subC [::xorb::datatypes::MetaComposite] {
+      foreach sc [$subC info instances] {
+	my debug "Deleting composite=$sc"
+	$sc delete
+      }
+    }
   }
 
   proc after-install {} {}

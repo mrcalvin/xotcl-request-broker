@@ -8,6 +8,13 @@ ad_library {
     
 }
 
+# / / / / / / / / / / / / / / / /
+# The lines below are just needed
+# for a smooth installation, 
+# it is just a kind of work-around
+# for particularities of the
+# new xotcl-core db layer!
+
 ::xotcl::Class ::xo::db::Class::NoInit \
     -instproc init {} {;}
 ::xo::db::Class instmixin add ::xo::db::Class::NoInit
