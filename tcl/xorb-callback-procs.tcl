@@ -94,9 +94,9 @@ namespace eval ::xorb {
 
   proc after-install {} { ; }
 
-  proc after-upgrade {
-    {-from_version_name:required}
-    {-to_version_name:required}
+  ad_proc after-upgrade {
+    -from_version_name
+    -to_version_name
   } { 
       if {$from_version_name < 0.3} {
 	ns_log warn {
