@@ -2,6 +2,14 @@
 
 	* tcl/xorb-callback-procs.tcl: Added uninstall logic for 
 	anythings of protocol plug-ins! 
+	As for upgrades from 0.3 to 0.4, there is currently one
+	limitation: contracts and 
+	implementations that were defined by non-explicitly named
+	::xotcl::Objects (by using new) cannot be identified through
+	the allinstances used for upgrades (from within the scope of the
+	upgrading connection thread as they were never initiated in
+	this very very thread!). This must then be handled manually,
+	this won't be a problem in 0.4+ thanks to the object types. 
 
 	* tcl/15-xorb-aux-procs.tcl: Some hacking for a non-errorprone
           installation while using ::xo::db::sql::*

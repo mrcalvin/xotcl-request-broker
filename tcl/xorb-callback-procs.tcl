@@ -41,7 +41,7 @@ namespace eval ::xorb {
   ConfigurationManager proc deleteImplementations impls {
     set sql ""
     foreach i $impls {
-      append sql "delete from acs_sc_impls where impl_name like '$t';\n"
+      append sql "delete from acs_sc_impls where impl_name like '$i';\n"
     }
     if {$sql ne {}} {
       db_dml [my qn cleanup_impls] $sql
@@ -110,6 +110,19 @@ namespace eval ::xorb {
       
       # / / / / / / / / / / / / / / / / / / / / /
       # Upgrading from 0.3 to 0.4
+      # - - - - - - - - - - - - - - - - - - - - - 
+      # There is currently one limitation:
+      # contracts and implementations that 
+      # were defined by non-explicitly named
+      # ::xotcl::Objects (by using new) cannot
+      # be identified through the allinstances
+      # call below (from within the scope 
+      # of the upgrading connection thread as
+      # they were never initiated in this very
+      # very thread!)
+      # This must then be handled manually, 
+      # this won't be a problem in 0.4+ thanks
+      # to the object types.
       ns_log notice "Upgrading from $from_version_name to $to_version_name"
       set ctrs [list]
       set msgTypes [list]
@@ -127,7 +140,6 @@ namespace eval ::xorb {
       ConfigurationManager deleteContracts $ctrs
       ConfigurationManager deleteMsgTypes $msgTypes
       ConfigurationManager deleteImplementations $impls
-      
     }
   }
 }
