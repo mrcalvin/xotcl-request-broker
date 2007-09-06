@@ -1,3 +1,8 @@
+2007-09-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/15-xorb-aux-procs.tcl: Some hacking for a non-errorprone
+          installation while using ::xo::db::sql::*
+
 2007-09-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/15-xorb-aux-procs.tcl: Added new ::xo::db::require
