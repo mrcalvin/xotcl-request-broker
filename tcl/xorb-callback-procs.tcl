@@ -20,7 +20,7 @@ namespace eval ::xorb {
       my log "Could not source '$f'"
     }
   }
-  ConfigurationManager deleteMsgTypes types {
+  ConfigurationManager proc deleteMsgTypes types {
     set sql ""
     foreach t $types {
       append sql "delete from acs_sc_msg_types where msg_type_name like '$t';\n"
