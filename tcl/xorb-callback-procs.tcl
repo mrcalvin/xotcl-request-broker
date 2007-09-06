@@ -41,16 +41,16 @@ namespace eval ::xorb {
     # / / / / / / / / / / / / / / / /
     # Starting with 0.4, clearing
     # message types
-    foreach subP [::xorb::datatypes::MetaPrimitive] {
+    foreach subP [::xorb::datatypes::MetaPrimitive info subclass] {
       if {$subP eq "::xorb::datatypes::MetaComposite"} continue;
       foreach sp [$subP info instances] {
-	my debug "Deleting primitive=$sp"
+	ns_log debug "Deleting primitive=$sp"
 	$sp delete
       }
     }
-    foreach subC [::xorb::datatypes::MetaComposite] {
+    foreach subC [::xorb::datatypes::MetaComposite info subclass] {
       foreach sc [$subC info instances] {
-	my debug "Deleting composite=$sc"
+	ns_log debug "Deleting composite=$sc"
 	$sc delete
       }
     }
