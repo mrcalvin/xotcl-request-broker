@@ -40,7 +40,7 @@ protocol plug-ins available.
 \subsection{Sources of information}
 Beyond this manual, the following materials are currently available.
 \begin{itemize}
-\item A \href{http://alice.wu-wien.ac.at:8000/xorb-doc}{wiki} providing for an FAQ section etc.
+\item A \href{http://alice.wu-wien.ac.at:8000/xorb-doc}{wiki} providing for a FAQ section etc.
 \item We aim at documenting elements of the public interfaces by means of the OpenACS in-code 
 documentation facility and the API Browser. References will be given throughout the manual where 
 appropriate. For inline documentation, watch out the OpenACS API Browser for \filelink{xotcl-soap/tcl/xosoap-client-procs.tcl}{xosoap's} and \filelink{xotcl-request-broker/tcl/xorb-stub-procs.tcl}{xorb's interface}.
@@ -77,7 +77,7 @@ Share-alike (by-sa) licence}.
      	\subsection{Prerequisites}
 	\subsubsection{Dependencies}
 	\begin{itemize}
-	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy xorb and its plug-ins on both the 4.0.10 an 4.5 family of AOLServer.
+	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy xorb and its plug-ins on both the 4.0.10 and 4.5 family of AOLServer.
 	\item \emph{AOLServer} (\textbf{2.6.2+}): We have been developing and running xorb under version 2.6.2, 2.6.4 and, recently, 2.6.5; under both AOLServer versions, respectively.
 	\item \emph{XOTcl module} (\textbf{1.5.4+}): We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
 	\item \emph{xotcl-core} (\textbf{0.70+}): xorb/ xosoap are built upon version 0.70 (or higher).
@@ -580,7 +580,7 @@ Third, the set of arguments to be passed might vary from invocation to invocatio
 
 Fourth, escalated operations signatures are hard to maintain in generic framework designs, where an arbitrary number and arbitrary kinds of clients manipulate these bits of information. This is valid for the generic extension mechanisms that come with xorb, for instance the interceptor infrastructure.
 
-Fifth, context objects allow to specify an interface or even an protocol for manipulating the stored argument data. By interface, we refer to a set of accessors, for instance, a protocol, however, would require more sophisticated features. Though this can be realised in various language settings, we now concentrate on XOTcl. XOTcl comes with a specific kind of objects, so called \href{http://media.wu-wien.ac.at/doc/tutorial.html#slots}{slots}, that generalise the idea of object properties or parameters (as known from other environments) and introduce manager objects for object-level variables. Slots allow various fine-granular interceptions to be executed upon manipulation of object states. This allows to enforce protocols in terms of canonical naming, validation of value spaces etc. in a neat object-centric manner.
+Fifth, context objects allow to specify an interface or even a protocol for manipulating the stored argument data. By interface, we refer to a set of accessors, for instance, a protocol, however, would require more sophisticated features. Though this can be realised in various language settings, we now concentrate on XOTcl. XOTcl comes with a specific kind of objects, so called \href{http://media.wu-wien.ac.at/doc/tutorial.html#slots}{slots}, that generalise the idea of object properties or parameters (as known from other environments) and introduce manager objects for object-level variables. Slots allow various fine-granular interceptions to be executed upon manipulation of object states. This allows to enforce protocols in terms of canonical naming, validation of value spaces etc. in a neat object-centric manner.
 
 Context objects in the scope of remoting frameworks, in their role as \emph{invocation contexts}, are thoroughly discussed and exemplified in \cite{zdun:2005}. A more general sketch in the same direction but applicable to a wider range of domains can be found in \cite{kelly:2003}.
 
