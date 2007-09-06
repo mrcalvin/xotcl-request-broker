@@ -276,7 +276,10 @@
     citecolor=darkblue}
   \usepackage{xmpincl}
   \usepackage[nofancy]{svninfo}
-  \cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}}{
+  \cfoot[]{\svnInfoFile, rev. \svnInfoRevision, \svnInfoDate}
+  \newcommand{\site}{http://alice.wu-wien.ac.at:8000}
+  }{
+  \newcommand{\site}{}
   % \DeclareGraphicsRule{.png}{png}{.bb}{}%
 }
 
@@ -289,7 +292,6 @@
 
 \newenvironment{hints}{\begin{itemize}\renewcommand\labelitemi{$\hookrightarrow$}\footnotesize}{\end{itemize}}
 %\newcommand{\apilink}[3]{\href{{http://localhost:8000/api-doc/proc-view?proc=}#1+#2+#3}{#1\rightarrow#3}}
-\newcommand{\site}{http://openacs-dotlrn.wu-wien.ac.at}
 \newcommand{\acsapi}{\site/api-doc}
 \newcommand{\xotclapi}{\site/xotcl}
 \newcommand{\xotcl}{http://media.wu-wien.ac.at/langRef-xotcl.html}

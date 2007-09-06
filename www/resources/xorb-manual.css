@@ -1,0 +1,104 @@
+/* css initially based upon 'Tranquille' by Dave Shea 
+   and the Zen Garden default style v1.01 */
+
+/* basic elements */
+body { 
+	font: 10pt verdana; 
+	color: #555753; 
+	margin: 0px; 
+	}
+p { 
+	font: 10pt verdana; 
+	margin-top: 0px; 
+	text-align: justify;
+	}
+h3 { 
+	font: italic normal 12pt verdana; 
+	letter-spacing: 1px; 
+	margin-bottom: 0px; 
+	color: #7D775C;
+	}
+a:link { 
+	font-weight: bold; 
+	text-decoration: none; 
+	color: #988F5E;
+	}
+a:visited { 
+	font-weight: bold; 
+	text-decoration: none; 
+	color: #988F5E;
+	}
+
+	a:hover, a:active { 
+	text-decoration: underline; 
+	color: #988F5E;
+	}
+
+
+/* specific divs */
+#container { 
+	/* background: transparent url(zen-bg.jpg) no-repeat top left;  */
+	padding: 0px 50px 0px 50px;  
+	margin: 50px; 
+	border: 1px solid #888888;
+	}
+
+div.toc {
+        font-size: 8pt;
+	background: white;
+	clear:both; 
+	margin: 20px 20px 20px 10px; 
+	width: 250px; 
+	float: left;
+	padding : 20px;
+	border: 1px dashed #888888;
+	}
+	
+.code {
+	border: 1px dotted #d7d7d7;
+        padding: .5em 1em;
+        margin: 1em 0;
+	font: normal 98% courier;
+	white-space: pre;
+}
+
+.lstinputlisting {
+    border: 1px solid #d7d7d7;
+    padding: .5em 1em;
+    margin: 1em 0;
+}
+
+.lstlisting {
+    border: 1px solid #d7d7d7;
+    padding: .5em 1em;
+    margin: 1em 0;
+}
+
+div.figure, div.caption {
+    text-align: center;
+}
+table.figure, table.caption {
+    margin: auto;
+}
+
+
+
+/* 
+   pre/code hack with line wrap
+   taken from http://www.longren.org/2006/09/27/wrapping-text-inside-pre-tags/
+*/
+
+pre {
+   white-space: pre-wrap;       /* css-3 */
+   white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+   white-space: -pre-wrap;       /* Opera 4-6 */
+   white-space: -o-pre-wrap;       /* Opera 7 */
+   word-wrap: break-word;       /* Internet Explorer 5.5+ */
+   border: 1px dotted #d7d7d7;
+   padding: .5em 1em;
+   margin: 1em 0;
+   font: normal 98% courier;
+}
+
+
+

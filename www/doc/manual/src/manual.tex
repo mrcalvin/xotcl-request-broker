@@ -116,7 +116,7 @@ Share-alike (by-sa) licence}.
 	\end{lstlisting}
 	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xotcl-request-broker&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{http://media.wu-wien.ac.at}
 	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
-	\item As a first step, you might want to point your browser to \emph{/request-broker/admin} which features a first administrative cockpit for xorb.
+	\item As a first step, you might want to point your browser to \href{/request-broker/admin}{/request-broker/admin} which features a first administrative cockpit for xorb.
 	\end{enumerate}
 	\subsubsection{Configuration}
 	Configuration, primarily, refers to adjusting package parameters. Currently, there are no critical adjustments necessary at this level. In the future, we will provide necessary hints at this point.
@@ -133,9 +133,9 @@ Share-alike (by-sa) licence}.
 \footnotesize]
 	svn <export | co> http://svn.thinkersfoot.net/xosoap/tags/release-<version> xotcl-soap
 	\end{lstlisting}
-	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xosoap&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{media.wu-wien.ac.at}
+	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xosoap&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{http://media.wu-wien.ac.at}
 	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
-	\item Go and check out  \emph{/xosoap/services/} where you might find some useful pointers on listening (example) services. 
+	\item Go and check out  \href{/xosoap/services/}{/xosoap/services/} where you might find some useful pointers on listening (example) services. 
 	\end{enumerate}
 	\subsubsection{Configuration}
 	In contrast to xorb, xosoap comes with a few configuration options for you. The following table provides an overview and some rough comments where necessary:
@@ -398,7 +398,7 @@ As for terminology, there are just very few concepts to remember. If you recall 
 \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{Check options}, again, are a native XOTcl concept to formulate constraints of various types on non-positional arguments. In xorb, however, we use this native XOTcl mechanism to specify special, i.e. protocol-specific type constraints. "xsFloat", as used and shown in the above examples, is referred to as \emph{type code}, i.e. a short-cut identifier for a specific type handler. The actual type handler, i.e. \objlink{::xosoap::xsd::Float} is named \emph{anything type}, or simply \emph{anything}. The main idea of anythings are nicely elaborated on by \cite{sommerlad:1998,maetzel:1996}, however, the main idea is to provide a generic and uniform value container that comes with on-demand casting. 
 \begin{hints}
 \item Note, some clarifying side notes might be required at this point: The term casting may not be mistaken for what it refers to in compiled and (strongly) typed languages. In the realm of xorb, it simply refers to exposing a value in accordance with some value space and representation constraints.
-\item Another side note might be appropriate. The term "type code" is prominently used in another, pure-SOAP framework written in and for Python, i.e. the Zolera SOAP infrastructure (ZSI, \cite{zsi:2007}). However, type codes though realising a comparable aim, are properties to Python objects later used by type-specific (de-)marshallers. In xorb, type code serve a more declarative purpose, simply by hijacking the \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check option mechanism} of XOTcl.
+\item Another side note might be appropriate. The term "type code" is prominently used in another, pure-SOAP framework written in and for Python, i.e. the Zolera SOAP infrastructure (ZSI, \cite{zsi:2007}). However, type codes though realising a comparable aim, are properties to Python objects later used by type-specific (de-)marshalers. In xorb, type code serve a more declarative purpose, simply by hijacking the \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check option mechanism} of XOTcl.
 \end{hints}
 The third and last concept realises what is need to provide for multi-protocol support. Just imagine, you want to re-use, or rather, expose a service contract originally defined for the local use in an OpenACS instance as interface description for a SOAP-based service. Type codes such as string, integer, etc. need to be resolved for the scope of SOAP and WSDL handling. Therefore, xorb comes with the idea of \emph{type sponsorships}. A \emph{type sponsor} is a data type handler, i.e. an anything, that comes with a protocol plug-in and announces, upon initialisation, itself as sponsor to a xorb general-purpose anything. The xorb-specific anything then, upon being processed during the handling of invocation dispatches, resolves its sponsor for the actually used protocol. 
 
@@ -673,18 +673,18 @@ A final clarification is needed at this point: What has become known as "remote 
   %\subsection{xosoap}
   \section{Appendix} 
   \subsection{Examples - xosoap}
- \lstinputlisting[breaklines=true,label=lst:quickstart:xosoap:2,frame=single,basicstyle=
+ \lstinputlisting[breaklines=true,numbers=none,label=lst:quickstart:xosoap:2,frame=single,basicstyle=
 \footnotesize,caption=A simple SOAP client]{../examples/xosoap/example-01-soap-consumer.tcl}
-  \lstinputlisting[breaklines=true,label=lst:quickstart:xosoap:3,frame=single,basicstyle=
+  \lstinputlisting[breaklines=true,numbers=none,label=lst:quickstart:xosoap:3,frame=single,basicstyle=
 \footnotesize,caption=An even simpler SOAP client]{../examples/xosoap/example-02-soap-consumer.tcl}
-    \lstinputlisting[breaklines=true,label=lst:quickstart:xosoap:4,frame=single,basicstyle=\footnotesize,caption=An XOTcl Object as SOAP client]{../examples/xosoap/example-03-soap-consumer.tcl}
+    \lstinputlisting[breaklines=true,numbers=none,label=lst:quickstart:xosoap:4,frame=single,basicstyle=\footnotesize,caption=An XOTcl Object as SOAP client]{../examples/xosoap/example-03-soap-consumer.tcl}
         \lstinputlisting[breaklines=true,numbers=none,label=lst:quickstart:xosoap:5,basicstyle=\footnotesize,caption=Using proxy templates/ template methods (I)]{../examples/xosoap/example-04-soap-consumer.tcl}
      \lstinputlisting[breaklines=true,numbers=none,label=lst:quickstart:xosoap:6,basicstyle=\footnotesize,caption=Using proxy templates/ template methods (II)]{../examples/xosoap/example-05-soap-consumer.tcl}
      \lstinputlisting[breaklines=true,numbers=none,basicstyle=
-\footnotesize,label=lst:quickstart:xosoap:7]{../examples/xosoap/example-07-soap-provider-init.tcl}
+\footnotesize,label=lst:quickstart:xosoap:7,caption=A simple SOAP service]{../examples/xosoap/example-07-soap-provider-init.tcl}
 \lstinputlisting[breaklines=true,numbers=none,basicstyle=\footnotesize,caption=Per-method precedence,label=lst:quickstart:xosoap:8]{../examples/xosoap/example-08-soap-consumer.tcl}
 \lstinputlisting[breaklines=true,numbers=none,basicstyle=\footnotesize,caption=Shared scope,label=lst:quickstart:xosoap:9]{../examples/xosoap/example-09-soap-consumer.tcl}
-\lstinputlisting[breaklines=true,numbers=none,basicstyle=\footnotesize,label=lst:quickstart:xosoap:10]{../examples/xosoap/example-10-soap-provider-init.tcl}
+\lstinputlisting[breaklines=true,caption=A more advanced service implementation,numbers=none,basicstyle=\footnotesize,label=lst:quickstart:xosoap:10]{../examples/xosoap/example-10-soap-provider-init.tcl}
 
  \newpage
  \bibliography{/Users/ssoberni/Documents/doc/diss/thesis}

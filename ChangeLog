@@ -4,7 +4,7 @@
           function_args call for acs-service-contract packages <
           5.4.0d1
 
-	* Tested for the new ::xo::db::require package as introduced
+	* Tested for the new ::xo::db::require package
           as introduced by xotcl-core 0.70
 
 2007-09-04  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
