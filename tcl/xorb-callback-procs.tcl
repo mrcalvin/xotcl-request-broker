@@ -20,6 +20,15 @@ namespace eval ::xorb {
       my log "Could not source '$f'"
     }
   }
+  ConfigurationManager deleteMsgTypes types {
+    set sql ""
+    foreach t $types {
+      append sql "delete from acs_sc_msg_types where msg_type_name like '$t';\n"
+    }
+    if {$sql ne {}} {
+      db_dml [my qn cleanup_msg_types] $sql
+    }
+  }
 
   proc before-uninstall {} {
     # / / / / / / / / / / / / / / / / /
@@ -40,19 +49,24 @@ namespace eval ::xorb {
     ::xorb::datatypes::Void delete
     # / / / / / / / / / / / / / / / /
     # Starting with 0.4, clearing
-    # message types
-    foreach subP [::xorb::datatypes::MetaPrimitive info subclass] {
-      if {$subP eq "::xorb::datatypes::MetaComposite"} continue;
-      foreach sp [$subP info instances] {
-	ns_log debug "Deleting primitive=$sp"
-	$sp delete
-      }
-    }
-    foreach subC [::xorb::datatypes::MetaComposite info subclass] {
-      foreach sc [$subC info instances] {
-	ns_log debug "Deleting composite=$sc"
-	$sc delete
-      }
+    # message types from protocol plug-ins
+    ConfigurationManager deleteMsgTypes {
+      xsVoid
+      xsString
+      xsBoolean
+      xsDecimal
+      xsInteger
+      xsLong
+      xsInt
+      xsDouble
+      xsFloat
+      xsDate
+      xsTime
+      xsDateTime
+      xsBase64Binary
+      xsHexBinary
+      soapStruct
+      soapArray
     }
   }
 
