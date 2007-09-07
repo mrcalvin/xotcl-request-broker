@@ -9,7 +9,7 @@ namespace eval ::xorb::manual {
   ServiceContract EchoService -defines {
     Abstract echoFloat \
 	-arguments {
-	  inputDate:xsFloat
+	  inputFloat:xsFloat
 	} -returns returnValue:xsFloat \
 	-description {
 	  Here, we outline an abstract call "echoFloat"

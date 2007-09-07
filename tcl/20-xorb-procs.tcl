@@ -7,7 +7,7 @@ ad_library {
   @cvs-id $Id$
   
 }
-ns_log debug XORB-SOURCED
+#ns_log debug XORB-SOURCED
 namespace eval xorb {
 
   namespace import -force ::xoexception::try

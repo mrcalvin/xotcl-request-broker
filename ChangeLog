@@ -1,3 +1,11 @@
+2007-09-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/doc/manual/examples/xosoap/example-07-soap-provider-init.tcl
+          (echoFloat): Small fix in demo service -> argument in
+          contract is meant to be inputFloat, not inputDate! Updated
+          documentation. Thanks to Michael Totschnig for the hint.
+	  Added missing png to the svn.
+
 2007-09-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Tagged 0.4 preview release 
