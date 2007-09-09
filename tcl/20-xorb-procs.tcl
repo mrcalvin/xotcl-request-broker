@@ -42,11 +42,11 @@ namespace eval xorb {
   }
 
   InterceptorChain instproc load {config context} {
-    set c [lsearch -glob -inline \
-	       [Configuration allinstances] *$config]
-    if {$c ne {}} {
-      [self]::RequestFlow mixin [$c unfold $context]
-      [self]::ResponseFlow mixin [$c unfold -reverse true $context]
+    #set c [lsearch -glob -inline \
+	#       [Configuration allinstances] *$config]
+    if {[$config istype ::xorb::Configuration]} {
+      [self]::RequestFlow mixin [$config unfold $context]
+      [self]::ResponseFlow mixin [$config unfold -reverse true $context]
     }
   }
 
@@ -54,8 +54,9 @@ namespace eval xorb {
     # / / / / / / / / / / / / / / / / / / / / / / / /
     # initialise a configuration, i.e. linearised sequence,
     # of interceptors
-    set config [parameter::get -parameter "interceptor_config"]
-    #my debug "---reqestObj-3:$requestObj"
+    set pkg [$context package]
+    set config [$pkg get_parameter "interceptor_config" ::xorb::Standard]
+    #my debug "---CONFIG=$config"
     my load [string toupper $config 0 0] $context
     return [[self]::RequestFlow handleRequest $context]
   }

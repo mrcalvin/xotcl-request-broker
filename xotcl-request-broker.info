@@ -22,7 +22,8 @@
             <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
         </callbacks>
         <parameters>
-            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="invocation_access_policy"  default="::xorb::deployment::Default" description="The request broker allows to use access policies to control and enforce restrictions upon invocations. It is possible to specify your own default per-instance policy. By default, ::xorb::deployment::Default applies." section_name="Invocation access"/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="interceptor_config"  default="::xorb::Standard" description="xorb allows for injecting specific handlers that are capable of intercepting and mangling requests and responses (in a chain of interceptors). Currently, xorb comes with two configuration of interceptors chains, i.e. &quot;::xorb::Standard&quot; and &quot;::xorb::Extended&quot;."/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="invocation_access_policy"  default="::xorb::deployment::Default" description="The request broker allows to use access policies to control and enforce restrictions upon invocations. It is possible to specify your own default per-instance policy. By default, ::xorb::deployment::Default applies."/>
         </parameters>
 
     </version>

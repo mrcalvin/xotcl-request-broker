@@ -1,3 +1,13 @@
+2007-09-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: Shifted the package parameter
+          interceptor_config to the xorb level (would not make sense
+          at the xosoap level).
+
+	* tcl/xorb-package-procs.tcl: Fixed the parameter resolution
+          mechanism between protocol packages and the singleton xorb
+          package.
+
 2007-09-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/doc/manual/examples/xosoap/example-07-soap-provider-init.tcl

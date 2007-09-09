@@ -116,9 +116,11 @@ namespace eval ::xorb {
   } {
     my requireXorb
     my instvar xorb
-    set value [next]
+    set value [next $attribute]
+    my debug "PARAM1 => value=$value,xorb?[info exists xorb]"
     if {$value eq {} && [info exists xorb]} {
-      $xorb get_parameter $attribute $default
+      set value [$xorb get_parameter $attribute $default]
+      my debug XORB-VALUE=$value
     }
     return $value
   }
