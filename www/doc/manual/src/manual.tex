@@ -121,7 +121,20 @@ Share-alike (by-sa) licence}.
 	\item As a first step, you might want to point your browser to \href{/request-broker/admin}{/request-broker/admin} which features a first administrative cockpit for xorb.
 	\end{enumerate}
 	\subsubsection{Configuration}
-	Configuration, primarily, refers to adjusting package parameters. Currently, there are no critical adjustments necessary at this level. In the future, we will provide necessary hints at this point.
+	Configuration, primarily, refers to adjusting package parameters. Currently, there are no critical adjustments necessary at this level.   
+	\begin{center}
+	\begin{footnotesize}
+\begin{longtable}{p{0.2\textwidth}p{0.6\textwidth}}
+    \toprule
+    Option & Description  \\ 
+    \midrule
+     invocation\_access\_policy & Invocation access policies follow the policy facilities devised by the xotcl-core and the way they are employed by xowiki. In xorb's context, we use them to provide access control to actual servants by means on evaluating (conditional) privileges on service implementations. This feature still needs proper documentation.\\
+    interceptor\_config & xorb allows for injecting specific handlers that are capable of intercepting and mangling requests and responses.  Currently, xorb comes with two configuration of interceptors chains, i.e. "::xorb::Standard" and "::xorb::Extended". This feature is currently not properly documented and subject to substantial changes in the near future. \\
+    \bottomrule
+\end{longtable}
+\end{footnotesize}
+\end{center}
+
 	\subsection{The SOAP protocol plug-in (xosoap)}
 	\subsubsection{Installation}
 	\begin{enumerate}
@@ -149,7 +162,7 @@ Share-alike (by-sa) licence}.
     \midrule
      marshaling\_style & Currently, xotcl-soap provides two marshaling styles that are partly related to the family of WSDL specifications and invocation schemes depicted by this specification. You might choose between RPC/Encoded (::xosoap::RpcEncoded), RPC/Literal (::xosoap::RpcLiteral) or Document/Literal (::xosoap::DocumentLiteral), respectively. Currently, we default to ::xosoap::RpcLiteral. \\
      service\_segment & The parameter value specifies the uri segment that will prefix url endpoints of services, i.e. http://<base\_url>/<package\_key>/<service\_segment</<object\_identifier>. It defaults to "services".\\
-     interceptor\_config & xosoap allows for injecting specific handlers that are capable of intercepting and mangling requests and responses.  Currently, xosoap comes with two configuration of interceptors chains, i.e. "standard" and "extended". This feature is currently not properly documented and subject to substantial changes in the near future. \\
+     wsi\_bp\_compliant & Compliance of auto-generated interface descriptions to either WSDL 1.1 or \href{http://ws-i.org/Profiles/BasicProfile-1.1-2004-08-24.html}{WS-I Basic Profile 1.0/1.1} are not necessarily the same. If you want to make sure that the WSDL generated from your service contracts is strictly complaint to WS-I Basic Profile 1.0/1.1, set this parameter to 1. We currently default to 1. This is still a moving target, what is actually subsumed by the WS-I compat-mode can be followed by in the ChangeLog for the moment and at some point in a more narrative style in this documentation.\\
     \bottomrule
 \end{longtable}
 \end{footnotesize}

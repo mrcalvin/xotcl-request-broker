@@ -1,3 +1,7 @@
+2007-09-10  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Updated documentation slightly on new configuration parameters.
+
 2007-09-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: Shifted the package parameter
