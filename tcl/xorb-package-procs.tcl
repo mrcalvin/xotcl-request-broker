@@ -138,7 +138,7 @@ namespace eval ::xorb {
     if {[my procsearch solicit=$what] ne {}} {
       my solicit=$what
     } else {
-      error [PackageException new [subst {
+      error [::xorb::exceptions::PackageException new [subst {
 	Your solicit for '[my info class]->$what' cannot be handled.
       }]]
     }

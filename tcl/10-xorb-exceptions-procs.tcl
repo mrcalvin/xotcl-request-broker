@@ -203,11 +203,15 @@ namespace eval xorb::exceptions {
     The value supplied violates the type constraint
   }
 
+  LoggableException PackageException -ad_doc {
+    An exception related to a package instance occurred
+  }
+
   # LoggableException UnknownException -ad_doc {
   #   An unspecified exception was caught
   # }
   namespace export SkeletonGenerationException LoggableException\
       InvocationException NoTransportProvider TypeViolationException \
       InterfaceDescriptionNotFound CalleeInterfaceNotFound RequestorException \
-      ClientRequestHandlerException
+      ClientRequestHandlerException PackageException
 }

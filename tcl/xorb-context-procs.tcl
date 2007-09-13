@@ -93,6 +93,17 @@ namespace eval ::xorb::context {
     {protocol ::xorb::AcsSc}
     package
   }
+
+  InvocationContext instproc setData {key value} {
+    my set data($key) $value
+  }
+
+  InvocationContext instproc getData {key} {
+    my instvar data
+    if {[info exists data($key)]} {
+      return $data($key)
+    }
+  }
  
   InvocationContext instproc getProtocolTree {} {
     my instvar protocol

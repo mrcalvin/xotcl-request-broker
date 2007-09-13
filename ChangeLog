@@ -1,3 +1,16 @@
+2007-09-13  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-context-procs.tcl: Added support for adding/removing
+          context data from invocation contexts (setData/getData).
+
+	* tcl/xorb-stub-procs.tcl: Added support for adding/removing
+          context data from invocation contexts (setData/getData).
+
+2007-09-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-package-procs.tcl: Fixed a missing exception type
+          (PackageException).
+
 2007-09-10  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Updated documentation slightly on new configuration parameters.

@@ -115,6 +115,17 @@ namespace eval ::xorb::stub {
     return [my subst $value]
   }
 
+  ContextObject instproc setData {key value} {
+    my set data($key) $value
+  }
+
+  ContextObject instproc getData {key} {
+    my instvar data
+    if {[info exists data($key)]} {
+      return $data($key)
+    }
+  }
+
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
 
