@@ -60,6 +60,7 @@ namespace eval xorb::exceptions {
     contentType
   }
   Loggable instproc write args {
+    my instvar node origin stackNode
     foreach p [[self class] info parameter] {
       if {[my exists $p]} {
 	my instvar $p
@@ -67,18 +68,21 @@ namespace eval xorb::exceptions {
 	[my info class] instvar $p
       }
     }
-    set msg [my message]
-    if {[ns_config "ns/parameters" debug]} {
-      # / / / / / / / / / / / / / / / / / / /
-      # Depending on the run mode (production vs. debug)
-      # we replace the run-time message by 
-      # the global errorInfo
-      global errorInfo
-      if {$errorInfo ne {}} {
-	append msg \n errorInfo: \n $errorInfo
-      }
+    if {![info exists stackNode] && [info exists origin]} {
+      set sNode [expr {[$origin exists stackNode]?[$origin set stackNode]:""}]
+    } else {
+      set sNode $stackNode
     }
-    eval $logCmd $mode [list $msg]
+    if {$sNode ne {}} {
+      set document [$node ownerDocument]
+      #my debug DOCUMENT=$document,XML=[$node asXML]
+      $node appendChild $sNode
+      set msg [$node asXML]
+      $node removeChild $sNode
+    } else {
+      set msg [$node asXML]
+    }
+    $logCmd $mode $msg
     next
   }
   
@@ -91,24 +95,51 @@ namespace eval xorb::exceptions {
     my superclass ::xoexception::Exception
     my instproc init {{message "n/a"}} {
       [self class] instvar __classDoc__
-      #my log "!!! HERE"
-      #my log "class=[my info class],parent=[[my info class] info parent]"
       if {[::xotcl::Object isclass [[my info class] info parent]]} {
 	my category [namespace tail [[my info class] info parent]]
       }
-      
+      my instvar node origin
       # / / / / / / / / / / / / / / / / / / /
       # allow for nesting of throwable objects
       # as message: extract message
       if {[::xoexception::Throwable isThrowable $message]} {
-	set message [$message message]
+	set document [[$message set node] ownerDocument]
+	set node [$document createElement exception]
+	$node setAttribute type [self class]
+	$node appendChild [$message set node]
+	if {[$message exists stackNode]} {
+	  set origin $message
+	} elseif {[$message exists origin]} {
+	  set origin [$message set origin]
+	}
+      } else {
+	if {![info exists node]} {
+	  set document [dom createDocument exception]
+	  set node [$document documentElement]
+	} else {
+	  set document [$node ownerDocument]
+	}
+	$node setAttribute type [self class]
+	set msgNode [$document createElement message]
+	$msgNode appendChild [$document createTextNode $message]
+	$node appendChild $msgNode
+	if {[ns_config "ns/parameters" debug]} {
+	  # / / / / / / / / / / / / / / / / / / /
+	  # Depending on the run mode (production vs. debug)
+	  # we preserve the original stack trace.
+	  global errorInfo
+	  my instvar stackNode
+	  set stackNode [$document createElement errorStack]
+	  $stackNode appendChild [$document createTextNode $errorInfo]
+	  #my set errorInfo $errorInfo
+	}
       }
-
       if {[info exists __classDoc__]} {
-	set message "[self class]: $__classDoc__ (run-time message: $message)"
+	set descNode [$document createElement description]
+	$descNode appendChild [$document createTextNode $__classDoc__]
+	$node appendChild $descNode
       }
-      my set __message__(text/plain) $message
-      next $message
+      next
     }
     my instmixin add ::xorb::exceptions::Loggable
     next

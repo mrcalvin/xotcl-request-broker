@@ -85,7 +85,7 @@ namespace eval ::xorb::deployment {
       }
      set verified 1 
     } catch {Exception e} {
-      $e write
+      $e write 
     } catch {error e} {
       #global errorInfo
       [::xorb::exceptions::UnknownNonConformanceException new $e] write

@@ -2572,8 +2572,7 @@ ad_after_server_initialization synchronise_contracts {
       set skeletonObj [$implObj new -mixin $contractObj] 
       
     } catch {Exception e} {
-      error [::xorb::exceptions::SkeletonGenerationException new \
- 		 "contract: $contract, impl: $impl, msg: [$e message]"]
+      error [::xorb::exceptions::SkeletonGenerationException new $e]
     } catch {error e} {
       #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \

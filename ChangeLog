@@ -1,3 +1,10 @@
+2007-09-14  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/10-xorb-exceptions-procs.tcl: Partial rewrite of
+          exception handling, now streaming into versatile xml and
+          being more careful to preserve the original error stack
+          (errorInfo). 
+
 2007-09-13  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-context-procs.tcl: Added support for adding/removing
