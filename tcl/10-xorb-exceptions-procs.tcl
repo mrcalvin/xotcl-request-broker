@@ -60,7 +60,7 @@ namespace eval xorb::exceptions {
     contentType
   }
   Loggable instproc write args {
-    my instvar node origin stackNode
+    my instvar node origin
     foreach p [[self class] info parameter] {
       if {[my exists $p]} {
 	my instvar $p
@@ -68,12 +68,10 @@ namespace eval xorb::exceptions {
 	[my info class] instvar $p
       }
     }
-    if {![info exists stackNode] && [info exists origin]} {
-      set sNode [expr {[$origin exists stackNode]?[$origin set stackNode]:""}]
-    } else {
-      set sNode $stackNode
-    }
-    if {$sNode ne {}} {
+    
+    # -- in debug mode?
+    if {[$origin exists stackNode]} {
+      set sNode [$origin set stackNode]
       set document [$node ownerDocument]
       #my debug DOCUMENT=$document,XML=[$node asXML]
       $node appendChild $sNode
@@ -107,9 +105,7 @@ namespace eval xorb::exceptions {
 	set node [$document createElement exception]
 	$node setAttribute type [self class]
 	$node appendChild [$message set node]
-	if {[$message exists stackNode]} {
-	  set origin $message
-	} elseif {[$message exists origin]} {
+	if {[$message exists origin]} {
 	  set origin [$message set origin]
 	}
       } else {
@@ -123,6 +119,7 @@ namespace eval xorb::exceptions {
 	set msgNode [$document createElement message]
 	$msgNode appendChild [$document createTextNode $message]
 	$node appendChild $msgNode
+	set origin [self]
 	if {[ns_config "ns/parameters" debug]} {
 	  # / / / / / / / / / / / / / / / / / / /
 	  # Depending on the run mode (production vs. debug)
