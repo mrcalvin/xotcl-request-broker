@@ -235,40 +235,40 @@ namespace eval ::xorb::deployment {
 
     # / / / / / / / / / / / / / / / / / /
     # 1) per-implementation interceptors
-    if {$interceptors ne {}} {
-      set cmds {}
-      foreach entry $interceptors {
-	switch [llength $entry] {
-	  1 { 
-	    append cmds [subst {
-	      ::xorb::Configuration::Element new \
-		  -interceptor $entry \
-		  -array set properties {
-		    position 1
-		    protocol all
-		    listen [namespace tail [self]]
-		  }}]
-	  }
-	  2 {
-	    foreach {protocol icpts} $entry break
-	    foreach i $icpts {
-	      append cmds [subst {
-		::xorb::Configuration::Element new \
-		    -interceptor $i \
-		    -array set properties {
-		      position 1
-		      protocol $protocol
-		      listen [namespace tail [self]]
-		    }}]
-	    }
-	  }
-	}
+#     if {$interceptors ne {}} {
+#       set cmds {}
+#       foreach entry $interceptors {
+# 	switch [llength $entry] {
+# 	  1 { 
+# 	    append cmds [subst {
+# 	      ::xorb::Configuration::Element new \
+# 		  -interceptor $entry \
+# 		  -array set properties {
+# 		    position 1
+# 		    protocol all
+# 		    listen [namespace tail [self]]
+# 		  }}]
+# 	  }
+# 	  2 {
+# 	    foreach {protocol icpts} $entry break
+# 	    foreach i $icpts {
+# 	      append cmds [subst {
+# 		::xorb::Configuration::Element new \
+# 		    -interceptor $i \
+# 		    -array set properties {
+# 		      position 1
+# 		      protocol $protocol
+# 		      listen [namespace tail [self]]
+# 		    }}]
+# 	    }
+# 	  }
+# 	}
 	
-      }
-      # register service-specific interceptors
-      # with ::xorb::Extended configuration
-      ::xorb::Extended contains $cmds
-    }
+#       }
+#       # register service-specific interceptors
+#       # with ::xorb::Extended configuration
+#       ::xorb::Extended contains $cmds
+#     }
     
     set rulingPolicy [parameter::get -parameter "invocation_access_policy"]
     # TODO: no per-instance policy available at the time of server init!
@@ -394,5 +394,5 @@ namespace eval ::xorb::deployment {
   # # # # # # # # # # # # # # #
   # default per-package policy
   
-  Policy Default -default_permission {public}
+  Policy Default -default_permission {login}
 }

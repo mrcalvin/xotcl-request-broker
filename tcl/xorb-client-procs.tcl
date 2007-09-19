@@ -1,6 +1,5 @@
 ad_library {
 
-  
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date July, 25 2006
   @cvs-id $Id$
@@ -14,7 +13,6 @@ namespace eval xorb::client {
   
   ::xotcl::Class ClientRequestHandler
   ClientRequestHandler instproc handleRequest {invocationObject} {
-
     # / / / / / / / / / / /
     # delegate to transport layer
     TransportProvider handle $invocationObject

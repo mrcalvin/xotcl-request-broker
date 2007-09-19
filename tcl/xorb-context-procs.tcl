@@ -104,6 +104,11 @@ namespace eval ::xorb::context {
       return $data($key)
     }
   }
+
+  InvocationContext instproc dataExists {key} {
+    my instvar data
+    return [info exists data($key)]
+  }
  
   InvocationContext instproc getProtocolTree {} {
     my instvar protocol

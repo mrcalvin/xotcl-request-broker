@@ -1,3 +1,19 @@
+2007-09-18  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-storm-procs.tcl: Added a first version of the
+          scenario-based testing framework as proposed by Mark
+          Strembeck. It will be used for future test writing and at
+          some point for developer support.
+
+	* tcl/xorb-interceptors-procs.tcl: Added the revised
+          interceptor infrastructure, now organised in an own
+          *-procs.tcl file.
+
+	* tcl/20-xorb-procs.tcl: Cleaned up, i.e. chunks of commented
+          and outdated code.
+
+	* Pitched trunk to 0.4.1
+
 2007-09-14  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/10-xorb-exceptions-procs.tcl: Partial rewrite of

@@ -7,311 +7,41 @@ ad_library {
   @cvs-id $Id$
   
 }
-#ns_log debug XORB-SOURCED
 namespace eval xorb {
 
   namespace import -force ::xoexception::try
   namespace import -force ::xorb::aux::*
   
-  ####################################################
-  # Implementing a chain of interceptors + flows
-  ####################################################
-  
-  ::xotcl::Class InterceptorChain -ad_doc {}
-
-  InterceptorChain instproc init args {
-
-    # / / / / / / / / / / / / / / / / / / / / / / / /
-    # nest an object into [self] that represents 
-    # the mixin-hook for request interceptors ("request flow")
-    ::xotcl::Object [self]::RequestFlow -proc handleRequest {context} {
-      #my debug "---requestObj-4:$requestObj"
-      set r $context
-      next 
-      return $r
-    }
-    
-    # / / / / / / / / / / / / / / / / / / / / / / / / 
-    # nest an object into [self] that represents
-    # the mixin-hook for response interceptors ("response flow")
-    ::xotcl::Object [self]::ResponseFlow -proc handleResponse {context} {
-      set r $context
-      next 
-      return $r
-    }
-  }
-
-  InterceptorChain instproc load {config context} {
-    #set c [lsearch -glob -inline \
-	#       [Configuration allinstances] *$config]
-    if {[$config istype ::xorb::Configuration]} {
-      [self]::RequestFlow mixin [$config unfold $context]
-      [self]::ResponseFlow mixin [$config unfold -reverse true $context]
-    }
-  }
-
+  # / / / / / / / / / / / / / /
+  # Base class for request
+  # handler
+  ::xotcl::Class InterceptorChain
   InterceptorChain instproc handleRequest {context} {
     # / / / / / / / / / / / / / / / / / / / / / / / /
     # initialise a configuration, i.e. linearised sequence,
     # of interceptors
+    my instvar chain
     set pkg [$context package]
-    set config [$pkg get_parameter "interceptor_config" ::xorb::Standard]
-    #my debug "---CONFIG=$config"
-    my load [string toupper $config 0 0] $context
-    return [[self]::RequestFlow handleRequest $context]
+    set chain [$pkg get_parameter "chain_of_interceptors" ::xorb::coi]
+    my debug "---CONFIG=$chain"
+    $chain handleRequest $context
+    next
   }
 
   InterceptorChain instproc handleResponse {context} {
-    return [[self]::ResponseFlow handleResponse $context]
-  }
-
-  ####################################################
-  # Configurations for the chain of interceptors
-  ####################################################
-
-  # / / / / / / / / / / / / / / / / / / / / / /
-  # Configuration meta-class
-
-  Class Configuration -parameter {
-    {listen "all"}
-    {position "1"}
-    {protocol "all"}
-  } -superclass {
-    OrderedComposite
-    ::xotcl::Class
-  }
-  
-  # # # # # # # # # # # # # # # # #
-  # # TODO: recreate fix is needed if 
-  # # configurations are set dynamically
-  # # (in the regression-test.tcl) or the
-  # # like in order to preserve the
-  # # structural information of the underlying
-  # # ordered composite (i.e. its children)
-  # #
-
-  Configuration proc recreate {obj args} {
-    if {[$obj exists __children]} {
-      foreach c [$obj set __children] {
-	set n [namespace tail $c]
-	if {[string first "__#" $n] != -1} {
-	  set prefix "[$c info class]"
-	  set stream [$c serialize]
-	  set idx [string first "-noinit" $stream]
-	  set body [string range $stream $idx end]
-	  lappend children "$prefix $body"
-	}
-      }
-    }
-    next;
-    if {[info exists children]} {
-      foreach c $children {
-	set o [eval $c]
-	$obj lappend  __children $o
-      }
-    }
-  }
-  
-  #   Configuration proc recreate {obj args} {
-  #     my log "---BEFORE:[$obj serialize]"
-  #     if {[$obj exists __children]} {
-  #       set children [$obj set __children]
-  #     }
-  #     next;
-  #     my log "---AFTER:[$obj serialize]"
-  #     if {![$obj exists __children] && [info exists children]} {
-  #       $obj set __children $children
-  #     }
-  #   }
-  
-  Configuration proc reverse {input} {
-    set temp [list]
-    for {set i [ expr [ llength $input ] - 1 ] } {$i >= 0} {incr i -1} {
-      lappend temp [ lindex $input $i ]
-    }
-    return $temp
-  }
-  Configuration instproc reversedHeritage {} {
-    set h [concat [self] [my info heritage]]
-    return [[self class] reverse $h]
-  }
-  Configuration instproc unfold {{-reverse false} ctx} {
-    array set mixins [list]
-    set l [my reversedHeritage]
-    set interceptors [list]
-    foreach pre $l {
-      if {[$pre istype [self class]]} {
-	my debug "pre=$pre,mixin-exists?[my array exists mixins]"
-	foreach {idx interceptor} [$pre records $ctx] {
-	  if {[info exists mixins($idx)]} {
-	    set item $mixins($idx)
-	    set interceptor [lappend item [join $interceptor]]
-	  } 
-	  set mixins($idx) $interceptor
-	}
-      }
-    }
-    # lsort on keys of __mixins__
-   foreach idx [lsort -increasing -integer [array names mixins]] {
-      eval lappend interceptors $mixins($idx)
-    }
-    if {$reverse} {
-      set interceptors [[self class] reverse $interceptors]
-    }
-    my debug "INTERCEPTORS=$interceptors"
-    return $interceptors
-  }
-  Configuration instproc setDefaults {obj} {
-    $obj instvar properties
-    my debug "sclass=[self class],params=[[self class] info parameter]"
-    foreach {p dv} [join [[self class] info parameter]] {
-      my debug "---p:$p,---dv:$dv"
-      if {![info exists properties($p)] || $properties($p) eq {}} {
-	set properties($p) [my $p]
-      } 
-    }
-    # # # # # # # # # # # #
-    # # # # # # # # # # # #
-    # # ::xorb::Standard 
-    # # restrictions
-    # # # # # # # # # # # # 
-    # # # # # # # # # # # #
-  
-    my debug "---arr=[array get properties]"
-    if {[self] ne "::xorb::Standard"} {
-      # position, if 0 then 1
-      if {$properties(position) == 0} {
-	set properties(position) [my position]
-      }
-    }
-  }
-  Configuration instproc records {context} {
-    array set temp [list]
-    #set __children  [lsort -command [list my compare] \
-			# -increasing [my info children]]
-    my debug "---CHILDREN=[my children],[my info children]"
-    foreach proxyChild [my children] {
-      my setDefaults $proxyChild
-      $proxyChild instvar properties interceptor
-      my debug "---PROPS=[array get properties]"
-      set pos $properties(position)
-      set listen $properties(listen)
-      set protocol $properties(protocol)
-      # / / / / / / / / / / / / / / / / 
-      # 1) resolve interceptor class
-      set child $interceptor
-      set gxpr [list]
-      # / / / / / / / / / / / / / / / / 
-      # 2) introduce mixin guards
-      if {$listen ne "all"} {
-	lappend gxpr "\[lsearch -glob [list $listen] \[$context virtualObject\]\] != -1"
-      }
-      
-      if {$protocol ne {}} {
-	# hierarchy of protocol plug-ins (starting with current offset)
-	# escalate [::xo::cc protocol] -> e.g. Soap / Remote / All
-	# hProtocols evaluate at runtime
-	lappend gxpr "\[lsearch -glob \[$context getProtocolTree\] [list *$protocol]\] != -1"
-      }
-      if {$gxpr ne {}} {
-	set child [list "$child -guard [list [join $gxpr { && }]]"]
-      }
-      my debug "---CHILD=$child"
-      if {[info exists temp($pos)]} {
-	set item $temp($pos)
-
-	set child [lappend item [join $child]]
-      }
-      set temp($pos) $child
-    }
-    return [array get temp]
-  }
-
-  Configuration instproc compare {a b} {
-    my setDefaults $a
-    my setDefaults $b
-    $a instvar {properties propertiesA}
-    $b instvar {properties propertiesB}
-    
-    set x $propertiesA(position)
-    set y $propertiesB(position)
-    if {$x < $y} {
-      return -1
-    } elseif {$x > $y} {
-      return 1
-    } else {
-      return 0
-    }
-  }
-
-::xotcl::Class Configuration::Element -slots {
-  Attribute interceptor
-}
-
-# / / / / / / / / / / / / / / / / / / / / / /
-# base configuration; only provides for (de-)
-# marshalling
-
-  Configuration Standard
-
-  ####################################################
-  # Interceptor (Meta-)Class
-  ####################################################
-
-
-  ::xotcl::Class Interceptor -superclass ::xotcl::Class \
-      -ad_doc {
-	@author stefan.sobernig@wu-wien.ac.at
-	@creation-date October 10, 2005     
-      }
-
-  ####################################################
-  # LoggingInterceptor	
-  ####################################################
-
-  Interceptor LoggingInterceptor
-  
-  LoggingInterceptor instproc handleRequest {context} {
-    my debug [$context serialize]
+    my instvar chain
+    $chain handleResponse $context
     next
   }
 
-  LoggingInterceptor instproc handleResponse {context} {
-    my debug [$context serialize]
-    next
-  }
-
-  # / / / / / / / / / / / / / / / / / / / / / /
-  # extended configuration; features basic message logging
-
-  Configuration Extended -superclass Standard -contains {
-    ::xorb::Configuration::Element new \
-	-interceptor ::xorb::LoggingInterceptor \
-	-array set properties {
-	  listen all
-	}
-  }
-
-  ####################################################
-  # Request Message Handler
-  ####################################################
-
+  # / / / / / / / / / / / / / / / /
+  # Class RequestHandler
   ::xotcl::Class RequestHandler -superclass InterceptorChain -ad_doc {    
     @author stefan.sobernig@wu-wien.ac.at
     @creation-date August 18, 2005 
   }										
   
-
-  RequestHandler ad_instproc init {} {
-    Upon intialisation, some credentials are prepared and 
-    made instance variables. 
-    They will later be used to populate a connection object.
-    
-    @author stefan.sobernig@wu-wien.ac.at
-    @creation-date August 18, 2005
-    
-    @see xosoap::MessageHandler::preauth
-  } {
+  RequestHandler ad_instproc init {} {} {
     # / / / / / / / / / / / / / / / / / / /
     # provide for the chain of interceptor 
     # to be initialised
@@ -328,97 +58,37 @@ namespace eval xorb {
      # - ...
      # is handled by protocol-specific
      # mixins
-     set requestFlowResult [next];#InterceptorChain->handleRequest
+     next;#InterceptorChain->handleRequest
      # / / / / / / / / / / / / / / /
      # 2) init invoker and dispatch
      
-     set invoker [Invoker new -context $requestFlowResult]
+     set invoker [Invoker new -context $context]
      $invoker destroy_on_cleanup
      set r [$invoker invoke]
      
      # / / / / / / / / / / / / / / /
      # 3) process result
-     my handleResponse $requestFlowResult $r
+     my handleResponse $context $r
    }
   
   RequestHandler ad_instproc handleResponse {context} {} {
     # / / / / / / / / / / / / / / / / / / / / /
     # 4) Pass response to response flow
     my debug NEXT-3=[self next]
-    set responseFlowResult [next $context]
-    #my dispatchResponse $responseFlowResult
-    return $responseFlowResult;# protocol-specific mixin->dispatchResponse 
+    next
+    return $context;# protocol-specific mixin->dispatchResponse 
   }
 
   # template methods, has to be provided by implementations of 
   # protocol plug-ins!
   RequestHandler abstract instproc dispatchResponse {payload}
   RequestHandler abstract instproc unplug {}
-  # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # #
-  # rhandler
   
+  # / / / / / / / / / / / / / / / /
+  # rhandler
   RequestHandler create rhandler
-
-  # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # #
-  # Base
-  # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # #
-#   ::xotcl::Class Base -superclass ::xotcl::Class -slots {
-#     Attribute deleteCmd
-#     Attribute middle 
-#     Attribute name -type "my qname" -proc qname {value} {
-#       # / / / / / / / / / / / /
-#       # 1) The name may not be set
-#       # to a autogenerated value,
-#       # pointing to the xotcl namespace,
-#       # i.e. spec objects must not be
-#       # declared by calling 'new'
-#       # without specifying an explicit 
-#       # name
-#       # 2) transform object references
-#       # (when used as actual 'names') into
-#       # canonical and valid string format:
-#       # we replace all '::' by '__'
-#       if {[string first ::xotcl:: $value] != -1} {
-# 	return 0
-#       } else {
-# 	# provide for a canonical transformation of '::'
-# 	my uplevel [subst {\$obj set \$var [string map {: _} $value]}]
-# 	return 1
-#       }
-#     }
-#   }
-#   Base abstract instproc stream {}
-#   Base instproc deploy args {
-#     if {[nsv_exists ::xotcl::THREAD ::XorbManager]} {
-#       my log "DEPLOYMENT: instant"
-#       my mixin add ::xorb::Synchronizable
-#       my sync
-#       my mixin delete ::xorb::Synchronizable
-#     } else {
-#       # synchronise in a batch + lazy manner
-#       # in fact, only upon server startup!
-#       my log "DEPLOYMENT: lazy"
-#       [my info class] lappend __syncees__ [self] 
-#     }
-#   }
-#   Base instproc getSignature {} {
-#     return [ns_sha1 [my stream]]
-#   }
-#   Base instproc slotInfo {option} {
-#     switch $option {
-#       "ordered" {
-# 	set ul [list]
-# 	foreach s [my info slots] {
-# 	  lappend ul [list [$s name] $s]
-# 	}
-# 	return [join [lsort -index 0 $ul]]
-#       }
-#     }
-#   }
-
+  
+  
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # ::xorb::Object
@@ -432,15 +102,7 @@ namespace eval xorb {
   # / / / / / / / / / / / / / / / / / /
   
   ::xotcl::Class Object -superclass ::xorb::aux::AcsObject
-  # AcsObjectType Object -superclass ::xorb::aux::AcsObject \
-#     -pretty_name "XORB Object" -pretty_plural "XORB Objects" \
-#     -abstract_p "t" -instproc init args {
-#       #my debug ---init-TOP
-#       #if {![my exists name] || [my name] eq {}} {
-#       #	my set name [namespace tail [self]]
-#       #}
-#       next
-#     }
+ 
   Object proc canonicalName {value} {
     # / / / / / / / / / / / /
     # 1) The name may not be set
@@ -450,7 +112,7 @@ namespace eval xorb {
     # declared by calling 'new'
     # without specifying an explicit 
     # name
-    # 2) transform object references
+    # 2) transform object references0
     # (when used as actual 'names') into
     # canonical and valid string format:
     # we replace all '::' by '__'
@@ -813,18 +475,6 @@ namespace eval xorb {
     set elementConstraints [db_null]
     ::xorb::datatypes::Anything tokenise $elementType
     if {$typeInfo ne {}} {set elementConstraints $typeInfo}
-    # return call script
-#     return [subst {
-#       select xorb_msg_type_element__new(
-#             '$msgTypeName',
-#             '$elementName',
-#             '$hook',
-#             '$isset_p',
-#             '$idx',
-#             '$elementConstraints'
-# 	    );
-#     }]
-
 
     ::xo::db::sql::xorb_msg_type_element new \
 	-msg_type_name $msgTypeName \
@@ -833,18 +483,6 @@ namespace eval xorb {
 	-element_msg_type_isset_p $isset_p \
 	-element_pos $idx \
 	-element_constraints $elementConstraints
-    
-    
-    #     return [subst {
-    #       select acs_sc_msg_type__new_element(
-    #             '$msgTypeName',
-    #             '$elementName',
-    #             '$hook',
-    #             '$isset_p',
-    #             '$idx',
-    #             '$elementConstraints'
-    #         );
-    #     }]
   }
 
 
@@ -891,25 +529,10 @@ namespace eval xorb {
 
   ServiceContract instproc save {} {
     my instvar contract_name
-    #set contract_name [my getQName $contract_name]
     array set specification [my stream]
     db_transaction {
       set contractId [next];# AcsObject->save
       
-      #array set specification $spec
-      #set contractName $specification(name)
-      #set contractDescription $specification(description)
-      
-      # 1) store contract object
-      #       set id [db_exec_plsql insert_contract {
-      # 	select acs_sc_contract__new(
-      #             :contractName,
-      #             :contractDescription
-      # 	    );
-      #       }]
-      #      set id [::xo::db::sql::acs_sc_contract new \
-	  #		  -contract_name $contractName \
-	  #		  -contract_desc $contractDescription]
       # / / / / / / / / / / / / / / / / / / /
       # operations: we bulk up all necessary
       # pl/pgsql calls and execute them at once
@@ -926,12 +549,6 @@ namespace eval xorb {
 	array set oDetails $oInfo
 	# create message type: Input
 	set inputTypeName "${contract_name}.${operation}.InputType"
-	# append sql [subst {
-	# 	  select acs_sc_msg_type__new(
-	#             '$inputTypeName',
-	#             ''
-	# 	    );
-	# 	}]
 	
 	::xo::db::sql::acs_sc_msg_type new \
 	    -msg_type_name $inputTypeName \
@@ -949,13 +566,6 @@ namespace eval xorb {
 	# create message type: Output
 	set outputTypeName "${contract_name}.${operation}.OutputType"
 	
-	# append sql [subst {
-	# 	  select acs_sc_msg_type__new(
-	#             '$outputTypeName',
-	#             ''
-	# 	    );
-	# 	}]
-	
 	::xo::db::sql::acs_sc_msg_type new \
 	    -msg_type_name $outputTypeName \
 	    -msg_type_spec {}
@@ -972,17 +582,6 @@ namespace eval xorb {
 	# finally, sum up by creating the operation itself
 	set desc $oDetails(description) 
 	set icp $oDetails(is_cachable_p)
-	# append sql [subst {
-	# 	  select acs_sc_operation__new(
-	#             :contractName,
-	#             :operation, 
-	#             :desc,
-	#             :icp,
-	#             :inputIdx,
-	#             :inputTypeName, 
-	#             :outputTypeName
-	# 	    );
-	# 	}]
 	
 	::xo::db::sql::acs_sc_operation new \
 	    -contract_name $contract_name \
@@ -997,94 +596,22 @@ namespace eval xorb {
 	
       }
     }
-    #my debug ID=$id
-    #return $id  
-    # TODO: add exception handling
- 
   }
-
-#   ServiceContract instforward defines %self slots
-
-#   ServiceContract instproc ad_doc {desc} {
-#     my description $desc
-#     next 
-#   }
-#   ServiceContract instproc init args {
-#     if {![my exists name] || [my name] eq {}} {
-#       my name [namespace tail [self]]
-#     }
-#     my middle "contract"
-#     my deleteCmd {acs_sc::${middle}::delete -contract_id $id}
-#     next
-#   }
-#   ServiceContract instproc stream {} {
-#     my instvar homologues
-#     set obj [[self] new -volatile]
-#     set arr(name) [my name]
-#     set arr(description) [my description]
-#     set ops [list]
-#     #my log "orig-line=[lsort [my info slots]]"
-#     foreach {n s} [my slotInfo ordered] {
-#       #my log "+++obj-meth=[$obj info methods]"
-#       #my log "+++s=$s"
-#       if {[$s istype ::xorb::Abstract]} {
-# 	lappend ops [$obj $n]
-#       } 
-#     }
-#     set arr(operations) [string trim [join $ops]]
-#     #my log "+++arr=[array get arr]"
-#     #my log "+++equal?[string equal [array get arr] [array get arr]]"
-#     return [array get arr]
-#   }
-
-# # # # # # # # # # # # # # # # # 
-# # # # # # # # # # # # # # # # # 
-# # recreation facility (automated
-# # sync) for explicitly named
-# # contract specification objects
-# #ServiceContract proc recreate {obj args} {
-# #  next
-# #  $obj mixin add ::xorb::Synchronizable
-# #  $obj sync
-# #  $obj mixin delete ::xorb::Synchronizable
-# #}
-
-#   # only to be called in main thread (upon init), later also upon recreation?
-#  #  ServiceContract proc sync {} {
-# #     foreach i [[self] allinstances] {
-# #       my debug "SYNC'ING:$i"
-# #       $i mixin add ::xorb::Synchronizable
-# #       $i [self proc]
-# #       $i mixin delete ::xorb::Synchronizable
-# #     }
-# #   }
-#   ServiceContract proc sync {} {
-#     my instvar __syncees__
-#     if {[info exists __syncees__] && [llength $__syncees__] > 0} {
-#       foreach s $__syncees__ {
-# 	my log "SYNC'ING: $s"
-# 	$s mixin add ::xorb::Synchronizable
-# 	$s [self proc]
-# 	$s mixin delete ::xorb::Synchronizable
-#       }
-#     }
-#   }
-
-# / / / / / / / / / / / / / / / / /
-# provide after_init hook 
-ad_after_server_initialization synchronise_contracts {
-  ::xorb::ServiceContract sync
-}
-
+  
+  
+  # / / / / / / / / / / / / / / / / /
+  # provide after_init hook 
+  ad_after_server_initialization synchronise_contracts {
+    ::xorb::ServiceContract sync
+  }
+  
   # / / / / / / / / / / / / / / / /
   # Introducing a deployment feature
   # for contracts, requiring an explicit
   # step by the developer to have its
   # contract definition materialised 
   # in the backend.
-
-
-
+  # - - - - - - - - - - - - - - - - - -  
   # only to be called in manager thread (upon init)
   ServiceContract proc fetch {
 			      -container:required 
@@ -1102,7 +629,6 @@ ad_after_server_initialization synchronise_contracts {
     if {$id ne {}} {
       append sql {where     ctrs.contract_id = :id}
     }
-     #my log "XXX:here for $container, recreate?$isRecreation"
     db_foreach [my qn defined_contracts] $sql {
       set c $container
       if {!$isRecreation} {
@@ -1116,13 +642,7 @@ ad_after_server_initialization synchronise_contracts {
       if {!$isRecreation} {
 	# create registry entry
 	$container set items([$c contract_name],[$c object_id]) $c
-      }
-      #my log "c=[$c name] ($c) created"
-      # # # # # # # # # # # # # # # 
-      # leave it in the persistent role?
-      # $c mixin delete Persistent
-      # # # # # # # # # # # # # # #
-     
+      }     
     }
 
   }
@@ -1192,15 +712,6 @@ ad_after_server_initialization synchronise_contracts {
     return [string trim [array get arrOperation]]
     
   }
-
-
-# Abstract instproc get {domain slot} {
-#     set arr(input) [join [my arguments]]
-#     set arr(output)  [join [my returns]]
-#     set arr(description) [string trim [my description]]
-#     set arrOperation([my name]) [string trim [array get arr]]
-#     return [string trim [array get arrOperation]]
-#   }
   
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
@@ -1283,7 +794,6 @@ ad_after_server_initialization synchronise_contracts {
     $domain ${scope}forward servant=$name $for
     $domain __api_make_forward_doc $scope $name
   }
-
   
   ::xotcl::Class Delegate::SideKick \
     -instproc init args {
@@ -1314,11 +824,6 @@ ad_after_server_initialization synchronise_contracts {
     # This might fail as the argument flow
     # to configure/ init in a serialised
     # environment is unpredictable!
-    #my log "SLOT-INIT?isconnected=[ns_conn isconnected],xotcl-thread?[info exists ::xotcl::currentThread]"
-    #my log reallyconnection=[catch {ns_conn headers} msg]
-
-    #my declareServant
-
   }
 
   Delegate instproc invoke {obj proc args} {
@@ -1357,17 +862,6 @@ ad_after_server_initialization synchronise_contracts {
   Delegate instproc assign args {}
   Delegate instproc get args {}
 
-
-  # Delegate instproc init {-selfproxy:switch} {
-#     if {$selfproxy} {
-#       my instvar domain
-#       my for ${domain}::servant=[namespace tail [self]] 
-#     }
-#     next --noArgs
-#   }
-  # Delegate instproc get {domain slot} {
-#     return "[my name] [my for]"
-#   }
   Delegate instproc delete {} {
     # / / / / / / / / / / / /
     # We override the ::xorb::Attribute
@@ -1455,20 +949,6 @@ ad_after_server_initialization synchronise_contracts {
       next $doc;#Delegate->init
     }
 
-  # Method instproc init {arguments doc body args} {
-#     my instvar domain
-#     #set dashedArgs [list]
-#     #foreach a $arguments {
-#     #  lappend dashedArgs -$a
-#     #}
-#     my debug METHOD=$arguments
-#     set name [namespace tail [self]]
-#     if {$body ne {}} {
-#       $domain ad_instproc servant=$name $arguments $doc $body 
-#     }
-#     next -selfproxy
-#   }
-
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # Xorb's Service Implementation class  
@@ -1501,8 +981,6 @@ ad_after_server_initialization synchronise_contracts {
       ::xorb::Object 
       ::xotcl::Class
     } -instproc init args {next}
-
-
 
   AcsObjectType ServiceImplementation \
     -id_column "xorb_service_impl_id" \
@@ -1605,10 +1083,6 @@ ad_after_server_initialization synchronise_contracts {
   # an example (see below)
 
  ServiceImplementation instproc slots args {
-  #if {[::xotcl::Slot info instmixin ::xotcl::Slot::Optimizer] ne {}} {
-  #  my log SLOT-CLEAR
-  #  ::xotcl::Slot instmixin delete ::xotcl::Slot::Optimizer
-  #}
    ::xotcl::Object instmixin add ::xorb::NamespaceHandler
    ::xorb::Delegate instmixin add ::xorb::Delegate::SideKick
    ::xorb::Method instmixin add ::xorb::Method::SideKick
@@ -1622,8 +1096,6 @@ ad_after_server_initialization synchronise_contracts {
    # object system corruption
    # upon local failure
    my debug SLOT-RESET
-   #::xotcl::Slot instmixin add ::xotcl::Slot::Optimizer
-   
  }
 
  ServiceImplementation instproc expandAlias {
@@ -1637,11 +1109,11 @@ ad_after_server_initialization synchronise_contracts {
        set alias $spec
        set language TCL
      }
-      2 {
-	set alias [lindex $spec 0]
-	set language [lindex $spec 1]
-	
-      }
+     2 {
+       set alias [lindex $spec 0]
+       set language [lindex $spec 1]
+       
+     }
    }
    ::xo::db::sql::acs_sc_impl_alias new \
        -impl_contract_name $contractName \
@@ -1650,33 +1122,20 @@ ad_after_server_initialization synchronise_contracts {
        -impl_alias $alias \
        -impl_pl $language
  }
-
+  
   # / / / / / / / / / / / / / / / / / /
   # save / delete / update are know realised
   # as methods on ::xorb::ServiceImplementation 
   # rather than the mixin ::xorb::Synchronizable
   # It replaces what was saveImpl to 
   # ::xorb::Synchronizable
-
-
   ServiceImplementation instproc save {} {
     array set impl [my stream]
     my instvar impl_name
-    #set impl_name [my getQName $impl_name]
     db_transaction {
-      # some defaults
-      #array set impl {
-      #pretty_name {}
-      #owner	    {}
-      #} 
       
       set implementationId [next];# ::xorb::AcsObject->save 
       my debug IMPL-ID=$implementationId
-      #[::xo::db::sql::acs_sc_impl new \
-	  #-impl_contract_name $impl(contract_name)  \
-	#	  -impl_name $impl(name)\
-	#	  -impl_pretty_name $impl(pretty_name)\
-	#	  -impl_owner_name $impl(owner)]
       
       foreach {operation aSpec} $impl(aliases) {
 	my expandAlias \
@@ -1687,9 +1146,6 @@ ad_after_server_initialization synchronise_contracts {
       }
 
     }
-    # - - binding
-    #set cid [::xo::db::sql::acs_sc_contract get_id \
-	#-contract_name $impl(contract_name)]
     ::xo::db::sql::acs_sc_binding new \
 	-contract_name $impl(contract_name)\
 	-impl_name $impl(name)
@@ -1699,7 +1155,6 @@ ad_after_server_initialization synchronise_contracts {
   ServiceImplementation instforward implements %self impl_contract_name 
   ServiceImplementation instforward using %self slots
   ServiceImplementation instproc stream {} {
-    #set obj [[self] new -volatile]
     set arr(name) [my impl_name]
     set arr(pretty_name) [my impl_pretty_name]
     set arr(owner) [my impl_owner_name]
@@ -1707,10 +1162,7 @@ ad_after_server_initialization synchronise_contracts {
     set ops [list]
     my debug "orig-line=[my slotInfo ordered]"
     foreach {n s} [my slotInfo ordered] {
-      #my log "+++s=$s"
-      #my log "+++obj-meth=[$obj info methods], call=[$s name]"
       if {[$s istype ::xorb::Delegate]} {
-	#	lappend ops [$obj $n] 
 	lappend ops [$s stream]
       }
     }
@@ -1790,10 +1242,6 @@ ad_after_server_initialization synchronise_contracts {
 	# create registry entry
 	$container set items([$i impl_name],[$i object_id]) $i
       }
-      #my log "i=[$i name] ($i) created"
-      # # # # # # # # # # # # # # # # 
-      # keep persistent role?
-      # $i mixin delete Persistent
     }
   }
   
@@ -1816,14 +1264,6 @@ ad_after_server_initialization synchronise_contracts {
   # # # # # # # # # # # # # # # #
   
   ::xotcl::Class Synchronizable -superclass IDepository 
-  # -slots {
-  #     # Repository knows this id as newId
-  #     Attribute id
-  #   }
-  #Synchronizable instproc update args {
-  #  eval my delete $args
-  # eval my save $args
-  #}
 
   # / / / / / / / / / / / / / / / / / 
   # updates on ACS Objects are not
@@ -1857,282 +1297,11 @@ ad_after_server_initialization synchronise_contracts {
       my filter delete notificationFilter
     }
   }
-  # Synchronizable instproc save args {
-#     set spec [my stream]
-#     # / / / / / / / / / / / / / / / /
-#     # We now provide our own tcl/db wrapping
-#     # for storing new contracts, as this
-#     # is required by the way we use
-#     # checkoptions to declare and validate
-#     # an extensible set of types used
-#     # in protocol plug-ins!
-#     # NOTE: ::acs_sc::contract::new_from_spec 
-#     # is no longer used.
-#     # A point in case for the poor level of
-#     # re-usability of existing package code,
-#     # here in terms of extensibility!
-#     my id [my save[string toupper [my middle] 0 0] $spec]
-#     #if {[my middle] eq "impl"} { 
-#     #  my id [::acs_sc::[my middle]::new_from_spec -spec $spec]
-#     #} else {  
-#       # OLD: my id [::acs_sc::[my middle]::new_from_spec -spec $spec]
-#      # my id [my saveContract $spec]
-#     #}
-#   }
- #  Synchronizable instproc expandAlias {
-#     contractName
-#     implName
-#     operation
-#     spec
-#   } {
-#     switch [llength $spec] {
-#       1 {
-# 	set alias $spec
-# 	set language TCL
-#       }
-#       2 {
-# 	set alias [lindex $spec 0]
-# 	set language [lindex $spec 1]
-
-#       }
-#     }
-#     ::xo::db::sql::acs_sc_impl_alias new \
-# 	-impl_contract_name $contractName \
-# 	-impl_name $implName \
-# 	-impl_operation_name $operation \
-# 	-impl_alias $alias \
-# 	-impl_pl $language
-#   }
-  # Synchronizable instproc saveImpl {spec} {
-#     db_transaction {
-#       # some defaults
-#       array set impl {
-# 	pretty_name {}
-# 	owner	    {}
-#       }
-#       array set impl $spec
-      
-#       set id [::xo::db::sql::acs_sc_impl new \
-# 		  -impl_contract_name $impl(contract_name)  \
-# 		  -impl_name $impl(name)\
-# 		  -impl_pretty_name $impl(pretty_name)\
-# 		  -impl_owner_name $impl(owner)]
-      
-#       foreach {operation aSpec} $impl(aliases) {
-# 	my expandAlias \
-# 	    $impl(contract_name) \
-# 	    $impl(name) \
-# 	    $operation \
-# 	    $aSpec
-#       }
-
-#       # - - binding
-#       set cid [::xo::db::sql::acs_sc_contract get_id \
-# 		   -contract_name $impl(contract_name)]
-#       ::xo::db::sql::acs_sc_binding new \
-# 	  -contract_name $impl(contract_name)\
-# 	  -impl_name $impl(name)
-#     }
-#     # - - return implementation id
-#     return $id
-#   }
-
-#   Synchronizable instproc expandMessageTypeElement {
-#     msgTypeName 
-#     element
-#     idx
-#   } {
-#     # / / / / / / / / / / / / / / / / /
-#     # Includes the necessary changes to 
-#     # support new type system.
-#     # The overall code piece is more ore less copied
-#     # from acs_sc::msg_type::parse_spec
-
-#     # / / / / / / / / / / / / / / / / /
-#     # adaptation (1): being more careful
-#     # with semicolons being delimiters.
-#     # Needed when using absolut 
-#     # object references in type descriptors,
-#     # for instance.
-#     set first [string first : $element]    
-#     set 1 [string range $element 0 [expr {$first-1}]]  
-#     set 2 [string range $element [expr {$first+1}] end]        
-#     set elementv [list $1 $2]
-#     set flagsv [split [lindex $elementv 1] ","]    
-#     set elementName [string trim [lindex $elementv 0]]
-#     # old multiple handling
-#     if { [llength $flagsv] > 1 } {               
-#       set idx [lsearch $flagsv "multiple"]         
-#       if { [llength $flagsv] > 2 || $idx == -1 } { 
-# 	error {Only one modified flag allowed, 
-# 	  and that's multiple as in foo:integer,multiple}               
-#       }               
-#       # Remove the 'multiple' flag        
-#       set flagsv [lreplace $flagsv $idx $idx]               
-#       set elementType "[lindex $flagsv 0]"              
-#       set isset_p "t"         
-#     } else {              
-#       set elementType [lindex $flagsv 0]    
-#       set isset_p "f"
-#     }
-#     # / / / / / / / / / / / / / / / / /
-#     # adaptation (2): the actual split
-#     # of the type descriptor into
-#     # the key element and the extended
-#     # type info.
-#     set elementConstraints [db_null]
-#     ::xorb::datatypes::Anything tokenise $elementType
-#     if {$typeInfo ne {}} {set elementConstraints $typeInfo}
-#     # return call script
-# #     return [subst {
-# #       select xorb_msg_type_element__new(
-# #             '$msgTypeName',
-# #             '$elementName',
-# #             '$hook',
-# #             '$isset_p',
-# #             '$idx',
-# #             '$elementConstraints'
-# # 	    );
-# #     }]
-
-
-#     ::xo::db::sql::xorb_msg_type_element new \
-# 	-msg_type_name $msgTypeName \
-# 	-element_name $elementName \
-# 	-element_msg_type_name $hook \
-# 	-element_msg_type_isset_p $isset_p \
-# 	-element_pos $idx \
-# 	-element_constraints $elementConstraints
-    
-    
-#     #     return [subst {
-#     #       select acs_sc_msg_type__new_element(
-#     #             '$msgTypeName',
-#     #             '$elementName',
-#     #             '$hook',
-#     #             '$isset_p',
-#     #             '$idx',
-#     #             '$elementConstraints'
-#     #         );
-#     #     }]
-#   }
-
-#   Synchronizable instproc saveContract {spec} {
-
-#     array set specification $spec
-#     set contractName $specification(name)
-#     set contractDescription $specification(description)
-#     db_transaction {
-#       # 1) store contract object
-# #       set id [db_exec_plsql insert_contract {
-# # 	select acs_sc_contract__new(
-# #             :contractName,
-# #             :contractDescription
-# # 	    );
-# #       }]
-#       set id [::xo::db::sql::acs_sc_contract new \
-# 		  -contract_name $contractName \
-# 		  -contract_desc $contractDescription]
-#       # / / / / / / / / / / / / / / / / / / /
-#       # operations: we bulk up all necessary
-#       # pl/pgsql calls and execute them at once
-#       # per operation.
- 
-#       foreach {operation oInfo} $specification(operations) {
-# 	# retrieve operation details
-# 	array set oDetails {
-# 	  description {}
-# 	  input {}
-# 	  output {}
-# 	  is_cachable_p "f"
-# 	}
-# 	array set oDetails $oInfo
-# 	# create message type: Input
-# 	set inputTypeName "${contractName}.${operation}.InputType"
-# 	# append sql [subst {
-# # 	  select acs_sc_msg_type__new(
-# #             '$inputTypeName',
-# #             ''
-# # 	    );
-# # 	}]
-
-# 	::xo::db::sql::acs_sc_msg_type new \
-# 	    -msg_type_name $inputTypeName \
-# 	    -msg_type_spec {}
-	
-# 	# create elements of message types
-# 	set inputIdx 0
-# 	foreach element $oDetails(input) {
-# 	  my expandMessageTypeElement \
-# 	      $inputTypeName \
-# 	      $element \
-# 	      $inputIdx
-# 	  incr inputIdx
-# 	}
-# 	# create message type: Output
-# 	set outputTypeName "${contractName}.${operation}.OutputType"
-      
-# 	# append sql [subst {
-# 	# 	  select acs_sc_msg_type__new(
-# 	#             '$outputTypeName',
-# 	#             ''
-# 	# 	    );
-# 	# 	}]
-	
-# 	::xo::db::sql::acs_sc_msg_type new \
-# 	    -msg_type_name $outputTypeName \
-# 	    -msg_type_spec {}
-	
-# 	# create elements of message types
-# 	set outputIdx 0
-# 	foreach element $oDetails(output) {
-# 	  my expandMessageTypeElement \
-# 	      $outputTypeName \
-# 	      $element \
-# 	      $outputIdx
-# 	  incr outputIdx
-# 	}
-# 	# finally, sum up by creating the operation itself
-# 	set desc $oDetails(description) 
-# 	set icp $oDetails(is_cachable_p)
-# 	# append sql [subst {
-# 	# 	  select acs_sc_operation__new(
-# 	#             :contractName,
-# 	#             :operation, 
-# 	#             :desc,
-# 	#             :icp,
-# 	#             :inputIdx,
-# 	#             :inputTypeName, 
-# 	#             :outputTypeName
-# 	# 	    );
-# 	# 	}]
-	
-# 	::xo::db::sql::acs_sc_operation new \
-# 	    -contract_name $contractName \
-# 	    -operation_name $operation \
-# 	    -operation_desc $desc \
-# 	    -operation_iscachable_p $icp \
-# 	    -operation_nargs $inputIdx \
-# 	    -operation_inputtype $inputTypeName \
-# 	    -operation_outputtype $outputTypeName \
-	    
-# 	# 2) execute bulk call per operation
-	
-#       }
-#     }
-#     my debug ID=$id
-#     return $id 
-    
-#     # TODO: add exception handling
- 
-#   }
-
 
   Synchronizable instproc delete args {
     my instvar object_id
     if {[info exists object_id] && $object_id ne {}} {
       next;# ::xorb::AcsObject->delete
-      # eval [my subst [my deleteCmd]]
       my setState oldId $object_id
     }
   }
@@ -2179,11 +1348,9 @@ ad_after_server_initialization synchronise_contracts {
       if {$newId == $oldId} {
 	set newId ""
       }
-      #my log "++cp++$cp,++sp++$sp,++c++$c,inst=[$c info instprocs]"
-      #my log "+++oldId=$oldId,newId=$newId, sp=$sp, cp=$cp"
       if {$sp ne "update"} {
-	#my log "forwarding XorbManager do ::xorb::manager::Repository event $cp [my info class] $oldId $newId"
-	eval XorbManager do ::xorb::manager::Repository event $cp [my info class] $oldId $newId  
+	eval XorbManager do ::xorb::manager::Repository event \
+	    $cp [my info class] $oldId $newId  
       }
     }
     return $r
@@ -2231,29 +1398,6 @@ ad_after_server_initialization synchronise_contracts {
       $s mixin delete [self class]
     }
   }
-  
-#   Persistent instproc Abstract {} {
-#     my instvar id 
-#     set arr(InputType) arguments
-#     set arr(OutputType) returns
-#     array set r [list]
-#     db_foreach select_sigelements_for_op {
-      
-#       select	msgs.msg_type_id, msgs.msg_type_name
-#       from   	acs_sc_operations ops,
-#       acs_sc_msg_types msgs
-#       where  	ops.operation_id = :id
-#       and		(ops.operation_inputtype_id = msgs.msg_type_id
-# 			 or ops.operation_outputtype_id = msgs.msg_type_id)
-      
-#     } {
-#       set r([lindex [split $msg_type_name "."] 2]) $msg_type_id      
-#     }
-#     foreach {type id} [array get r] {
-#        set s $arr($type)
-#       my fetch[string toupper $s 0 0] $r($type)    
-#     }
-#   }
 
   Persistent instproc Abstract {} {
     my instvar id 
@@ -2301,55 +1445,6 @@ ad_after_server_initialization synchronise_contracts {
     }
   }
 
-
-  # Persistent instproc fetchArguments {id} {
-    
-#     if {$id ne {}} {
-#       set value [list]
-#       db_foreach select_args {
-# 	select	acs_sc_msg_type_elements.element_name, 
-# 		acs_sc_msg_type_elements.element_msg_type_isset_p, 
-# 		xorb_msg_type_elements_ext.element_constraints, 
-# 		msgs.msg_type_name
-# 	from   	acs_sc_msg_types msgs,
-# 		acs_sc_msg_type_elements
-# 	left outer join xorb_msg_type_elements_ext ON 
-# (xorb_msg_type_elements_ext.msg_type_id = acs_sc_msg_type_elements.msg_type_id)
-# 	where msgs.msg_type_id = acs_sc_msg_type_elements.element_msg_type_id
-# 	and acs_sc_msg_type_elements.msg_type_id = :id
-# 	order by acs_sc_msg_type_elements.element_pos ASC
-#       } {
-# 	if {$element_constraints ne [db_null]} {
-# 	  set msg_type_name "$msg_type_name$element_constraints"
-# 	}
-# 	lappend value $element_name:$msg_type_name
-#       }
-#       #my log "+++id=$id;value=[join $value];next=[self next]"
-#       my arguments [join $value]
-#     }
-#   }
-  
- #  Persistent instproc fetchReturns {id} {
-    
-#     if {$id ne {}} {
-#       set value [list]
-#       db_foreach select_rtv {
-# 	select	el.element_name, msgs.msg_type_name, el.element_pos, el.element_msg_type_isset_p, el.element_constraints 
-# 	from   	acs_sc_msg_type_elements el,acs_sc_msg_types msgs
-# 	where  	el.msg_type_id = :id
-# 	and	el.element_msg_type_id = msgs.msg_type_id
-# 	order by el.element_pos ASC
-#       } {
-# 	if {$element_constraints ne [db_null]} {
-# 	  set msg_type_name "$msg_type_name$element_constraints"
-# 	}
-# 	lappend value $element_name:$msg_type_name
-#       }
-#       #my log "+++id=$id;value=[join $value];next=[self next]"
-#       my returns [join $value]
-#     }
-#   }
-
   Persistent instproc ServiceImplementation {} {
     my instvar object_id
     db_foreach [my qn select_aliases_for_impl] {
@@ -2368,45 +1463,24 @@ ad_after_server_initialization synchronise_contracts {
     set oldId [$obj object_id]
     set newId [lindex $args 0]
     set repos [$obj info parent]
-    #my log "obj=$obj,args=$args,oldId=$oldId,newId=$newId"
-    # if {[$obj istype ServiceContract]} {
-    #  # / / / / / / / / / / / / / / / / / /
-    # # get current bindings
-    #$obj instvar id
-    #      set sql {
-    #	select impl_id 
-    #	from acs_sc_bindings 
-    #	where contract_id = :id
-    #     }
-    #    set __bindings__ [db_list current_bindings $sql] 
-    #     my log "stored bindings=$__bindings__"
-    #}
-    # / / / / / / / / / / / / / / / / / /
-    # get current repository entry -> items array
-    #my log "RECREATE=>next=[self next], oldId=$oldId, newId=$newId"
     next
     # new state
     [$obj info class] fetch -recreate -container $obj -id $newId
     # / / / / / / / / / / / / / / / / / /
     # set new repository item -> items array
     $repos instvar items
-    #my debug "==repository-update==> item '[$obj name],$oldId' replaced by '[$obj name],[$obj object_id]'"
     set items([$obj name],[$obj object_id]) $obj
-    #my debug "ITEMS-WITH-NEW:[array get items]"
     # / / / / / / / / / / / / / / / / / /
     # re-inject bindings (TODO: re-publish -> conformance check?)
     # foreach <i> conforms <yes> | <no> => <yes> => update 
     # / / / / / / / / / / / / / / /  
     # clear items from old entry
     unset items([$obj name],$oldId)
-    #my debug "ITEMS-WITHOUT-OLD:[array get items]"
     ::xorb::manager::Broker event update [$obj info class] $oldId $newId
     # / / / / / / / / / / / / / / /
     # clear skeleton cache; new skeleton
     # will be acquired lazily
-    #my log "BEFORE-CLEAR"
     ::xorb::SkeletonCache remove [$obj canonicalName]
-    #my log "AFTER-CLEAR"
   } 
 
   # # # # # # # # # # # # # # # #
@@ -2481,7 +1555,6 @@ ad_after_server_initialization synchronise_contracts {
       [self]::$name destroy_on_cleanup
 
     } catch {error e} {
-      #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
 		 "contract: $name, msg: $e"]
     }
@@ -2549,7 +1622,6 @@ ad_after_server_initialization synchronise_contracts {
       [self]::$name destroy_on_cleanup
       
     } catch {Exception e} {
-      #rethrow
       error $e
     } catch {error e} {
       global errorInfo
@@ -2563,9 +1635,7 @@ ad_after_server_initialization synchronise_contracts {
   Skeleton proc generate {{-contract ""} -impl:required} {
     try {
       set implObj [my getImplementation -name $impl -contract $contract]
-      #set cName [expr {$contract ne {}?$contract:[$implObj implements]}]
       set contractObj [my getContract -name [$implObj implements]]
-      
       my debug "SER=[$contractObj serialize]"
       
       # TODO: contract class as mixin or instmixin?
@@ -2574,7 +1644,6 @@ ad_after_server_initialization synchronise_contracts {
     } catch {Exception e} {
       error [::xorb::exceptions::SkeletonGenerationException new $e]
     } catch {error e} {
-      #global errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
  		 "contract: $contract, impl: $impl, msg: $e"]
     }
@@ -2692,17 +1761,11 @@ ad_after_server_initialization synchronise_contracts {
 			   -destroy_on_cleanup])
       }
     }
-    
-#     if {[my returns] ne {} && ![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
-# 			  [my returns] _ 1 label tc]} {
-#       error "Return value specification invalid." 
-#     }
-    
+        
     # -- defaults
     if {![info exists label] || $label eq {}} {set label returnValue}
     if {![info exists tc] || $tc eq {}} {set tc void}
     set declaration ${label}:${tc}
-#    set rvc [ReturnValueChecker __require__ $__skeleton__]
     $rvc __add__\
 	-call [my name]\
 	-declaration $declaration
@@ -2796,7 +1859,6 @@ ad_after_server_initialization synchronise_contracts {
 	    } catch {Exception e} {
 	      error \$e
 	    } catch {error e} {
-	      #global errorInfo
 	      error \[::xorb::exceptions::ServantDispatchException new \
 		  "Dispatching call [my name] to servant failed: \$e"\]
 	    }
@@ -2811,12 +1873,10 @@ ad_after_server_initialization synchronise_contracts {
 	    my debug "---PERROR=\[\$e message\]"
 	    error \$e
 	  } catch {error e} {
-	    #global errorInfo
 	    error \[::xorb::exceptions::ArgumentTransformationException\
 		new \$e\]
 	  }
 	  if {\[info exists r\]} {
-	    # return result
 	    return \$r
 	  }
 	}]
@@ -2899,11 +1959,6 @@ ad_after_server_initialization synchronise_contracts {
     ::xoexception::try {
       [self class] instvar modes
       set type $modes($t)
-      #my debug lifecycle=[my serialize]
-      #set type Object
-      #if {[::xotcl::Object isclass [self]]} {
-	#set type Class
-      #}
       set mode [string trim $mode __]
       my $mode$type 
     } catch {error e} {
@@ -2965,11 +2020,10 @@ ad_after_server_initialization synchronise_contracts {
   # we avoid that mode to be able to use
   # use cached skeleton objects for 
   # wsdl etc. generation
-::xotcl::Class SkeletonCache::Abstract -instproc init args {}
-::xotcl::Class SkeletonCache::Delegate -instproc init args {}
+  ::xotcl::Class SkeletonCache::Abstract -instproc init args {}
+  ::xotcl::Class SkeletonCache::Delegate -instproc init args {}
 
   SkeletonCache proc remove {key} {
-    #my log "Cache clearing called (key=$key)"
     ns_cache flush xorb_skeleton_cache ::xorb::Skeleton::$key
   }
   SkeletonCache instproc getContract {
@@ -2977,21 +2031,15 @@ ad_after_server_initialization synchronise_contracts {
     -name:required
     -unbound:switch
   } {
-    #my log "CACHE-BEFORE: [ns_cache names xorb_skeleton_cache]"
-    #set suffix -[expr {$lightweight?"light":"heavy"}]
     set qname [::xorb::Object canonicalName $name]
     set value [ns_cache eval xorb_skeleton_cache [self]::$qname {
       set obj [next]
       set cl [$obj info class]
       set code [::Serializer deepSerialize $obj]
-      #my log "serialised+stored ([string bytelength $code]): $code"
       return $code
     }]
-    #my log "CACHE-AFTER: [ns_cache names xorb_skeleton_cache]"
     if {![info exists obj]} {
-      #my log "ALREADY STORED: follow-up call"
       if {![my isobject [self]::$qname]} {
-	#my log "OBJECT does not exist: eval $value"
 	# / / / / / / / / / / / / / / / /
 	# In case of cached skeleton objects
 	# we need to avoid initialisation of
@@ -3008,18 +2056,14 @@ ad_after_server_initialization synchronise_contracts {
       }
       return [self]::$qname
     } else {
-      #my log "NOT STORED: first-time call"
       return $obj
     }
-    
   }
   SkeletonCache instproc getImplementation {
     -lightweight:switch
     -name:required
     {-contract ""}
   } {
-    #set suffix -[expr {$lightweight?"light":"heavy"}]
-    #my log "CACHE-BEFORE: [ns_cache names xorb_skeleton_cache]"
     if {$contract ne {}} {
       set contract ${contract}__
     }
@@ -3029,14 +2073,10 @@ ad_after_server_initialization synchronise_contracts {
       set obj [next]
       set cl [$obj info class]
       set code [::Serializer deepSerialize $obj]
-      #my log "serialised+stored ([string bytelength $code]): $code"
       return $code
     }]
-    #my log "CACHE-AFTER: [ns_cache names xorb_skeleton_cache]"
     if {![info exists obj]} {
-      #my log "ALREADY STORED: follow-up call"
       if {![my isobject [self]::$qname]} {
-	#my log "OBJECT does not exist: eval $value"
 	# / / / / / / / / / / / / / / / /
 	# In case of cached skeleton objects
 	# we need to avoid initialisation of
@@ -3053,13 +2093,10 @@ ad_after_server_initialization synchronise_contracts {
       }
       return [self]::$qname
     } else {
-      #my log "NOT STORED: first-time call"
       return $obj
     }
     
   }
-
-  # Skeleton mixin SkeletonCache
 
   # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # #
@@ -3077,16 +2114,12 @@ ad_after_server_initialization synchronise_contracts {
     Attribute context
   }
 
-  Invoker instproc resolve {objectId} {
-    return $objectId
-  }
-
   Invoker instproc init args {
     my instvar impl call arguments \
 	skeleton protocol context contract
     # / / / / / / / / / / / / / / / / / /
     # 1) invocation data
-    set impl [my resolve [$context virtualObject]]
+    set impl [$context virtualObject]
     set call [$context virtualCall]
     set protocol [$context protocol]
     set arguments [list]
@@ -3158,8 +2191,6 @@ ad_after_server_initialization synchronise_contracts {
 	  is not permitted under the ruling access policy ('[$pkg getPolicy]').
 	}]]
       }
-      #::xotcl::nonposArgs mixin delete \
-	  #::xorb::datatypes::Anything::CheckOption+Uplift
       # / / / / / / / / / / / / /
       # TODO: remove context for actual
       # invocation
@@ -3168,7 +2199,6 @@ ad_after_server_initialization synchronise_contracts {
       my debug "---IERROR: [$e message]"
       error $e
     } catch {error e} {
-      #global errorInfo
       error [::xorb::exceptions::InvocationException new \
 		 [subst {
 		   Call '$call' on '$skeleton' ([$skeleton info class]) 
@@ -3184,11 +2214,11 @@ ad_after_server_initialization synchronise_contracts {
       return $result
     }
   }
-    
+
   namespace export ServiceContract ServiceImplementation Abstract \
       Delegate Method Synchronizable Persistent IDepository Skeleton \
       Invoker ServantAdapter ReturnValueChecker Configuration InterceptorChain \
-      Standard Interceptor LoggingInterceptor Extended RequestHandler rhandler \
-      
+      RequestHandler rhandler
 }
+
 
