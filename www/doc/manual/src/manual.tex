@@ -129,7 +129,7 @@ Share-alike (by-sa) licence}.
     Option & Description  \\ 
     \midrule
      invocation\_access\_policy & Invocation access policies follow the policy facilities devised by the xotcl-core and the way they are employed by xowiki. In xorb's context, we use them to provide access control to actual servants by means on evaluating (conditional) privileges on service implementations. This feature still needs proper documentation.\\
-    interceptor\_config & xorb allows for injecting specific handlers that are capable of intercepting and mangling requests and responses.  Currently, xorb comes with two configuration of interceptors chains, i.e. "::xorb::Standard" and "::xorb::Extended". This feature is currently not properly documented and subject to substantial changes in the near future. \\
+    chain\_of\_interceptors & xorb allows for injecting specific handlers ("interceptors") that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::coi as responsible chain of interceptors, you may add your interceptors to this chain or provide your own chain object. \\
     \bottomrule
 \end{longtable}
 \end{footnotesize}

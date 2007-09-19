@@ -7,7 +7,8 @@
 
 	* tcl/xorb-interceptors-procs.tcl: Added the revised
           interceptor infrastructure, now organised in an own
-          *-procs.tcl file.
+          *-procs.tcl file. Changed package param "interceptor_config"
+          to "chain_of_interceptors".
 
 	* tcl/20-xorb-procs.tcl: Cleaned up, i.e. chunks of commented
           and outdated code.
