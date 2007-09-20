@@ -688,7 +688,10 @@ namespace eval xorb {
     <p> For a code snippet in context, see <a href="/api-doc/proc-view?proc=Class+%3a%3axorb%3a%3aServiceContract">ServiceContract</a>.
     
   }
-
+  Abstract instproc ad_doc {docString} {
+    my description $docString
+    next
+  }
   Abstract instproc stream {} {
     my instvar domain
     # / / / / / / / / / / / / / / /
@@ -710,7 +713,6 @@ namespace eval xorb {
     set arr(description) [string trim [my description]]
     set arrOperation([my name]) [string trim [array get arr]]
     return [string trim [array get arrOperation]]
-    
   }
   
   # # # # # # # # # # # # # # # #

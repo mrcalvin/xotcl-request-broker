@@ -1,3 +1,9 @@
+2007-09-20  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: Allowing the use of ad_doc on
+          ::xorb::Abstract (alternatively to "description") in a way
+          that the doc string is also used as operation description.
+
 2007-09-18  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-storm-procs.tcl: Added a first version of the

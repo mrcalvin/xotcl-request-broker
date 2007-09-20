@@ -394,5 +394,5 @@ namespace eval ::xorb::deployment {
   # # # # # # # # # # # # # # #
   # default per-package policy
   
-  Policy Default -default_permission {login}
+  Policy Default -default_permission {public}
 }
