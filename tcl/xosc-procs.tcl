@@ -157,8 +157,7 @@ namespace eval ::xorb {
   ContextObjectClass AcsScGlueObject -slots {
     Attribute contract
   } -superclass ContextObject \
-      -clientPlugin ::xorb::AcsSc::Client \
-      -clientProtocol ::xorb::AcsSc
+      -clientPlugin ::xorb::AcsSc::Client
 
   AcsScGlueObject instforward impl %self virtualObject
   AcsScGlueObject instforward operation %self virtualCall

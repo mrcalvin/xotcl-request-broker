@@ -1,3 +1,43 @@
+2007-10-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Re-organised documentation's tex sources, started
+          documentary work on major changes in this revision: extension +
+          flow control infrastructure (interceptors), policies, etc. 
+
+	* tcl/xorb-stub-procs.tcl: Code clean-up and aligned context
+          object to ::xorb::context::InvocationContext as new base
+          class (see below).
+
+	* tcl/xorb-storm-procs.tcl: Fixed an issue with fixtures and
+          error aggregation at the parent level.
+
+	* tcl/xorb-context-procs.tcl: Cleaned-up and unified
+          context-related infrastructure throughout
+          xorb. InvocationContext is now the base class for both
+          provider- and consumer-side context types.
+
+	* tcl/xorb-client-procs.tcl: Cleaned-up and introduced new
+          consumer-side request handler: ClientRequestHandler.
+
+	* tcl/20-xorb-procs.tcl: Cleaned-up and moved code related to
+          request handler + interceptors to xorb-interceptors-procs.tcl.
+
+	* Re-design and re-write of infrastructure for request handlers
+          + chain of interceptors and interceptors. Chains and
+          interceptors now allow for basic flow control + indirection
+          and come with (per-roundtrip) statefulness. Furthermore,
+          interceptors can be rendered invokable at a conditional
+          basis. We provide some ready-to-use sample interceptors
+          (authentication, caching, notification) to
+          showcase the new features.
+
+2007-09-21  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-interceptors-procs.tcl: Provided per-roundtrip
+          statefullness to interceptors. Should also support
+          invocation schemes with involve exlusively either flow
+          direction.
+
 2007-09-20  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: Allowing the use of ad_doc on

@@ -22,88 +22,49 @@ namespace eval ::xorb::stub {
   # merry with ::xorb::InvocationContext
 
   ::xotcl::Class ContextObjectClass -slots {
-    # / / / / / / / / / / / / / /
-    # TODO: Need to unify this somehow.
     Attribute clientPlugin
-    Attribute clientProtocol
   } -superclass ::xotcl::Class
 
-#   ContextObjectClass instproc recreate {obj} {
-#     # / / / / / / / / / / / / / /
-#     # 1) save context info for
-#     # subsequent calls
-#     set objectId [$obj virtualObject] 
-#     # / / / / / / / / / / / / / /
-#     # 2) TODO: call history
-#     next
-#     # reset
-#     $obj set virtualObject $objectId
-#   }
+  ::xotcl::Class ContextObject \
+      -superclass ::xorb::context::InvocationContext \
+      -slots {
+	# / / / / / / / / / / / / /
+	# For the release candidate
+	# we temporarily disable
+	# asynchrony handling
+	# - - - - - - - - - - - - - 
+	# Attribute callback
+      } -ad_doc {
+	<p>The class ContextObject realises a specific pattern
+	of parameter passing which is used in xorb's client-side
+	interfaces. Instances (of refining sub-classes) serve as
+	generic container for parameters that are handed down the 
+	various layers of the stub/ client proxy infrastructure.</p>
+	
+	<p>The class provides the following properties (attribute slots):
+	<ul>
+	<li>virtualObject: The non-canonical object identifier as passed
+	through from the respective protocol plug-in, e.g. acs/FtsContentProvider
+	</li>
+	<li>virtualCall: The name of the abstracted operation called. 
+	In an OO setting, we rather refer to the abstracted method.
+	</li>
+	<li>virtualArgs: List of parameter/value pairs delegated to the invoker of
+	xorb. Depending on various stages of a dispatch run-through, these might
+	either be XOTcl objects of type <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xorb::datatypes::Anything">Anything</a> or a streamed list
+	representation containing non-positional argument pairs.
+	</li>
+	<li>protocol: Name of the main class representing the underlying
+	protocol plug-in, e.g. <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::Soap">::xosoap::Soap</a>
+	</li>
+	</ul>
+	</p>
 
-  ::xotcl::Class ContextObject -slots {
-    Attribute virtualObject
-    Attribute virtualCall
-    Attribute virtualArgs
-    Attribute marshalledRequest
-    Attribute marshalledResponse
-    Attribute unmarshalledRequest
-    Attribute unmarshalledResponse
-    # / / / / / / / / / / / / /
-    # For the release candidate
-    # we temporarily disable
-    # asynchrony handling
-    # - - - - - - - - - - - - - 
-    # Attribute callback
-    Attribute protocol -default ::xorb::protocols::Tcl
-  } -ad_doc {
-    <p>The class ContextObject realises a specific pattern
-    of parameter passing which is used in xorb's client-side
-    interfaces. Instances (of refining sub-classes) serve as
-    generic container for parameters that are handed down the 
-    various layers of the stub/ client proxy infrastructure.</p>
-    
-    <p>The class provides the following properties (attribute slots):
-    <ul>
-    <li>virtualObject: The non-canonical object identifier as passed
-    through from the respective protocol plug-in, e.g. acs/FtsContentProvider
-    </li>
-    <li>virtualCall: The name of the abstracted operation called. 
-    In an OO setting, we rather refer to the abstracted method.
-    </li>
-    <li>virtualArgs: List of parameter/value pairs delegated to the invoker of
-    xorb. Depending on various stages of a dispatch run-through, these might
-    either be XOTcl objects of type <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xorb::datatypes::Anything">Anything</a> or a streamed list
-    representation containing non-positional argument pairs.
-    </li>
-    <li>protocol: Name of the main class representing the underlying
-    protocol plug-in, e.g. <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::Soap">::xosoap::Soap</a>
-    </li>
-    </ul>
-    </p>
-
-    <p>For an important refinement, providing a couple of protocol-specific
-    property extensions, see <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::client::SoapGlueObject">::xosoap::client::SoapGlueObject</p>
-  
-    @author stefan.sobernig@wu-wien.ac.at
-  }
-
-#   ContextObject instproc reset {} {
-#     set c [my info class]
-#     $c recreate [self]
-#   }
-  ContextObject instproc use {object} {
-    # / / / / / / / / / / / / / / /
-    # TODO: provide decoration with
-    # object-wide context mixin, i.e.
-    # construe a mixin class on the fly
-    # that return the current instance
-    # of a context object class
-  }
-  ContextObject instproc decontextualise {object} {
-    # / / / / / / / / / / / / / / /
-    # TODO: reverse a previously
-    # realised decoration
-  }
+	<p>For an important refinement, providing a couple of protocol-specific
+	property extensions, see <a href="show-object?show%5fmethods=1&show%5fsource=0&object=::xosoap::client::SoapGlueObject">::xosoap::client::SoapGlueObject</p>
+	
+	@author stefan.sobernig@wu-wien.ac.at
+      }
 
   ContextObject instproc getSubstified {attribute} {
     # / / / / / / / / / /
@@ -113,17 +74,6 @@ namespace eval ::xorb::stub {
     set value [my set $attribute]
     set value [string map {%% % % \$} $value]
     return [my subst $value]
-  }
-
-  ContextObject instproc setData {key value} {
-    my set data($key) $value
-  }
-
-  ContextObject instproc getData {key} {
-    my instvar data
-    if {[info exists data($key)]} {
-      return $data($key)
-    }
   }
 
   # # # # # # # # # # # # #
@@ -251,7 +201,7 @@ namespace eval ::xorb::stub {
       # mix into requesthandler
       set contextClass [$contextObj info class]
       set plugin [$contextClass clientPlugin]
-      set protocol [$contextClass clientProtocol]
+      set protocol [$contextObj protocol]
 
       my debug ARGS-TO-PARSE=[lindex $args 0]
       ::xotcl::nonposArgs mixin add \
@@ -264,9 +214,9 @@ namespace eval ::xorb::stub {
       my debug REQUEST-CTX=[$contextObj serialize]
 
       try {
-	::xorb::client::crHandler mixin add $plugin
-	::xorb::client::crHandler handleRequest $contextObj
-	::xorb::client::crHandler mixin delete $plugin
+	::xorb::client::ClientRequestHandler mixin add $plugin
+	::xorb::client::ClientRequestHandler handleRequest $contextObj
+	::xorb::client::ClientRequestHandler mixin delete $plugin
       } catch {Exception e} {
 	# -- re-throws
 	error $e
@@ -337,8 +287,7 @@ namespace eval ::xorb::stub {
     # 3-) lately bound (at call time of
     # proxy method, assigned to the proxy
     # object through 'glueobject')
-    my debug stub-class=[$stubObject info class],co?[$stubObject istype ::xorb::stub::ContextObject]
-
+    
     if {$earlyBoundContext ne {}} {
       set contextObj $earlyBoundContext
     } elseif {[$stubObject istype ::xorb::stub::ContextObject]} {
@@ -352,8 +301,8 @@ namespace eval ::xorb::stub {
   }
   
   Requestor proc require {
-	args		 
-  } {
+			  args		 
+			} {
     # / / / / / / / / / / / / / / 
     # TODO: select abstraction style,
     # i.e. call or message (document)
@@ -406,25 +355,7 @@ namespace eval ::xorb::stub {
     ::xotcl::Object instproc ad_glue
     ::xotcl::Object instproc __makeStubBody__
   }
-  
-#   Object instproc __makeStubBody__ {
-#     -stubName
-#     -stubMask
-#     {-contextObject {}}
-#   } {
-#     set context [expr {$contextObject ne {}?\
-# 			   "-earlyBoundContext $contextObject":""}]
-#     set self [self]
-#     set body [subst -nocommands {
-#       set requestor [::xorb::stub::Requestor require \
-# 			 -call $stubName \
-# 			 -signatureMask {$stubMask} \
-# 			 -stubObject $self $context]
-#       \$requestor handle \$args
-#     }]
-#     return $body
-#   }
-  
+    
   Object instproc __makeStubBody__ {{-filter false}} {
     # / / / / / / / / / / / / / / / / / / /
     # stub builder is only meant
@@ -513,24 +444,6 @@ namespace eval ::xorb::stub {
 
 	set innerSignature $output(innerRecord)
 	set argList $output(outerRecord)
-	# 	set glueArgs [lsearch \
-	    # 			  -all \
-	    # 			  -inline \
-	    # 			  -regexp $argList {^-.*:(.*,)?glue(,.*)?$}]
-	# 	set argList [lsearch \
-	    # 			 -all \
-	    # 			 -inline \
-	    # 			 -not \
-	    # 			 -regexp $argList {^-.*:(.*,)?glue(,.*)?$}]
-	# 	my debug BEFORE-ARGS=$argList,glueArgs=$glueArgs
-	# 	foreach targ $ar {
-	
-	# 	}
-	
-	# 	foreach garg $glueArgs {
-	# 	  regexp {^-(.+):(.+)$} $garg _ argName checkoptions
-	# 	  set argList [concat -$argName:required $argList]
-	# 	}
       }
       # / / / / / / / / / / / /
       # The nasty embedding in
@@ -544,11 +457,8 @@ namespace eval ::xorb::stub {
       #     set glueArgs "{{$glueArgs}}"
       set innerSignature "{{$innerSignature}}"
     } else {
-      #set glueArgs "{$glueArgs}"
       set innerSignature "{$innerSignature}"
     }
-    #set argList [expr {[llength $argList] == 1?"{{$argList}}":[list $argList]}]
-    #set argList [list [list $argList]]
     my debug "argList=argList"
 
     set body [subst -nocommands {
@@ -561,6 +471,7 @@ namespace eval ::xorb::stub {
 	\$requestor setup
 	\$requestor call \$args
       } catch {Exception e} {
+	my debug EXCEPTION=[\$e serialize]
 	\$e write
 	error [subst {
 	  Exception caught. Please, consult the log file for details: 
@@ -606,8 +517,8 @@ namespace eval ::xorb::stub {
 	-returns string \
 	-glueobject $someGlueObject \
 	proc helloWorld {
-	  -arg1:string
-	}
+			 -arg1:string
+		       }
     </pre>
     </p>
 
@@ -656,7 +567,7 @@ namespace eval ::xorb::stub {
     to its role regarding client proxies, please, watch out
     for the inline documentation on <a href="/api-doc/proc-view?proc=::xotcl::Object+instproc+glue">::xotcl::Object->glue</a>.</p>
 
-     <p>
+    <p>
     A simplistic example:
     <pre>
     ::xotcl::Object o 
@@ -666,8 +577,8 @@ namespace eval ::xorb::stub {
 	-returns string \
 	-glueobject $someGlueObject \
 	proc helloWorld {
-	  -arg1:string
-	} {
+			 -arg1:string
+		       } {
 	  Some inline doc
 	} 
     </pre>
@@ -716,7 +627,7 @@ namespace eval ::xorb::stub {
 
   set comment {
     Object instforward __stubContext__ \
-      -default {__getStubContext__ __setStubContext__} %self %1
+	-default {__getStubContext__ __setStubContext__} %self %1
     
     Object instproc __getStubContext__ {} {
       my instvar __stubContext__
@@ -767,7 +678,7 @@ namespace eval ::xorb::stub {
     <p>This specialised/overloaded variant of ad_proc provides
     for declaring proxy methods on a per-object level. While it 
     supports all features of ::xotcl::Object->ad_proc (inline
-    documentation etc.), it also allows to specify 'proxy templates'.
+						       documentation etc.), it also allows to specify 'proxy templates'.
     Proxy templates simply describe the usage pattern when a
     body script is provided (instead of an empty string). The ability
     to provide a body is the key difference to <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+lue">glue</a>/<a href="api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">ad_glue</a> that
@@ -835,7 +746,7 @@ namespace eval ::xorb::stub {
     to the body argument. As soon as you declare a body on the proxy method,
     you need to distinguish between two type of arguments, i.e. those that 
     will be part of the proxy invocation (denoted by an mandatory 'glue' 
-    as checkoption) and those that will simply be available in the method
+					  as checkoption) and those that will simply be available in the method
     body's local scope.
     @doc The inline documentation string
     @body The body declaration. Note, that you can either provide an empty
@@ -898,10 +809,10 @@ namespace eval ::xorb::stub {
     doc
     body
   } {
-     <p>This specialised/overloaded variant of ::xotcl::Class->ad_instproc 
+    <p>This specialised/overloaded variant of ::xotcl::Class->ad_instproc 
     provides for declaring proxy methods on a per-instance level. While it 
     supports all features of ::xotcl::Class->ad_instproc (inline
-    documentation etc.), it also allows to specify 'proxy templates'.
+							  documentation etc.), it also allows to specify 'proxy templates'.
     Proxy templates simply describe the usage pattern when a
     body script is provided (instead of an empty string). The ability
     to provide a body is the key difference to <a href="api-doc/proc-view?proc=::xotcl::Object+instproc+glue">glue</a>/<a href="api-doc/proc-view?proc=::xotcl::Object+instproc+ad_glue">ad_glue</a> that
@@ -971,7 +882,7 @@ namespace eval ::xorb::stub {
     to the body argument. As soon as you declare a body on the proxy method,
     you need to distinguish between two type of arguments, i.e. those that 
     will be part of the proxy invocation (denoted by an mandatory 'glue' 
-    as checkoption) and those that will simply be available in the method
+					  as checkoption) and those that will simply be available in the method
     body's local scope.
     @doc The inline documentation string
     @body The body declaration. Note, that you can either provide an empty

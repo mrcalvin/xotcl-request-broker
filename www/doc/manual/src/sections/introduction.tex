@@ -1,0 +1,51 @@
+     \section{Introduction}\label{sec:introduction}
+        \textbf{xorb}, the X(OTcl) R(equest) B(roker), is an 
+infrastructure package for the web development toolkit OpenACS and OpenACS-based frameworks that 
+provides for generic means of call abstraction.  Call abstraction, hereby, refers to both distributed and 
+non-distributed scenarios. In a non-distributed scenario, xorb is an object-oriented refinement of the well 
+established OpenACS facilities also referred to as "service contracts'. In a distributed scenario, xorb 
+provides a remoting infrastructure for OpenACS. xorb was designed in a protocol-agnostic manner, i.e. 
+our primary intention is to provide support for a variety of remoting protocols. Protocol support is, 
+therefore, realised in terms of protocol plug-ins for xorb. So far, we have realised a feature-rich SOAP 
+protocol plug-in referred to as \textbf{xosoap}. Both, xorb and its protocol plug-ins are realised in \href{http://media.wu-wien.ac.at/}{XOTcl}, a powerful OO extension to standard Tcl.
+
+This guide, in its current shape, aims at providing the fundamentals of using call abstractions in a 
+distributed scenario. We restrict ourselves, for the moment, to the remoting capabilities and therefore 
+introduce the reader to the SOAP protocol plug-in, i.e. xotcl-soap (xosoap). The present document and 
+resource collection will be steadily extended to cover more general aspects of request brokerage and 
+protocol plug-ins available.
+\subsection{Sources of information}
+Beyond this manual, the following materials are currently available.
+\begin{itemize}
+\item A \href{http://alice.wu-wien.ac.at:8000/xorb-doc}{wiki} providing for a FAQ section etc.
+\item We aim at documenting elements of the public interfaces by means of the OpenACS in-code 
+documentation facility and the API Browser. References will be given throughout the manual where 
+appropriate. For inline documentation, watch out the OpenACS API Browser for \filelink{xotcl-soap/tcl/xosoap-client-procs.tcl}{xosoap's} and \filelink{xotcl-request-broker/tcl/xorb-stub-procs.tcl}{xorb's interface}.
+\item Tutorial prepared for the \href{http://oacs-dotlrn-conf2007.wu-wien.ac.at/}{OpenACS Spring 
+Conference 2007} (up-to-date):
+\begin{itemize} 
+\item \href{http://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/file/sobernig-xosoap-slides.pdf?
+m=download|Slide set}{Slide set}
+\item A \href{http://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/file/tutorial-sobernig.mp4?
+m=download}{podcast recording} of my talk
+\end{itemize}
+\item \href{http://nm.wu-wien.ac.at/research/publications/b670.pdf}{Tutorial (slide set)} prepared for the 
+OpenACS Fall Conference 2006 (obsolete) 
+\end{itemize}
+Please, note that these resources reflect and document various stages of development and don't 
+necessarily reflect the current state. The only source of information that is kept up-to-date is this manual 
+document and its wiki mirror. Moreover, some of them might focus advanced concepts that are properly 
+elaborated in the realm of this general-purpose documentation.
+
+Besides, we assume some familiarity with basic XOTcl concepts and its syntax. There is an increasing number of resources available on this nifty language, you might want to check out the following resources to get started:
+
+\begin{itemize}
+\item There is a comprehensive \href{http://media.wu-wien.ac.at/doc/tutorial.html}{XOTcl manual} available.
+\item A reading tailored to OpenACS developers is to be found in \href{http://www.matuska.org/martin/doc/xotcl-openacs-2007.pdf}{XOTcl for OpenACS Developers}. There is also a \href{http://www.matuska.org/martin/doc/xotcl-openacs-2007-p.pdf}{podcast} on this topic available.
+\end{itemize}
+\subsection{Copyright terms}
+The XOTcl Request Broker (xorb) and all protocol plug-in packages, i.e. currently xosoap, are provided 
+under the provisions of the \href{http://creativecommons.org/licenses/LGPL/2.1/}{Lesser General Public 
+License (LGPL) version 2.1}. All accompanying and documentary work, including this document, comes 
+under the \href{http://creativecommons.org/licenses/by-sa/2.0/at/}{Creative Commons Attributation and 
+Share-alike (by-sa) licence}.

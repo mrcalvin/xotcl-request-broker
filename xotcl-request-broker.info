@@ -22,8 +22,9 @@
             <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
         </callbacks>
         <parameters>
-            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="chain_of_interceptors"  default="::xorb::coi" description="xorb allows for injecting specific handlers (&quot;interceptors&quot;) that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::coi as responsible chain of interceptors, you may add your interceptors to this chain or provide your own chain object."/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="consumer_chain"  default="::xorb::client::consumer_chain" description="xorb allows for injecting specific handlers (&quot;interceptors&quot;) that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::client::consumer_chain as responsible chain of interceptors for the consumner side. You may add your interceptors to this chain or provide your own chain object."/>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="invocation_access_policy"  default="::xorb::deployment::Default" description="The request broker allows to use access policies to control and enforce restrictions upon invocations. It is possible to specify your own default per-instance policy. By default, ::xorb::deployment::Default applies."/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="provider_chain"  default="::xorb::provider_chain" description="xorb allows for injecting specific handlers (&quot;interceptors&quot;) that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::provider_chain as responsible chain of interceptors for the provider side. You may add your interceptors to this chain or provide your own chain object."/>
         </parameters>
 
     </version>

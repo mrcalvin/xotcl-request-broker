@@ -12,84 +12,6 @@ namespace eval xorb {
   namespace import -force ::xoexception::try
   namespace import -force ::xorb::aux::*
   
-  # / / / / / / / / / / / / / /
-  # Base class for request
-  # handler
-  ::xotcl::Class InterceptorChain
-  InterceptorChain instproc handleRequest {context} {
-    # / / / / / / / / / / / / / / / / / / / / / / / /
-    # initialise a configuration, i.e. linearised sequence,
-    # of interceptors
-    my instvar chain
-    set pkg [$context package]
-    set chain [$pkg get_parameter "chain_of_interceptors" ::xorb::coi]
-    my debug "---CONFIG=$chain"
-    $chain handleRequest $context
-    next
-  }
-
-  InterceptorChain instproc handleResponse {context} {
-    my instvar chain
-    $chain handleResponse $context
-    next
-  }
-
-  # / / / / / / / / / / / / / / / /
-  # Class RequestHandler
-  ::xotcl::Class RequestHandler -superclass InterceptorChain -ad_doc {    
-    @author stefan.sobernig@wu-wien.ac.at
-    @creation-date August 18, 2005 
-  }										
-  
-  RequestHandler ad_instproc init {} {} {
-    # / / / / / / / / / / / / / / / / / / /
-    # provide for the chain of interceptor 
-    # to be initialised
-    next
-  }
-
-   RequestHandler ad_instproc handleRequest {context} {} {	
-    
-     # / / / / / / / / / / / / / / /
-     # 1) preprocessing (CoI)
-     # having request processed by 
-     # chain of interceptors
-     # - demarshalling
-     # - ...
-     # is handled by protocol-specific
-     # mixins
-     next;#InterceptorChain->handleRequest
-     # / / / / / / / / / / / / / / /
-     # 2) init invoker and dispatch
-     
-     set invoker [Invoker new -context $context]
-     $invoker destroy_on_cleanup
-     set r [$invoker invoke]
-     
-     # / / / / / / / / / / / / / / /
-     # 3) process result
-     my handleResponse $context $r
-   }
-  
-  RequestHandler ad_instproc handleResponse {context} {} {
-    # / / / / / / / / / / / / / / / / / / / / /
-    # 4) Pass response to response flow
-    my debug NEXT-3=[self next]
-    next
-    return $context;# protocol-specific mixin->dispatchResponse 
-  }
-
-  # template methods, has to be provided by implementations of 
-  # protocol plug-ins!
-  RequestHandler abstract instproc dispatchResponse {payload}
-  RequestHandler abstract instproc unplug {}
-  
-  # / / / / / / / / / / / / / / / /
-  # rhandler
-  RequestHandler create rhandler
-  
-  
-  # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # ::xorb::Object
   # We provide for a subclass of 
@@ -2219,8 +2141,7 @@ namespace eval xorb {
 
   namespace export ServiceContract ServiceImplementation Abstract \
       Delegate Method Synchronizable Persistent IDepository Skeleton \
-      Invoker ServantAdapter ReturnValueChecker Configuration InterceptorChain \
-      RequestHandler rhandler
+      Invoker ServantAdapter ReturnValueChecker
 }
 
 

@@ -1,0 +1,94 @@
+     \section{Installation \& configuration guideline}\label{sec:installation}
+     	\subsection{Prerequisites}
+	\subsubsection{Dependencies}
+	\begin{itemize}
+	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy xorb and its plug-ins on both the 4.0.10 and 4.5 family of AOLServer.
+	\item \emph{AOLServer} (\textbf{2.6.2+}): We have been developing and running xorb under version 2.6.2, 2.6.4 and, recently, 2.6.5; under both AOLServer versions, respectively.
+	\item \emph{XOTcl module} (\textbf{1.5.4+}): We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
+	\item \emph{xotcl-core} (\textbf{0.70+}): xorb/ xosoap are built upon version 0.70 (or higher).
+	 Please, make sure that you comply with the install instructions specified in the \href{http://openacs.org/forums/message-view?message_id=1165990}{OACS developer forum}: In a PostgreSQL environment, there are strict requirements on the completeness and correctness of entries to the acs\_function\_args relation. This will be settled in the near future by patches to the acs-kernel, till then, xotcl-core requires these prior manual backend patch.
+	\item \emph{acs-service-contract} (\textbf{5.2.3+}): xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). This xotcl-core facility (in PostgreSQL environments) requires certain acs\_function\_args entries to be in place. Since versions 5.4.0d1+, PosgreSQL-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1+ is not mandatory, as we provide for a generic upgrade and therefore compatibility to lower versions of the package (at least 5.2.3). This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation.
+	\end{itemize}
+	\subsubsection{Patches}
+	Provided that you meet the above requirements, no manual patching is needed.
+%	\begin{itemize}
+%	\item \emph{acs-service-contract}: For versions below 5.4.0d1, we require that you apply the following patch to your PostgreSQL-based backend before proceeding with the actual installation. This means running a SQL script or statements against your data base, for instance, by the following means.
+%	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+%\footnotesize]
+%	cd <path-to-your-instance>/packages/xotcl-request-broker/www/doc/patches/0.4
+%	psql -U <your-db-user> -f acs-service-contract-function-args.sql
+%	\end{lstlisting}
+%	After having accomplished the above step, please restart your instance to make sure that the added facilities are available to the actual installation of xorb.
+%	\end{itemize}
+	\subsection{The XOTcl Request Broker (xorb)}
+ 	\subsubsection{Installation}
+	\begin{enumerate}
+	\item Verify the dependencies indicated above. Make sure that XOTcl is available in your AOLServer environment and that the xotcl-core package is in place. As for the latter, you might grab the most recent version from OpenACS's cvs by issueing the call 
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
+	cvs -d:pserver:anonymous@cvs.openacs.org:/cvsroot co -r HEAD xotcl-core
+	\end{lstlisting}
+	\begin{hints}
+	\item The actual version of xotcl-core that is strictly required will always be given in the above section on dependencies. Also watch out for mandatory patches indicate above that might apply to the xotcl-core.
+	\end{hints}
+	\item Make sure that you are running the required or a patched version of acs-service-contract (see above).
+	\item Get and install the APM package: You may grab the trunk or tag version directly from svn, by calling either
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=\footnotesize]
+	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/trunk xotcl-request-broker
+	\end{lstlisting}
+	or
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+\footnotesize]
+	svn <export | co> http://svn.thinkersfoot.net/xotcl-request-broker/tags/release-<version> \
+	xotcl-request-broker
+	\end{lstlisting}
+	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xotcl-request-broker&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{http://media.wu-wien.ac.at}
+	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
+	\item As a first step, you might want to point your browser to \href{/request-broker/admin}{/request-broker/admin} which features a first administrative cockpit for xorb.
+	\end{enumerate}
+	\subsubsection{Configuration}
+	Configuration, primarily, refers to adjusting package parameters. Currently, there are no critical adjustments necessary at this level.   
+	\begin{center}
+	\begin{footnotesize}
+\begin{longtable}{p{0.2\textwidth}p{0.6\textwidth}}
+    \toprule
+    Option & Description  \\ 
+    \midrule
+     invocation\_access\_policy & Invocation access policies follow the policy facilities devised by the xotcl-core and the way they are employed by xowiki. In xorb's context, we use them to provide access control to actual servants by means on evaluating (conditional) privileges on service implementations. This feature still needs proper documentation.\\
+    chain\_of\_interceptors & xorb allows for injecting specific handlers ("interceptors") that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::coi as responsible chain of interceptors, you may add your interceptors to this chain or provide your own chain object. \\
+    \bottomrule
+\end{longtable}
+\end{footnotesize}
+\end{center}
+
+	\subsection{The SOAP protocol plug-in (xosoap)}
+	\subsubsection{Installation}
+	\begin{enumerate}
+	\item As with the request broker package, grab the APM package: Again, You may take trunk or tag version directly from svn, this time by calling either
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+\footnotesize]
+	svn <export | co> http://svn.thinkersfoot.net/xosoap/trunk xotcl-soap
+	\end{lstlisting}
+	or
+	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=
+\footnotesize]
+	svn <export | co> http://svn.thinkersfoot.net/xosoap/tags/release-<version> xotcl-soap
+	\end{lstlisting}
+	Here, we assume that you are in your packages directory. Alternatively, you might want to \href{http://stefan.thinkersfoot.net/websvn/listing.php?repname=xosoap&path=\%2F&sc=0}{browse the current svn repository} to get a tarball (websvn credentials: guest / guest). Besides, APM tarballs are provided at \href{http://media.wu-wien.ac.at/download/}{http://media.wu-wien.ac.at}
+	\item Proceed with the common way of installing OpenACS packages. Note, a restart of the server after the APM installation is recommended.
+	\item Go and check out  \href{/xosoap/services/}{/xosoap/services/} where you might find some useful pointers on listening (example) services. 
+	\end{enumerate}
+	\subsubsection{Configuration}
+	In contrast to xorb, xosoap comes with a few configuration options for you. The following table provides an overview and some rough comments where necessary:
+\begin{center}
+\begin{footnotesize}
+  \begin{longtable}{p{0.2\textwidth}p{0.6\textwidth}}
+    \toprule
+    Option & Description  \\ 
+    \midrule
+     marshaling\_style & Currently, xotcl-soap provides two marshaling styles that are partly related to the family of WSDL specifications and invocation schemes depicted by this specification. You might choose between RPC/Encoded (::xosoap::RpcEncoded), RPC/Literal (::xosoap::RpcLiteral) or Document/Literal (::xosoap::DocumentLiteral), respectively. Currently, we default to ::xosoap::RpcLiteral. \\
+     service\_segment & The parameter value specifies the uri segment that will prefix url endpoints of services, i.e. http://<base\_url>/<package\_key>/<service\_segment</<object\_identifier>. It defaults to "services".\\
+     wsi\_bp\_compliant & Compliance of auto-generated interface descriptions to either WSDL 1.1 or \href{http://ws-i.org/Profiles/BasicProfile-1.1-2004-08-24.html}{WS-I Basic Profile 1.0/1.1} are not necessarily the same. If you want to make sure that the WSDL generated from your service contracts is strictly complaint to WS-I Basic Profile 1.0/1.1, set this parameter to 1. We currently default to 1. This is still a moving target, what is actually subsumed by the WS-I compat-mode can be followed by in the ChangeLog for the moment and at some point in a more narrative style in this documentation.\\
+    \bottomrule
+\end{longtable}
+\end{footnotesize}
+\end{center}

@@ -154,7 +154,7 @@ namespace eval ::xorb {
   ProtocolPackage instproc solicit=invocation {context} {
     my instvar listener protocol
     $protocol plug -listener $listener
-    ::xorb::rhandler handleRequest $context
+    ::xorb::ServerRequestHandler handleRequest $context
     $protocol unplug
   }
 

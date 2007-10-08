@@ -45,12 +45,12 @@ namespace eval ::xorb::protocols {
     }
   }
   PluginClass instproc plug {-listener:required} {
-    ::xorb::rhandler mixin add [self]
-    ::xorb::rhandler listener $listener
+    ::xorb::ServerRequestHandler mixin add [self]
+    ::xorb::ServerRequestHandler listener $listener
   }
   PluginClass instproc unplug {} {
-    if {[::xorb::rhandler info mixin [self]] ne {}} {
-      ::xorb::rhandler mixin delete [self]
+    if {[::xorb::ServerRequestHandler info mixin [self]] ne {}} {
+      ::xorb::ServerRequestHandler mixin delete [self]
     }
   }
   

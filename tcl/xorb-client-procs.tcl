@@ -11,25 +11,17 @@ namespace eval xorb::client {
 
   namespace import -force ::xoexception::try
   
-  ::xotcl::Class ClientRequestHandler
-  ClientRequestHandler instproc handleRequest {invocationObject} {
-    # / / / / / / / / / / /
-    # delegate to transport layer
-    TransportProvider handle $invocationObject
-    my handleResponse $invocationObject
+  ::xorb::HandlerManager ClientRequestHandler \
+      -superclass ::xorb::BasicRequestHandler \
+      -chain "consumer_chain"
+  ClientRequestHandler instproc handleRequest {invocationContext} {
+    TransportProvider handle $invocationContext
+    next;# BasicRequestHandler->handleRequest
   }
-  ClientRequestHandler instproc handleResponse {invocationObject} {
-    next
-  }
-
-  ClientRequestHandler create crHandler
-
+  
   ::xotcl::Class TransportProvider
   TransportProvider proc getClass {key} {
-#    my log classes=[Class allinstances]
-#    my log classes=[my info subclass]
     foreach p [my info subclass] {
- #     my log p=$p,k=$key
       if {[$p set key] eq $key} {
 	return $p
       }
@@ -422,6 +414,5 @@ namespace eval xorb::client {
   Requestor instproc requests args {
     next
   } 
-
   namespace export ProtocolStub
 }

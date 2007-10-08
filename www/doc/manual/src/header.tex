@@ -254,7 +254,9 @@
 %\usepackage[xhtml]{tex4ht} 
 
 \usepackage{listings} % allows for including code listings similar to \verbatim and \verb
-
+\lstset{rangeprefix=\#<\ ,% curly left brace plus space 
+rangesuffix=\ >\#,%
+includerangemarker=false}% space plus curly right brace
 
 %
 % ----------------------------------------------------------------------------------------------

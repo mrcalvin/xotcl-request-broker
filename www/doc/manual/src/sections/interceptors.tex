@@ -1,0 +1,91 @@
+ \subsection{Extension mechanisms and flow control: interceptors}\label{sec:interceptors}
+Since its very beginning, xorb has been coming with a mechanism allowing for relatively straight-forward customisation and extension of the basic brokerage an invocation infrastructure referred to as (chain of) interceptors. Interceptors are also known as "handlers" in comparable frameworks. The architectural role of interceptors is to provide extensibility while preserving orthogonality of the extension or add-on functionality to the core one. In their role, the can make use (access) contextual information of various kind and modify this contextual, invocation and invocation context, information to serve their purpose. Within this overall setting, interceptors might be used to provide for an advanced flow control and indirection. You might consider plugging-in in basic logging, monitoring, debugging or
+security-relevant features (authentication) by providing your own interceptors. Interceptors are organised in chain of interceptors with these being registered with either the client or server request handler. Upon reception or delivery of brokered requests/ responses, the chains and their interceptors are initiated, and are passed in a specific order of precedence the invocation contexts, including requests and responses. We need to distinguish the following two dimensions characteristic to interceptors:
+\begin{enumerate}
+\item \emph{Direction of interception}: Interceptors might either listen to requests (\emph{request flow}), responses (\emph{response flow}) or both. Registering a custom-made interceptor with either of these flows is outlined further below. Interceptors, once initiated, preserve their state for the duration of an entire round-trip (a request and an affiliated response).
+\item \emph{Scope of interception}: This dimension has a couple of angles. First, scope refers to either side of the broker. Interceptors may be registered with either the consumer- or provider-side chain of interceptors. Second, interceptors may be weaved into either the request or response flow depending on context constraints evaluated at call time. The context constraints can result from conditions with respect to package parameters, invocation data, and invocation context data, etc.
+\end{enumerate}
+\subsubsection{Precedence order of interceptors}
+The precedence of interceptors to be invoked upon requests and responses is determined by two factors. First, and more clearly perceivable, the chain of interceptor an interceptor is registered with holds the authority. Chain of interceptors are implemented as ordered composites which, by default, preserve the precedence of registration. Therefore, the default behaviour is to call registered interceptors in a "first-registered-first-called" manner in the respective request flow. For the response flow, the precedence as applied to the request flow is reversed. However, you might want to define an explicit call order, for instance, which can be achieved by using the sorting feature of the ordered composite. Based upon per-object variables for each registered interceptor, the chain of interceptor may be used to sort all registered interceptors according to the order-inducing variable value. Second, you might want to define your own chain of interceptor. In this case, if you don't want to start from the very beginning, but just plan to refine the default chains (::xorb::coi), your custom chain can inherit the interceptor settings from a super chain by extending the super chain. The super chain's interceptors are then ordered before your custom chain's ones, i.e. we apply a top-down concatenation.
+In the following, we will introduce some example interceptors to you that can also be used or adapted in your xorb installation. 
+%
+\begin{figure}[hbt]
+\centering
+\begin{minipage}[]{0.45\textwidth}
+\centering
+\includegraphics[width=0.95\textwidth]{img/coi-precedence}
+\caption{A simple example chain}
+\end{minipage}
+\label{fig:coi-precedence}
+\begin{minipage}[]{0.45\textwidth}
+\centering
+\includegraphics[width=0.95\textwidth]{img/coi-inherited-precedence}
+\caption{Inheritance between chains}
+\end{minipage}
+\label{fig:coi-inherited-precedence}
+\end{figure}
+%
+Figure \ref{fig:coi-precedence} and \ref{fig:coi-inherited-precedence} try to summarise the above in simple terms, based upon the upcoming examples. As for the provider side, we will briefly outline the realisation of a straight-forward logging interceptor (\begin{math}I_L\end{math}), a more complex authentication interceptor (\begin{math}I_A\end{math}), and a nifty notification interceptor (\begin{math}I_N\end{math}). 
+
+However, in the first place, we need to make sure that we have at least a single instance of \objlink{::xorb::ChainOfInterceptors}  at hand. In a non-demo setting, you might find it convenient to use the existing and default chain object "::xorb::coi" to use instead. For now, we want to create two chains, one that will act as top-level chain object and a second that will inherit from and refine the first one. To achieve this, you might consider the following two lines:
+%
+\lstset{breaklines=true,numbers=none,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[name=example01,linerange={lst:superchain-end,lst:subchain-end}]{../../../interceptor-suite.tcl}
+%
+The above yields two objects, with SubChain inheriting from SuperChain all register interceptors and their order of call precedence. In order to be able to use either of the two chains in a running xorb instance, you will have to register them as value to the package parameters "provider\_chain" or "consumer\_chain", depending on whether you want to use them for the consumer or provider side of xorb and its plug-ins. Note that SubChain could also inherit from an existing chain, for instance, "::xorb::coi".
+%
+\subsubsection{Realising and deploying interceptors}  
+% simple interceptor: Logging Class + methods
+Let us consider the simplest possible example for an interceptor for a start. Referring to Figure \ref{fig:coi-precedence}, we will create a simple logger (\begin{math}I_L\end{math}) that serialises the shutting invocation context and writes it to the standard AOLServer logging stream. There are two decisions to take before implementing such a simplistic logging interceptor.
+\begin{enumerate}
+\item What are the minimum requirements for implementing an interceptor? A basic interceptors is just an ordinary XOTcl \xotclref{Class}{class} that owns its nature as interceptor the fact that it comes with either one or two per-instance methods defined and is registered with a chain object.
+\item Should it be capable of intercepting both requests and responses, or either of these? This relates to the first dimension depicted above, the direction of interception. This decision materialises as the number and kind of per-instance methods defined upon the XOTcl \xotclref{Class}{class}. Once an interceptor class defines a method "handleRequest", it will listen to the request flow. A method "handleResponse" will achieve them same for the response flow. The two methods accept a single mandatory argument which will be populated with the invocation context object.
+\end{enumerate}
+Bearing the said in mind, we might create the logging interceptor (\begin{math}I_L\end{math}) the following way:
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[firstnumber=1,name=example01,linerange=lst:logginginterceptor-end]{../../../interceptor-suite.tcl}
+Once it has been defined, register the \xotclref{Class}{class} with the previously created chain object:
+Provided that the chain object is stored as active chain of interceptors by setting the package parameters "provider\_chain" or "consumer\_chain", it will then be called:
+%
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[firstnumber=1,name=example01,linerange=lst:registerlogger-end]{../../../interceptor-suite.tcl}
+%
+% aspect interceptor: checkPointcuts > provider-side: authentication
+The above logger example shows a simple interceptor which is an XOTcl \xotclref{Class}{class} following a straight-forward design-by-convention. In more complex scenarios, you might want to parametrise further the conditions of applications of an interceptor. This refers to the second dimension of intercepting, the scope of interception (see above). In order to facilitate the deployment of flexibly scoped interceptors, xorb comes with a helper called \objlink{::xorb::AspectInterceptor}. The concept and a valuable implementation study can be found in \cite{zdun:2005}. The overall idea is to allow to specify a set of conditions whose fulfilment will cause the interceptor to be executed upon a shuttling invocation context. \objlink{::xorb::AspectInterceptor} offers a proper hook template that allows to add your custom condition set. This set of statements will be evaluated before the actual invocation of the interceptor. Take the following example, taken from a stock interceptor that comes with xosoap for authentication purposes. We refer to the entire implementation as "authentication interceptor" in the scope of this section (\begin{math}I_A\end{math}).
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[firstnumber=1,name=example01,linerange=lst:authenticationinterceptor-end]{../../../../../xotcl-soap/tcl/15-xosoap-procs.tcl}
+Considering the overall picture, the method checkPointcuts is realised as template method. Instances of \objlink{::xorb::AspectInterceptor} expect (in an abstract sense) a custom-provided checkPointcuts implementation by its sub classes. If it evaluates to 1, the interceptor's handleRequest and/or handleResponse will be called. Otherwise, the chain continues silently with the next interceptor in the order of precedence. As you learn from the example above, you can use various contextual information to express your conditions. Note that you can equally modify this contextual information:
+\begin{itemize}
+\item The \emph{invocation context object}, e.g. instances of \objlink{::xorb::InvocationContext} or \objlink{::xorb::stub::GlueObject}, provide access to various contextual info sets, the currently engaged protocol plug-in (e.g. \objlink{::xosoap::Soap}) or the name of the target service, to name just one example. It also provides access to invocation context data, e.g. information passed in SOAP Header elements. The invocation context object allows for creating most of the relevant scopes: e.g. per-service, per-protocol interceptors etc. The above example of an authentication interceptor will listen exclusively to SOAP-based requests and responses.
+\item \emph{Package parameters} might be requested to decide upon turning the interceptor active or not. The authentication interceptor will only evaluate if requested by the package administrators in the current protocol plug-in instance.
+\item More generally available \emph{connection information} as provided by ::xo::cc, ad\_conn and ns\_conn may be used.
+\item At the consumer side, you may also pass \emph{per-proxy context information} to your client proxy that will then be passed along the interceptor chain and may be used for flow control.
+\end{itemize}
+If you plan to create your own \objlink{::xorb::AspectInterceptor}, you might consider the following steps, deviating from the declaration of a simple interceptor, as our logger example.
+\begin{enumerate}
+\item Create a sub class of \objlink{::xorb::AspectInterceptor}.
+\item Define a per-instance method "checkPointcuts" on your sub class.
+\item Proceed as outlined for the simple case: First, create per-instance methods "handleRequest"/ "handleResponse" and, second, register it with a chain object.
+\end{enumerate}
+This might take the following form:
+%
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[firstnumber=1,name=example01,linerange=lst:customaspectinterceptor-end]{../../../interceptor-suite.tcl}
+%
+At this point, we re-created what is depicted in Figure \ref{fig:coi-precedence}. If you are interested in the stock authentication interceptor delivered as part of xosoap and briefly mentioned above, have a look at the appendix section where we list the code for documentation purposes, i.e. see Listing \ref{lst:advanced:xosoap:auth}.
+% notification interceptor
+% Show inheritance, notification as feature
+%%%%%%%%%%%%%%%%%%%%%
+% consumer-side: caching
+\\\\
+The last couple of examples relate to provider-side interceptors and introduce you to three possible usage scenarios for these interceptors. However, you may also deploy interceptors at the consumer side, rendering possible solutions slightly different to those enticing ones shown for the provider side. A quite common and possibly interesting scenario is \emph{consumer-side caching}.  The following caching interceptor will provide you some insights on the following features of xorb's interceptors which directly relate to the requirements of a caching scenario:
+\begin{enumerate}
+\item How to create and activate a consumer-side chain of interceptors?
+\item How to use interceptor-based indirection?
+\item How to take advantage of the per-roundtrip statefulness of interceptors?
+\end{enumerate}
+As for creation and activation, everything said on provider-side interceptors is also valid for the consumer side. The only difference is that the client request handler keeps a chain object (by default: "::xorb::client::consumer\_chain") different to that of the server request handler). Therefore, creating and registering your consumer-side interceptor requires you to register your interceptor with the ruling consumer-side chain object. Regarding the example of a caching interceptor, this could look like the following:
+%
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
+\lstinputlisting[firstnumber=1,linerange=lst:cachinginterceptor-end]{../../../interceptor-suite.tcl}
+%

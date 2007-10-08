@@ -6,7 +6,7 @@ ad_library {
   This adaptation is based upon v0.4 of the original code.
   For the conceptual background, see
   http://wi.wu-wien.ac.at/home/mark/publications/tecos04.pdf
- 
+  
   @author mark.strembeck@wu-wien.ac.at
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date September 10, 2007
@@ -87,7 +87,7 @@ namespace eval ::xorb::storm {
   }
   Test instproc finalise {} {
     my instvar node attributes timestamp
-    my debug FINALIZE\n
+    #ns_write "[self]: FINALIZE\n"
     if {[my exists timestamp]} {
       my set attributes(grosstime) [$timestamp diff]
     }
@@ -125,7 +125,7 @@ namespace eval ::xorb::storm {
   }
   Guardian instproc checkPreConditions {} {
     my instvar preconditions
-    ns_write "[self]: preconds\n"
+    #ns_write "[self]: preconds\n"
     foreach pre $preconditions {
       if {![my mockEval $pre]} {
 	my unsatisfied [ConditionUnsatisfied new $pre]
@@ -134,10 +134,10 @@ namespace eval ::xorb::storm {
   }
   Guardian instproc checkPostConditions {} {
     my instvar postconditions
-    my debug "[self]: postconds\n"
+    #ns_write "[self]: postconds\n"
     foreach post $postconditions {
-      if {[catch {my mockEval $post} msg]} {
-	my unsatisfied [ConditionUnsatisfied new $msg]
+      if {![my mockEval $post]} {
+	my unsatisfied [ConditionUnsatisfied new $post]
       }
     }
   }
@@ -177,7 +177,7 @@ namespace eval ::xorb::storm {
 	halt_on_first_error
     set ts [Timestamp new -volatile]
     if {[info exists setup_script]} {
-      my debug "[self]: setup_script\n"
+      #ns_write "[self]: setup_script\n"
       if {[catch {my mockEval $setup_script} msg]} {
 	my unsatisfied [PrerequisiteUnsatisfied new $msg]
       }
@@ -185,20 +185,22 @@ namespace eval ::xorb::storm {
     foreach c [my children] {
       #set tsc [Timestamp new -volatile]
       if {[catch {$c run} result]} {
-	my debug "[self]: UNSATISFIED(Fixture), $result\n"
+	#ns_write "[self]: UNSATISFIED(Fixture), $result\n"
 	my unsatisfied $result
       }
       #$c set attributes(grosstime) [$tsc diff]
     }
     next
     if {[info exists cleanup_script]} {
-      my debug "[self]: cleanup_script\n"
+      #ns_write "[self]: cleanup_script\n"
       if {[catch {my mockEval $cleanup_script} msg]} {
 	my unsatisfied [PrerequisiteUnsatisfied new $msg]
       }
     }
-    my finalise
-    my satisfied [Satisfied new "done"]
+    if {[my exists non_halting_error]} {
+      my finalise
+      error [Unsatisfied new "failed"]
+    }
   }
   Fixture instproc unsatisfied result {
     my instvar halt_on_first_error
@@ -208,13 +210,16 @@ namespace eval ::xorb::storm {
     }
     my report $result
     if {$halt_on_first_error} {
+      #ns_write HALT_ON_FIRST_ERROR\n
       my finalise
       error $result
+    } else {
+      my set non_halting_error 1
     }
   }
   Fixture instproc report {{-stop:switch false} result} {
     if {[$result istype PrerequisiteUnsatisfied] && [$result = [self]]} {
-      my debug PREREQError\n
+      #ns_write PREREQError\n
       my instvar node
       set doc [$node ownerDocument]
       set n [$doc createElement system-err]
@@ -252,10 +257,11 @@ namespace eval ::xorb::storm {
       $node setAttribute name [namespace tail [self]]
       my array set attributes [array get defaults]
     }
-    my debug "[self]: RUN\n"
+    #ns_write "[self]: RUN\n"
     if {[catch {next} result]} {
-      my debug "[self]: FAILED and HALTED: $result"
+      #ns_write "[self]: FAILED and HALTED: $result"
     } 
+    my finalise
   }
   TestSuite instproc report {{-stop:switch false} result} {
     my instvar node
@@ -267,7 +273,7 @@ namespace eval ::xorb::storm {
 	my incr attributes(unsatisfied)
       }
     }
-    my debug "[self] REPORT args=$result,stop=$stop\n"
+    #ns_write "[self] REPORT args=[$result serialize],stop=$stop\n"
     next;# Test->report
   }
   TestSuite instproc getReport {} {
@@ -310,7 +316,7 @@ namespace eval ::xorb::storm {
 	my incr attributes(failures)
       }
     }
-    my debug "[self] REPORT args=$result, stop=$stop\n"
+    #ns_write "[self] REPORT args=$result, stop=$stop\n"
     next;# Test->report
   }
   TestCase instproc run {} {
@@ -321,8 +327,13 @@ namespace eval ::xorb::storm {
       set node [my getNode testcase]
       my array set attributes [array get defaults]
     }
-    my debug "[self]: RUN\n"
-    next
+    #ns_write "[self]: RUN\n"
+    if {![catch {next} msg]} {
+      my finalise
+      my satisfied [Satisfied new "done"]
+    } else {
+      error $msg
+    }
   }
 
 
@@ -348,7 +359,7 @@ namespace eval ::xorb::storm {
   TestScenario instmixin add Guardian
 
   TestScenario instproc report {{-stop:switch false} result} {
-    my debug "[self] REPORT args=$result,stop=$stop\n"
+    #ns_write "[self] REPORT args=$result,stop=$stop\n"
     next;# Test->report
   }
 
@@ -363,7 +374,7 @@ namespace eval ::xorb::storm {
     }
     next;# Guardian->run
     if {[info exists test_body]} {
-      my debug "[self]: RUN\n"
+     # ns_write "[self]: RUN\n"
       my evaluate $test_body
     }
   }
@@ -381,17 +392,17 @@ namespace eval ::xorb::storm {
     } else {
       my set attributes(nettime) [$ts diff]
       if {$r ne $expected_result} {
-	my debug UNSATISFIED\n
+	#ns_write UNSATISFIED\n
 	my unsatisfied [Unsatisfied new "$r != $expected_result"]
       } else {
-	my debug SATISFIED\n
+	#ns_write SATISFIED\n
 	my satisfied [Satisfied new "$r == $expected_result"]
       }
     }
   }
 
   TestScenario instproc report {{-stop:switch false} result} {
-    my debug "[self]: REPORT,stop=$stop\n"
+    #ns_write "[self]: REPORT,stop=$stop\n"
     my instvar node
     my set attributes(type) [namespace tail [$result info class]]
     my set attributes(message) [$result message]
@@ -416,7 +427,7 @@ namespace eval ::xorb::storm {
   }
   TestResult instproc = {object} {
     my instvar reference
-    my debug REF($reference==$object)=[expr {$reference eq $object}]\n
+    #ns_write REF($reference==$object)=[expr {$reference eq $object}]\n
     return [expr {$reference eq $object}]
   }
   Class Unsatisfied -superclass TestResult 
@@ -460,6 +471,31 @@ namespace eval ::xorb::storm {
   }
 
   # / / / / / / / / / / / / / /
+  # Class NonFailureScenario
+  # - - - - - - - - - - - - - - 
+  # A simple testscenario which simply
+  # requires the test body to execute
+  # without errors/excpetions being fired.
+
+  Class NonFailureScenario -superclass TestScenario
+  NonFailureScenario instproc evaluate {test_body} {
+    set ts [Timestamp new -volatile]
+    if {[catch { set r [my mockEval $test_body] } msg]} {
+      my set attributes(nettime) [$ts diff]
+      # failed
+      if {[my isobject $msg]} {
+	my unsatisfied [Unsatisfied new [$msg message]]
+      } else {
+	my unsatisfied [Unsatisfied new $msg]
+      }
+    } else {
+      # succeeded
+      my satisfied [Satisfied new "Ran smoothly without errors/exceptions."]
+    }
+  }
+
+
+  # / / / / / / / / / / / / / /
   # a custom aggregator at
   # the TestCase level
   Class FailureScenario::TestCase 
@@ -473,7 +509,8 @@ namespace eval ::xorb::storm {
   }
 
   TestCase instmixin add FailureScenario::TestCase
-
+  
+  
   namespace export TestSuite TestCase TestScenario \
       TestResult
 }
