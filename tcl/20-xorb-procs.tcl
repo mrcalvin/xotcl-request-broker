@@ -1414,7 +1414,7 @@ namespace eval xorb {
   # # # # # # # # # # # # # # # #
 
   ::xotcl::Class Skeleton -set lightweight 0
-  
+
   Skeleton proc getContract {
 	-lightweight:switch 
 	-name:required
@@ -2138,7 +2138,7 @@ namespace eval xorb {
       return $result
     }
   }
-
+  
   namespace export ServiceContract ServiceImplementation Abstract \
       Delegate Method Synchronizable Persistent IDepository Skeleton \
       Invoker ServantAdapter ReturnValueChecker

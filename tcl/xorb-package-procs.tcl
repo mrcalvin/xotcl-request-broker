@@ -13,7 +13,11 @@ namespace eval ::xorb {
   # A package class for the
   # request broker itself
 
-  ::xo::PackageMgr Package -superclass ::xo::Package
+  ::xo::PackageMgr Package \
+      -superclass ::xo::Package \
+      -pretty_name "XORB Package" \
+      -package_key "xotcl-request-broker"
+
   Package proc require {-url {package_id -1}} {
     # / / / / / / / / / / / /
     # -1 indicates a dependent

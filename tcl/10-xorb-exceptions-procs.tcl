@@ -83,6 +83,11 @@ namespace eval xorb::exceptions {
     $logCmd $mode $msg
     next
   }
+
+  Loggable instproc getStackMessage {} {
+    my instvar origin
+    return [$origin set stack]
+  }
   
   ::xotcl::Class LoggableException -superclass Class -parameter {
     {logCmd "ns_log"}

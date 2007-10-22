@@ -1035,9 +1035,29 @@ namespace eval ::xorb::aux {
       eval $children
     }
   }
-  
+ 
+  # / / / / / / / / / / / / / /
+  # Mixin class Streamable
+  # - - - - - - - - - - - - - - 
+  # Provides some streaming 
+  # functionality to its hosts
+
+  Class Streamable
+  Streamable instproc stream {targets} {
+    set stream [list]
+    foreach t $targets {
+      my instvar $t
+      if {[array exists $t]} {
+	lappend stream "-array set $t [list [array get $t]]"
+      } elseif {[info exists $t]} {
+	lappend stream "-set $t [set $t]"
+      }
+    }
+    return $stream
+  }
+ 
   namespace export Traversal PreOrderTraversal OrderedComposite \
       TypedOrderedComposite AggregationClass AcsObjectType AcsAttribute \
-      AcsObject
+      AcsObject Streamable
   
 }

@@ -10,15 +10,7 @@ ad_library {
 namespace eval xorb::client {
 
   namespace import -force ::xoexception::try
-  
-  ::xorb::HandlerManager ClientRequestHandler \
-      -superclass ::xorb::BasicRequestHandler \
-      -chain "consumer_chain"
-  ClientRequestHandler instproc handleRequest {invocationContext} {
-    TransportProvider handle $invocationContext
-    next;# BasicRequestHandler->handleRequest
-  }
-  
+    
   ::xotcl::Class TransportProvider
   TransportProvider proc getClass {key} {
     foreach p [my info subclass] {
