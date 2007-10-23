@@ -97,8 +97,13 @@ ad_library {
       # / / / / / / / / / / / / 
       if {[info exists cName] && $cName ne {}} {
 	my debug  cName=$cName
-	set grep($cMiddle) [::xorb::manager::CRepository resolve \
-				-name $cName]
+	set cObj [::xorb::manager::CRepository resolve \
+		      -name $cName]
+	if {$cObj ne {}} {
+	  set grep($cMiddle) $cObj
+	} else {
+	  error "No contract named '$cName' found."
+	}
       }
       my debug next=[self next]
       next 
@@ -115,8 +120,12 @@ ad_library {
 	set obj [::xorb::manager::IRepository resolve \
 		     -name $iName \
 		     -contract $contract]
-	my debug IMPLOBJ=$obj
-	set grep($iMiddle) $obj
+	if {$obj ne {}} {
+	  my debug IMPLOBJ=$obj
+	  set grep($iMiddle) $obj
+	} else {
+	  error "No implementation named '$iName' found."
+	}
       }
       my debug next=[self next]
       next
@@ -176,11 +185,38 @@ ad_library {
       my mixin {}
       return $r
     }
-    Broker proc stream args {
-      array set retrieval [eval my lookup $args]
+    # / / / / / / / / / / / / / / / / / /
+    # / / / / / / / / / / / / / / / / / /
+    # NOTE: Finally, we identified the
+    # reason for the mysterious bug
+    # "wrong-#-args-should-be-stream"
+    # encountered occasionally.
+    # Background: We use ServiceImplementation
+    # and ServiceContract as mixins for Broker.
+    # These two mixin classes come with their own
+    # zero-arg stream method. In cases of 
+    # broker failures (look-up) due to a wrong
+    # impl name etc., the mixin list of broker
+    # might not get cleared. This causes follow-up
+    # stream calls to the Broker to be first handled
+    # by the mixin classes' methods.
+    # Solution:
+    # -1- We change the name of the former
+    # Broker->stream method to Broker->get
+    # -2- We provide for exception catching
+    # and explicit cleanup.
+    # / / / / / / / / / / / / / / / / / /
+    # / / / / / / / / / / / / / / / / / /
+    Broker proc cleanup {} {
+      my mixin {}
+    }
+    Broker proc get args {
       array set stream [list]
-      # provide for streaming
-      foreach item [array names retrieval] {
+      my cleanup
+      if {[catch {
+	array set retrieval [eval my lookup $args]
+	# provide for streaming
+	foreach item [array names retrieval] {
 	# / / / / / / / / / / / / / / / / / / / /
 	# free the item for the persistent mixin
 	# for the purpose of streaming
@@ -188,7 +224,13 @@ ad_library {
 	set stream($item) [eval Serializer deepSerialize $retrieval($item) \
 			       [list -map [list $retrieval($item) "\[self\]::[$retrieval($item) canonicalName]"]]]
       }
-      my debug "+++STREAM-RETURN:[array get stream]"
+	my debug "+++STREAM-RETURN:[array get stream]"
+      } msg]} {
+	# - explicit cleanup!
+	my cleanup
+	# - after cleanup, we provide for a re-throw.
+	error $msg
+      }
       return [array get stream]
     } 
     Broker proc event {call args} {
@@ -404,18 +446,6 @@ ad_library {
       } else {
 	return $items
       }
-      # if {[llength $items] > 1} {
-# 	# multiple impls retrieved
-# 	if {![info exists contract] || $contract eq {}} {
-# 	  error "Cannot resolve implementation unambiguously."
-# 	}
-# 	foreach i $items {
-# 	  if {[$i implements] eq $contract} return $i;
-# 	}
-# 	return ""
-#       } else {
-# 	return $items
-#       } 
     }
     
     # # # # # # # # # # # # # # # #

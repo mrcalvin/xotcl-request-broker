@@ -1050,7 +1050,7 @@ namespace eval ::xorb::aux {
       if {[array exists $t]} {
 	lappend stream "-array set $t [list [array get $t]]"
       } elseif {[info exists $t]} {
-	lappend stream "-set $t [set $t]"
+	lappend stream "[list -set $t [set $t]]"
       }
     }
     return $stream

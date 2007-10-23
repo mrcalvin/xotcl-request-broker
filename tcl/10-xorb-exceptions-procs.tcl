@@ -59,6 +59,7 @@ namespace eval xorb::exceptions {
     {category {}}
     contentType
   }
+
   Loggable instproc write args {
     my instvar node origin
     foreach p [[self class] info parameter] {
@@ -68,20 +69,24 @@ namespace eval xorb::exceptions {
 	[my info class] instvar $p
       }
     }
-    
+    set msg [my getLogMessage]
+    $logCmd $mode $msg
+    next
+  }
+
+  Loggable instproc getLogMessage {} {
+    my instvar node origin
     # -- in debug mode?
     if {[$origin exists stackNode]} {
       set sNode [$origin set stackNode]
       set document [$node ownerDocument]
-      #my debug DOCUMENT=$document,XML=[$node asXML]
       $node appendChild $sNode
       set msg [$node asXML]
       $node removeChild $sNode
     } else {
       set msg [$node asXML]
     }
-    $logCmd $mode $msg
-    next
+    return $msg
   }
 
   Loggable instproc getStackMessage {} {
@@ -225,6 +230,11 @@ namespace eval xorb::exceptions {
 
   LoggableException RequestorException -ad_doc {
     Requestor failed dispatching your invocation request
+  }
+
+  LoggableException NonBlockingRequestorException -ad_doc {
+    Requestor failed dispatching your invocation request 
+    in asynchronous/ non-blocking mode. 
   }
 
   LoggableException ClientRequestHandlerException -ad_doc {

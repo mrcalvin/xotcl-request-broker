@@ -1,3 +1,61 @@
+2007-10-23  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* New dependency set: compat to xotcl-core 0.74+: This
+          includes some compatibility-related fixes. Adjusted
+          xorb::Package to support the improved package support by
+          core etc. 
+
+	* Pitched version to 0.4.2 
+
+	* tcl/20-xorb-procs.tcl: Partial rewrite of asynchrony
+          support. Support can now be disabled/enabled at wish by
+          either mixin-in Requestor::Asynchrony or not. There is now
+          to dedicated sub classes, Blocking- and
+          NonBlockingRequestor. The latter takes two distinct roles in
+          either the scope of the executing connection thread
+          (NonBlockingRequestor::ConnectionThread) or the
+          serving background thread
+          (NonBlockingRequestor::BackgroundThread). 
+
+	* tcl/xorb-broker-procs.tcl: Major bug fix; finally, we
+	identified the reason for the mysterious bug  
+	"wrong-#-args-should-be-stream" encountered
+	occasionally. Background: We use ServiceImplementation and
+	ServiceContract as mixins for Broker. These two mixin classes
+	come with their own zero-arg stream method. In cases of broker
+	failures (look-up) due to a wrong impl name etc., the mixin
+	list of broker might not get cleared. This causes follow-up
+	stream calls to the Broker to be first handled by the mixin
+	classes' methods. This yields the wrong-#-args error as stream
+	would not any arguments at this level of the next
+	path. Solution: -1- We	change the name of the former
+	Broker->stream method to Broker->get -2- We provide for 
+	exception catching and explicit cleanup, both at entering the
+	Broker and leaving it (also in error conditions).
+	In addition, we are now more verbous about contract/
+	implementations not found for a given names.
+
+2007-10-22  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-interceptors-procs.tcl: Fixed sourcing/ precedence
+          issue with ClientRequestHandler.
+
+	* tcl/xorb-stub-procs.tcl: Non-blocking consumer support. The
+          entire feature set is realised through the mixin class
+          Requestor::NonBlocking (connection thread scope),
+          AsyncRequestor, and AsyncRequestor::ClientRequestHandler
+          (both: background thread scope).
+
+	* tcl/15-xorb-aux-procs.tcl: Added a mixin class Streamable
+          that provides for streaming object states into a sourcable
+          script. 
+
+	* Introducing basic non-blocking/asynchrony
+          support for the consumer side. Non-blockingness is both
+          realisied at the level of program flow (delegation to
+          background threads) and transport (asynchronous http
+          requests etc.). Documentation still missing.
+
 2007-10-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Re-organised documentation's tex sources, started

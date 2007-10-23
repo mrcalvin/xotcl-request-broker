@@ -82,8 +82,9 @@ namespace eval ::xorb::stub {
   # # # # # # # # # # # # #
 
   ::xotcl::Class Requestor -slots {
-    Attribute earlyBoundContext -default {}
-    Attribute stubObject
+    #Attribute earlyBoundContext -default {}
+    #Attribute stubObject
+    Attribute contextObject
     Attribute protocol
     Attribute callName
     Attribute signatureMask
@@ -92,24 +93,33 @@ namespace eval ::xorb::stub {
   Requestor instproc setup {} {
     next
   }
+
+  Requestor instproc cleanup {} {
+    # / / / / / / / / / / / / / /
+    # A generic cleanup hook,
+    # meant to be called after
+    # sinks have been informed etc.
+    my debug "[self] is going to be destroyed."
+    my destroy
+  }
     
   Requestor instproc call args {
    if {[catch {
       my instvar earlyBoundContext stubObject callName \
-	  signatureMask returntype contextObj protocol
+	  signatureMask returntype contextObject protocol
       # / / / / / / / / / / / / /
       # derive from context object
       # prototype!
       
-      $contextObj copy [self]::co
-      set contextObj [self]::co
+      $contextObject copy [self]::co
+      set contextObject [self]::co
       
       # / / / / / / / / / / / / /
       # turn context object into
       # proper invocation context?
       # populate invocation context
       
-      $contextObj virtualCall $callName
+      $contextObject virtualCall $callName
       # / / / / / / / / / / / / /
       # simulate xotcl nonposArgs
       # parser, i.e. enforce both
@@ -129,9 +139,9 @@ namespace eval ::xorb::stub {
       # / / / / / / / / / / / / /
       # set client protocol and
       # mix into requesthandler
-      set contextClass [$contextObj info class]
+      set contextClass [$contextObject info class]
       set plugin [$contextClass clientPlugin]
-      set protocol [$contextObj protocol]
+      set protocol [$contextObject protocol]
 
       my debug ARGS-TO-PARSE=[lindex $args 0]
       ::xotcl::nonposArgs mixin add \
@@ -140,13 +150,13 @@ namespace eval ::xorb::stub {
       ::xotcl::nonposArgs mixin delete \
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
       
-      $contextObj virtualArgs $r
-      my debug REQUEST-CTX=[$contextObj serialize]
+      $contextObject virtualArgs $r
+      my debug REQUEST-CTX=[$contextObject serialize]
 
       try {
 	#::xorb::client::ClientRequestHandler mixin add $plugin
 	::xorb::client::ClientRequestHandler mixin add $plugin end
-	::xorb::client::ClientRequestHandler handleRequest $contextObj
+	::xorb::client::ClientRequestHandler handleRequest $contextObject
 	::xorb::client::ClientRequestHandler mixin {}
       } catch {Exception e} {
 	# -- re-throws
@@ -155,14 +165,6 @@ namespace eval ::xorb::stub {
 	#global errorInfo
 	error [::xorb::exceptions::ClientRequestHandlerException new $e]
       }
-
-      # / / / / / / / / / / / / /
-      # verify returntype constraint
-      # introducing anythings:
-      # unmarshalledResponse is of 
-      # type Anything
-      set any [$contextObj unmarshalledResponse]
-      set r [my unwrap $any]
       #my debug RESULT=[$r serialize]
     } e]} {
       if {[::xoexception::Throwable isThrowable $e]} {
@@ -170,19 +172,17 @@ namespace eval ::xorb::stub {
       } else {
 	error [::xorb::exceptions::RequestorException new $e]
       }
-    } else {
-      return $r
     }
   }
   Requestor instproc unwrap {any} {
-    my instvar contextObj returntype protocol
+    my instvar contextObject returntype protocol
     # / / / / / / / / / / / / /
     # verify returntype constraint
     # introducing anythings:
     # unmarshalledResponse is of 
     # type Anything
     if {![$any isVoid__] && $returntype eq "void"} {
-      set value [$contextObj unmarshalledResponse]
+      set value [$contextObject unmarshalledResponse]
       error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
 		 "We expected a void return value, but got: $value"]
     }
@@ -209,11 +209,8 @@ namespace eval ::xorb::stub {
       
     }
   }
-  Requestor instproc setup {} {
-    my instvar earlyBoundContext stubObject \
-	contextObj
-    
-    namespace import -force ::xorb::exceptions::*
+
+  Requestor proc resolveContext {{-earlyBoundContext {}} -stubObject args} {
     # / / / / / / / / / / / / /
     # early bound context available?
     # lately bound context?
@@ -229,7 +226,7 @@ namespace eval ::xorb::stub {
     # 3-) lately bound (at call time of
     # proxy method, assigned to the proxy
     # object through 'glueobject')
-    
+
     if {$earlyBoundContext ne {}} {
       set contextObj $earlyBoundContext
     } elseif {[$stubObject istype ::xorb::stub::ContextObject]} {
@@ -239,254 +236,324 @@ namespace eval ::xorb::stub {
 		  $contextObj eq {}} {
       error "Requestor cannot resolve any context ('glue') object."
     }
-    next;#Requestor->setup
+    return $contextObj
   }
   
-  Requestor proc require {
-			  args		 
-			} {
-    # / / / / / / / / / / / / / / 
-    # TODO: select abstraction style,
-    # i.e. call or message (document)
-    # style, for instance and return
-    # specific instance of subclass
-    my debug REQUIRE:args=$args
-    return [eval my new $args]
-  }
-
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
-  # Mixin class Requestor::NonBlocking
+  # Per-object method 
+  # Requestor->getInstance
   # - - - - - - - - - - - - - - - - - - 
-  # Realises non-blocking support in
-  # the scope of the actual connection
-  # thread.
+  # It serves as a factory method that
+  # returns a concrete instance of
+  # Requestor or its sub classes.
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
 
-  ::xotcl::Class Requestor::NonBlocking -slots {
-    Attribute delegate
+  Requestor proc getInstance {-contextObject args} {
+    if {![info exists contextObject]} {
+      set contextObject [eval my resolveContext $args]
+    }
+    return [BlockingRequestor new \
+		-destroy_on_cleanup \
+		-contextObject $contextObject]
   }
-  Requestor::NonBlocking instproc call args {
-    my instvar contextObj
-    $contextObj instvar asynchronous
-    if {$asynchronous && ![my istype ::xorb::stub::AsyncRequestor]} {
-      my instvar delegate
-      my debug "$delegate call $args"
-      eval ::XorbManager do -async $delegate call $args
-      my destroy_on_cleanup
-      return ""
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # Mixin class Requestor::Asynchrony
+  # - - - - - - - - - - - - - - - - - - 
+  # A small manager mixin that allows
+  # for enabling/disabling asynchrony
+  # support at will.
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+
+  Class Requestor::Asynchrony 
+  Requestor::Asynchrony instproc getInstance {-contextObject args} {
+    if {![info exists contextObject]} {
+      set contextObject [eval my resolveContext $args]
+    }
+    if {[$contextObject asynchronous]} {
+      return [::xorb::stub::NonBlockingRequestor new \
+		  -mixin ::xorb::stub::NonBlockingRequestor::ConnectionThread \
+		  -destroy_on_cleanup \
+		  -contextObject $contextObject]
     } else {
-      # -- proceed in blocking mode
-      next
+      next -contextObject $contextObject $args
     }
   }
-  Requestor::NonBlocking instproc setup args {
-    # -- first, proceed with the generic setup
-    next
-    # / / / / / / / / / / / / / /
-    # Enforce synchrony or asynchrony
-    # at the application level
-    # (program flow)
-    my instvar contextObj delegate
-    $contextObj instvar asynchronous callback
-    if {$asynchronous && ![my istype ::xorb::stub::AsyncRequestor]} {
-      # / / / / / / / / / / / / /
-      # 1-) Prepare a delegate
-      # requestor in the broker
-      # thread to take over.
-      # We, therefore, stream the
-      # requestor and context object
-      # into the broker thread.
-      # - - - - - - - - - - - - - 
-      # 1.1-) the context object
-      $contextObj mixin add ::xorb::aux::Streamable
-      append script [subst {
-	set context \[[$contextObj info class] new [join [$contextObj stream {
-	  messageStyle
-	  protocol
-	  virtualObject
-	  asynchronous
-	  callNamespace
-	  httpHeader
-	}] "\\\n "]\]
-      }]
-      $contextObj mixin delete ::xorb::aux::Streamable
-      # - - - - - - - - - - - - - 
-      # 1.2-) provide for sinks,
-      # either a resultcallback
-      # or a poll object.
-      if {[info exists callback]} {
-	my debug SET-CALLBACK
-	# init a result callback object
-	set sink [::xorb::stub::ResultCallback new]
-	$sink do command $callback
-      } else {
-	# init a poll object
-	set sink [::xorb::stub::PollObject new]
-      }
-      # - - - - - - - - - - - - - 
-      # 1.3-) the requestor
-      my mixin add ::xorb::aux::Streamable
-      append script [subst {
-	::xorb::stub::AsyncRequestor new  [join [my stream {
-	  callName 
-	  signatureMask 
-	  returntype 
-	  protocol
-	}] "\\\n "] -set contextObj \$context -sink [$sink object]
-      }]
+  
+  # / / / / / / / / / / / / / / / / / /
+  # To disable asynchrony support,
+  # comment out the following line:
+  Requestor mixin add Requestor::Asynchrony
 
-      my mixin delete ::xorb::aux::Streamable
-      # - - - - - - - - - - - - - 
-      # 1.4-) some cleanup ?
-      my debug SCRIPT=$script
-      my instvar delegate
-      set delegate [::thread::send [::XorbManager get_tid] $script]
-      my debug DELEGATE=$delegate
-    }
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # Class BlockingRequestor
+  # - - - - - - - - - - - - - - - - - - 
+  # The blocking flavour of Requestor.
+  # Blocking refers both to program
+  # flow (ClientProxy -> Requestor) and 
+  # transport (Http, for instance).
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+
+  ::xotcl::Class BlockingRequestor -superclass Requestor
+  BlockingRequestor instproc call args {
+    next;# Requestor->call
+    my instvar contextObject
+    # / / / / / / / / / / / / /
+    # verify returntype constraint
+    # introducing anythings:
+    # unmarshalledResponse is of 
+    # type Anything
+    set any [$contextObject unmarshalledResponse]
+    return [my unwrap $any]
   }
 
-  # -- enable non-blocking support
-  Requestor instmixin add Requestor::NonBlocking
-
-  # / / / / / / / / / / / / / / / / / / / / / / 
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
   # Class Sink
-  # - somehow ressembles ::xotcl::THREAD::Client
-  # - - - - - - - - - - - - - - - - - - - - - - 
+  # - - - - - - - - - - - - - - - - - - 
+  # Base class for the two non-blocking
+  # strategies currently supported: poll
+  # objects and result callbacks.
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+
   Class Sink -slots {
     Attribute realm -default ::XorbManager
     Attribute object
   }
   Sink instproc init args {
     my instvar object realm
-    my debug "[self class] INIT"
     if {![info exists object]} {
-      my debug "[self class] CREATE=$realm do [my info class] new -noinit"
       set object [$realm do [my info class] new -noinit]
     }
-    my debug "SINK created"
   }
   Sink instproc do args {
     my instvar realm object
-    my debug "SINK-DO=$realm do $object $args"
     eval $realm do $object $args
   }
-  Sink instproc inform {result requestor} {
-    $requestor destroy
+  Sink instproc inform {state result {requestor {}}} {
+    if {[my isobject $requestor]} {
+      $requestor cleanup
+    }
   }
   
   Class ResultCallback -slots {
     Attribute command
   } -superclass Sink
-  ResultCallback instproc inform {result requestor} {
+  ResultCallback instproc inform {state result {requestor {}}} {
     my instvar command
-    eval $command $result
+    eval ${command}.$state [list $result]
     next
   }
   
   Class PollObject -slots {
     Attribute data
   } -superclass Sink
-  PollObject instproc inform {result requestor} {
+  PollObject instproc inform {state result {requestor {}}} {
     my data $result
   }
 
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
-  # Sub class AsyncRequestor
+  # Sub class NonBlockingRequestor
   # - - - - - - - - - - - - - - - - - - 
-  # Realises non-blocking support in
-  # the scope of the standing, 
-  # background thread actually serving
-  # the request
+  # Realises non-blocking support. It needs
+  # to take two roles in the current connection
+  # (thread) and background (thread) scope.
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  Class NonBlockingRequestor -slots {
+    Attribute sink
+  } -superclass Requestor 
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # Mixin class 
+  # NonBlockingRequestor::ConnectionThread
+  # - - - - - - - - - - - - - - - - - - 
+  # Encapsulates the behaviour of the
+  # role taken by the NonBlockingRequestor
+  # in the scope of the current connection
+  # thread. This involves:
+  # -1- setting-up an environment in the
+  # background thread (sink, delegate
+  # requestor, delegate context object)
+  # -2- delegating the actual call to
+  # the background thread.
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+
+  Class NonBlockingRequestor::ConnectionThread
+  NonBlockingRequestor::ConnectionThread instproc call args {
+    # / / / / / / / / / / / / / /
+    # Enforce synchrony or asynchrony
+    # at the application level
+    # (program flow)
+    my instvar contextObject
+    $contextObject instvar callback
+    # / / / / / / / / / / / / /
+    # 1-) Prepare a delegate
+    # requestor in the broker
+    # thread to take over.
+    # We, therefore, stream the
+    # requestor and context object
+    # into the broker thread.
+    # - - - - - - - - - - - - - 
+    # 1.1-) the context object
+    $contextObject mixin add ::xorb::aux::Streamable
+    append script [subst {
+      set context \[[$contextObject info class] new [join [$contextObject stream {
+	messageStyle
+	protocol
+	virtualObject
+	asynchronous
+	callNamespace
+	httpHeader
+      }] "\\\n "]\]
+    }]
+    $contextObject mixin delete ::xorb::aux::Streamable
+    # - - - - - - - - - - - - - 
+    # 1.2-) provide for sinks,
+    # either a resultcallback
+    # or a poll object.
+    if {[info exists callback]} {
+      # init a result callback object
+      set sink [::xorb::stub::ResultCallback new]
+      $sink do command $callback
+    } else {
+      # init a poll object
+      set sink [::xorb::stub::PollObject new]
+    }
+    # - - - - - - - - - - - - - 
+    # 1.3-) the requestor
+    my mixin add ::xorb::aux::Streamable
+    append script [subst {
+      [my info class] new  [join [my stream {
+	callName 
+	signatureMask 
+	returntype 
+	protocol
+      }] "\\\n "] -contextObject \$context -sink [$sink object] \
+	  -mixin [my info class]::BackgroundThread
+    }]
+
+    my mixin delete ::xorb::aux::Streamable
+    # - - - - - - - - - - - - - 
+    # 1.4-) some cleanup ?
+    # my debug SCRIPT=$script
+    set delegate [::thread::send [::XorbManager get_tid] $script]
+    eval ::XorbManager do -async $delegate call $args
+    return ""
+  }
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # Mixin class 
+  # NonBlockingRequestor::BackgroundThread
+  # - - - - - - - - - - - - - - - - - - 
+  # Encapsulates the behaviour of the
+  # role taken by the NonBlockingRequestor
+  # in the scope of the persistent background
+  # thread. This involves:
+  # -1- the provision of completion/failure
+  # callbacks for the non-blocking transport
+  # infrastructure (onSuccess, onFailure).
+  # -2- injecting some specific behaviour
+  # into the ClientRequestHandler.
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
 
   
-  Class AsyncRequestor -slots {
-    Attribute sink
-  } -superclass Requestor
-
-  # / / / / / / / / / / / / / / 
-  # Will be called (in its role
-  # as request_manager) from
-  # the AsyncHttpRequest (or the
-  # superior transport provider).
-  AsyncRequestor instproc deliver {payload requestObject} {
-    my instvar sink contextObj
+  Class NonBlockingRequestor::BackgroundThread
+  NonBlockingRequestor::BackgroundThread instproc onSuccess {
+    contextObj 
+    transportProvider
+  } {
+    my instvar sink
     # 1-) pass payload through 
     # the response flow
-    $contextObj marshalledResponse $payload
     set contextClass [$contextObj info class]
     set plugin [$contextClass clientPlugin]
-    my debug "NOTINDIRECTED"
+    # - cleanup - - - - - - 
+    $transportProvider destroy
+    # - - - - - - - - - - -
     ::xorb::client::ClientRequestHandler mixin \
-	[list [self class]::ClientRequestHandler $plugin]
+	[list ::xorb::client::ClientRequestHandler::[namespace tail [self class]] $plugin]
     set ctx [::xorb::client::ClientRequestHandler handleResponse $contextObj]
     ::xorb::client::ClientRequestHandler mixin {}
   }
 
-  AsyncRequestor instproc call args {
-    my instvar contextObj sink
-    $contextObj set requestor [self]
+  NonBlockingRequestor::BackgroundThread instproc onFailure {
+    exceptionObject 
+    transportProvider
+  } {
+    my instvar sink
+    set exception [::xorb::exceptions::NonBlockingRequestorException new \
+		       $exceptionObject]
+    
+    # - TODO: $exception write
+    
+    # - cleanup - - - - - - 
+    $transportProvider destroy
+    # - - - - - - - - - - -
+    $sink inform [self proc] [$exception getLogMessage] [self]
+  }
+
+  NonBlockingRequestor::BackgroundThread instproc call args {
+    my instvar contextObject sink
+    $contextObject set requestor [self]
     # / / / / / / / / / / / / / / / / / / / 
     # need to catch errors/exceptions
     # and deliver them (faults for instance)
     if {[catch {
       ::xorb::client::ClientRequestHandler mixin add \
-	  [self class]::ClientRequestHandler
-      #::xorb::client::ClientRequestHandler set sink $sink
-      my debug "SETTING [self class]::ClientRequestHandler"
-      next
-      # / / / / / / / / / /
-      # ! this is never
-      # called as control
-      # is handed to the
-      # next call in this
-      # thread of control !
-      
-      #::xorb::client::ClientRequestHandler unset sink
-      #::xorb::client::ClientRequestHandler mixin delete \
-	      #	  [self class]::ClientRequestHandler
+	  ::xorb::client::ClientRequestHandler::[namespace tail [self class]]
+      next;#Requestor->call
+      # / / / / / / / / / / / / / / / / / / / /
+      # The post-next block is not called under
+      # default conditions, as we also use
+      # non-blocking transport. HOWEVER, if some
+      # extension (i.e. interceptor) indirects
+      # to the response flow, it might get
+      # called.
     } msg]} {
-      if {[my isobject $msg]} {
-	global errorInfo
-	my debug ASYNC-ERROR=[$msg message][$msg getStackMessage]
+      if {[::xoexception::Throwable isThrowable $e]} {
+	$e write
       } else {
-	global errorInfo
-	my debug ASYNC-ERROR=$errorInfo
+	[::xorb::exceptions::NonBlockingRequestorException new \
+	     -volatile $e] write
       }
     }
   }
   
-  # / / / / / / / / / / / / / / / / / / / / / / / / /
-  # / / / / / / / / / / / / / / / / / / / / / / / / /
-  # Mixin class AsyncRequestor::ClientRequestHandler
-  # - - - - - - - - - - - - - - - - - - - - - - - - - 
-  # In the servant thread for an async request,
-  # we need some special handling at the level
-  # of the the client request handler:
-  # - Indirection from within the request flow
-  # - Informing the sink upon return from the 
-  # response flow.
-  # - Per-roundtrip state is bound to the
-  # AsyncRequestor instance
-  # / / / / / / / / / / / / / / / / / / / / / / / / /
-  # / / / / / / / / / / / / / / / / / / / / / / / / /
-  Class AsyncRequestor::ClientRequestHandler \
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # Mixin class 
+  # ::xorb::client::ClientRequestHandler::BackgroundThread
+  # - - - - - - - - - - - - - - - - - - 
+  # Groups some injectable behaviour for
+  # the ClientRequestHandler in the scope
+  # of the background thread.
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  Class ::xorb::client::ClientRequestHandler::BackgroundThread \
       -instproc handleResponse {context} {
 	$context instvar requestor
 	$requestor instvar sink
-	my debug "INDIRECTED=[my info mixin],next=[self next]"
 	set ctx [next];#::xorb::RequestHandler->handleResponse
 	# Finally, store the payload with
 	# the sink object (poll object
 	# or request callback)
-	$sink inform [$requestor unwrap [$ctx unmarshalledResponse]] [self]
+	$sink inform onSuccess \
+	    [$requestor unwrap [$ctx unmarshalledResponse]] $requestor
       } -instproc getInstance {context} {
 	$context instvar requestor
-	my debug "CoiForRequestor=[my serialize]"
 	# / / / / / / / / / / / / / / / / / / /
 	# replaces HandlerManager->getInstance
 	# - this helps to provide per-roundtrip
@@ -649,13 +716,15 @@ namespace eval ::xorb::stub {
     my debug "argList=argList"
 
     set body [subst -nocommands {
-      set requestor [::xorb::stub::Requestor require \
-			 -callName $methName \
-			 -signatureMask $innerSignature \
-			 -stubObject $self $context $voidness]
+      set requestor \[eval ::xorb::stub::Requestor getInstance \
+	  -stubObject $self $context\]
+      eval \$requestor configure -callName $methName \
+	  [list -signatureMask $innerSignature] \
+	  $voidness
+
       ::xoexception::try {
 	my debug INNER-ARGS=\$args
-	\$requestor setup
+	#\$requestor setup
 	\$requestor call \$args
       } catch {Exception e} {
 	my debug EXCEPTION=[\$e serialize]
@@ -1096,5 +1165,5 @@ namespace eval ::xorb::stub {
   }
   
   namespace export ContextObject Requestor ProxyObject ProxyClass \
-      ContextObjectClass
+      ContextObjectClass BlockingRequestor NonBlockingRequestor
 }

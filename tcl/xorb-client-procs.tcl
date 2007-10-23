@@ -34,7 +34,7 @@ namespace eval xorb::client {
     }
     # 2) instantiate an object
     # from this provider
-    set providerObj [$pc new -volatile]
+    set providerObj [$pc new -destroy_on_cleanup]
     # 3) pass it to the handling
     # instance
     try {
@@ -56,8 +56,7 @@ namespace eval xorb::client {
     next
   }
 
-  namespace export ClientRequestHandler crHandler \
-      TransportProvider 
+  namespace export TransportProvider 
 
   # # # # # # # # # # # #
   # # # # # # # # # # # #

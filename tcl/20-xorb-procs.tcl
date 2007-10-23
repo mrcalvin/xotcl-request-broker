@@ -1432,7 +1432,7 @@ namespace eval xorb {
       if {[my isobject ::xorb::manager::Broker]} {
 	# 1- retrieve contract from within
 	# the managing thread
-	array set stream [eval ::xorb::manager::Broker stream \
+	array set stream [eval ::xorb::manager::Broker get \
 			      -what ServiceContract \
 			      $cond \
 			      -contract $name]
@@ -1441,7 +1441,7 @@ namespace eval xorb {
 	# 2- retrieve contract from outside 
 	# of the managing thread
 	array set stream [eval XorbManager do \
-			      ::xorb::manager::Broker stream \
+			      ::xorb::manager::Broker get \
 			      -what ServiceContract \
 			      $cond \
 			      -contract $name]
@@ -1501,14 +1501,14 @@ namespace eval xorb {
       if {[my isobject ::xorb::manager::Broker]} {
 	# 1- retrieve impl from within
 	# the managing thread
-	array set stream [::xorb::manager::Broker stream \
+	array set stream [::xorb::manager::Broker get \
 			      -what ServiceImplementation \
 			      -conditions Boundness \
 			      -impl $name \
 			      -contract $contract]
       } else {
 	array set stream [XorbManager do \
-			      ::xorb::manager::Broker stream \
+			      ::xorb::manager::Broker get \
 			      -what ServiceImplementation \
 			      -conditions Boundness \
 			      -impl $name \
