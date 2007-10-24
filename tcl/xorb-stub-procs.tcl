@@ -82,8 +82,6 @@ namespace eval ::xorb::stub {
   # # # # # # # # # # # # #
 
   ::xotcl::Class Requestor -slots {
-    #Attribute earlyBoundContext -default {}
-    #Attribute stubObject
     Attribute contextObject
     Attribute protocol
     Attribute callName
@@ -107,86 +105,73 @@ namespace eval ::xorb::stub {
    if {[catch {
       my instvar earlyBoundContext stubObject callName \
 	  signatureMask returntype contextObject protocol
-      # / / / / / / / / / / / / /
-      # derive from context object
-      # prototype!
-      
-      $contextObject copy [self]::co
-      set contextObject [self]::co
-      
-      # / / / / / / / / / / / / /
-      # turn context object into
-      # proper invocation context?
-      # populate invocation context
-      
-      $contextObject virtualCall $callName
-      # / / / / / / / / / / / / /
-      # simulate xotcl nonposArgs
-      # parser, i.e. enforce both
-      # typing (checkoption-enhanced)
-      # signature
-      # - upon init of requestor?
-      # - upon handle call?
-      my debug signatureMask=$signatureMask
-      my proc __parse__ [lindex $signatureMask 0] {
-	#foreach v [info vars] { uplevel [list set parsedArgs($v) [set $v]]}
-	my debug INNER-PARSE=[info vars]
-	if {[info exists returnObjs]} {
-	  return $returnObjs
-	}
-      }
-      # call parser
-      # / / / / / / / / / / / / /
-      # set client protocol and
-      # mix into requesthandler
-      set contextClass [$contextObject info class]
-      set plugin [$contextClass clientPlugin]
-      set protocol [$contextObject protocol]
-
-      my debug ARGS-TO-PARSE=[lindex $args 0]
-      ::xotcl::nonposArgs mixin add \
+     
+     # / / / / / / / / / / / / /
+     # 1-) derive from context object
+     # a clone!
+     $contextObject copy [self]::co
+     set contextObject [self]::co
+     
+     # / / / / / / / / / / / / /
+     # 2-) turn context object into
+     # proper invocation context?
+     # populate invocation context
+     $contextObject virtualCall $callName
+     
+     # / / / / / / / / / / / / /
+     # 3-) provide argument
+     # parser (aware of Anythings!)
+     
+     #my debug signatureMask=$signatureMask
+     my proc __parse__ [lindex $signatureMask 0] {
+       #my debug INNER-PARSE=[info vars]
+       if {[info exists returnObjs]} {
+	 return $returnObjs
+       }
+     }
+     
+     # / / / / / / / / / / / / / /
+     # 4-) Set in current protocol
+     # in the requestor's scope;
+     # for subsequent use by the
+     # Anything resolver:
+     # see Anything::CheckOption+Uplift
+     set protocol [$contextObject protocol]
+     
+     # my debug ARGS-TO-PARSE=[lindex $args 0]
+     ::xotcl::nonposArgs mixin add \
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
-      set r [eval my __parse__ [lindex $args 0]]
-      ::xotcl::nonposArgs mixin delete \
+     set r [eval my __parse__ [lindex $args 0]]
+     ::xotcl::nonposArgs mixin delete \
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
-      
-      $contextObject virtualArgs $r
-      my debug REQUEST-CTX=[$contextObject serialize]
-
-      try {
-	#::xorb::client::ClientRequestHandler mixin add $plugin
-	::xorb::client::ClientRequestHandler mixin add $plugin end
-	::xorb::client::ClientRequestHandler handleRequest $contextObject
-	::xorb::client::ClientRequestHandler mixin {}
-      } catch {Exception e} {
-	# -- re-throws
-	error $e
-      } catch {error e} {
-	#global errorInfo
-	error [::xorb::exceptions::ClientRequestHandlerException new $e]
-      }
-      #my debug RESULT=[$r serialize]
-    } e]} {
-      if {[::xoexception::Throwable isThrowable $e]} {
-	error $e
-      } else {
-	error [::xorb::exceptions::RequestorException new $e]
-      }
-    }
+     
+     $contextObject virtualArgs $r
+     # my debug REQUEST-CTX=[$contextObject serialize]
+     
+     try {
+       set contextObject \
+	   [::xorb::client::ClientRequestHandler handle $contextObject]
+       ::xorb::client::ClientRequestHandler mixin {}
+     } catch {Exception e} {
+       # -- re-throws
+       error $e
+     } catch {error e} {
+       error [::xorb::exceptions::ClientRequestHandlerException new $e]
+     }
+   } e]} {
+     if {[::xoexception::Throwable isThrowable $e]} {
+       error $e
+     } else {
+       error [::xorb::exceptions::RequestorException new $e]
+     }
+   }
   }
   Requestor instproc unwrap {any} {
     my instvar contextObject returntype protocol
-    # / / / / / / / / / / / / /
-    # verify returntype constraint
-    # introducing anythings:
-    # unmarshalledResponse is of 
-    # type Anything
-    if {![$any isVoid__] && $returntype eq "void"} {
-      set value [$contextObject unmarshalledResponse]
-      error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
-		 "We expected a void return value, but got: $value"]
-    }
-    
+
+    # / / / / / / / / / / / / / / /
+    # VERIFICATION of return type 
+    # constraint ....
     # / / / / / / / / / / / / / / /
     # TODO: Validation of non-void types
     # / / / / / / / / / / / / / / /
@@ -194,19 +179,15 @@ namespace eval ::xorb::stub {
     # 1) returns -> <type> as conventional proc return
     # 2) returns -> <name>:<type> set a variable
     # in upper scope
-    my debug isvoid=[$any isVoid__]
+   
+    if {![$any isVoid__] && $returntype eq "void"} {
+      set value [$contextObject result]
+      error [::xorb::exceptions::ViolationOfReturnTypeConstraint new \
+		 "We expected a void return value, but got: $value"]
+    }
+    
     if {![$any isVoid__] && $returntype ne "void"} {
-      # / / / / / / / / / / / / /
-      # clear context obj
-      # before new request 
-      # procedure
-      # options: manual clearance
-      # our recreate mechanism
-      #$contextObj reset
-      #return
       return [$any as -protocol $protocol $returntype]
-      #my debug RESULT=[$r serialize]
-      
     }
   }
 
@@ -309,7 +290,7 @@ namespace eval ::xorb::stub {
     # introducing anythings:
     # unmarshalledResponse is of 
     # type Anything
-    set any [$contextObject unmarshalledResponse]
+    set any [$contextObject result]
     return [my unwrap $any]
   }
 
@@ -446,7 +427,6 @@ namespace eval ::xorb::stub {
     my mixin delete ::xorb::aux::Streamable
     # - - - - - - - - - - - - - 
     # 1.4-) some cleanup ?
-    # my debug SCRIPT=$script
     set delegate [::thread::send [::XorbManager get_tid] $script]
     eval ::XorbManager do -async $delegate call $args
     return ""
@@ -483,9 +463,19 @@ namespace eval ::xorb::stub {
     # - cleanup - - - - - - 
     $transportProvider destroy
     # - - - - - - - - - - -
+    # / / / / / / / / / / / / / / / / / / / 
+    # realises ClientRequestHandler->handle
+    # partially!
     ::xorb::client::ClientRequestHandler mixin \
 	[list ::xorb::client::ClientRequestHandler::[namespace tail [self class]] $plugin]
-    set ctx [::xorb::client::ClientRequestHandler handleResponse $contextObj]
+    set responseFlow [::xorb::client::ClientRequestHandler \
+			  handleResponse $contextObj]
+    if {![my isobject $responseFlow] || \
+	    ![$responseFlow istype ::xorb::context::InvocationContext]} {
+      my debug "===ResponseFlow=== WARNING: Fallback to original context object"
+      set responseFlow $contextObj
+    }
+    ::xorb::client::ClientRequestHandler deliver $responseFlow
     ::xorb::client::ClientRequestHandler mixin {}
   }
 
@@ -523,11 +513,11 @@ namespace eval ::xorb::stub {
       # to the response flow, it might get
       # called.
     } msg]} {
-      if {[::xoexception::Throwable isThrowable $e]} {
-	$e write
+      if {[::xoexception::Throwable isThrowable $msg]} {
+	$msg write
       } else {
 	[::xorb::exceptions::NonBlockingRequestorException new \
-	     -volatile $e] write
+	     -volatile $msg] write
       }
     }
   }
@@ -543,21 +533,21 @@ namespace eval ::xorb::stub {
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   Class ::xorb::client::ClientRequestHandler::BackgroundThread \
-      -instproc handleResponse {context} {
+      -instproc deliver {context} {
 	$context instvar requestor
 	$requestor instvar sink
-	set ctx [next];#::xorb::RequestHandler->handleResponse
+	next;#::xorb::client::ClientRequestHandler->deliver
 	# Finally, store the payload with
 	# the sink object (poll object
 	# or request callback)
 	$sink inform onSuccess \
-	    [$requestor unwrap [$ctx unmarshalledResponse]] $requestor
+	    [$requestor unwrap [$context result]] $requestor
       } -instproc getInstance {context} {
 	$context instvar requestor
 	# / / / / / / / / / / / / / / / / / / /
 	# replaces HandlerManager->getInstance
 	# - this helps to provide per-roundtrip
-	# statefullness in a asynchronous/non-blocking
+	# statefulness in a asynchronous/non-blocking
 	# setting. Roundtrips are encapsulated by
 	# instances of AsyncRequestor, the interceptor
 	# chain is therefore bound to this entity.

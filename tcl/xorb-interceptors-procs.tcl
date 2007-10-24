@@ -18,8 +18,42 @@ namespace eval ::xorb {
   
   Class HandlerManager -parameter {
     chain
+    transport
   } -superclass Class
 
+  HandlerManager instproc handle {context} {
+    # -1- / / / / clear context data / / / /
+    $context clearData
+    # -2- / / / / process request flow / / / /
+    my plug $context
+    set requestFlow [my handleRequest $context]
+    if {![my isobject $requestFlow] || \
+	    ![$requestFlow istype ::xorb::context::InvocationContext]} {
+      my debug "===RequestFlow=== WARNING: Fallback to original context object"
+      set requestFlow $context
+    }
+    # -3- / / / / dispatch / / / /
+    my switch $context $requestFlow
+    my dispatch $requestFlow
+    # -4- / / / / clear context data / / / /
+    $requestFlow clearData
+    # -5- / / / / process response flow / / / /
+    set responseFlow [my handleResponse $requestFlow]
+    if {![my isobject $responseFlow] || \
+	    ![$responseFlow istype ::xorb::context::InvocationContext]} {
+      my debug "===ResponseFlow=== WARNING: Fallback to original context object"
+      set responseFlow $requestFlow
+    }
+    # -6- / / / / deliver / / / /
+    my switch $requestFlow $responseFlow
+    my deliver $responseFlow
+    # / / / / / / / / / / / /
+    # in a non-blocking scenario
+    # $responseFlow might not exist
+    # after deliver!
+    # my unplug $responseFlow
+    return $responseFlow
+  }
   HandlerManager instproc handleRequest {context} {
     set i [my getInstance $context]
     my debug "load requestflow"
@@ -30,17 +64,7 @@ namespace eval ::xorb {
     set pkg [$context package]
     set c [$pkg get_parameter $chain ::xorb::$chain]
     $i mixin [$c children -[self proc] $context]
-    set result [$i [self proc] $context]
-    # / / / / / / / / / / / / / / / / / / / / / / / / / 
-    # fallback, if one of the interceptors did bounce
-    # the flow incorrectly, without providing for a valid
-    # context object.
-    if {![my isobject $result] || \
-	    ![$result istype ::xorb::context::InvocationContext]} {
-      my debug "WARNING: Fallback to original context object"
-      return $context
-    }
-    return $result
+    return [$i [self proc] $context]
   }
 
   HandlerManager instproc handleResponse {context} {
@@ -51,7 +75,7 @@ namespace eval ::xorb {
     set c [$pkg get_parameter $chain ::xorb::$chain]
     #my debug "---CONFIG=$c,children=[$c children -[self proc] $context]"
     $i mixin [$c children -[self proc] $context]
-    $i [self proc] $context
+    return [$i [self proc] $context]
   }
 
   HandlerManager instproc getInstance {context} {
@@ -61,15 +85,22 @@ namespace eval ::xorb {
     return "[self]::instance"
   }
 
+  HandlerManager abstract instproc dispatch {context}
+  HandlerManager abstract instproc deliver {context}
+  HandlerManager abstract instproc plug {context} 
+  HandlerManager abstract instproc unplug {context}
+  HandlerManager instproc switch {old new} {
+    my unplug $old
+    my plug $new
+  }
   # / / / / / / / / / / / / / / / / / / /
-  # Joint base class BasicRequestHandler
+  # Base class BasicRequestHandler
 
   Class BasicRequestHandler -parameter {
     {requestHandler {[my info parent]}}
   }
   BasicRequestHandler instproc handleRequest {context} {
-    my instvar requestHandler
-    return [$requestHandler handleResponse $context]
+    return $context
   }
   BasicRequestHandler instproc handleResponse {context} {
     return $context
@@ -80,26 +111,51 @@ namespace eval ::xorb {
   HandlerManager ServerRequestHandler \
       -superclass BasicRequestHandler \
       -chain "provider_chain"
-  ServerRequestHandler instproc handleRequest {context} { 
-    my instvar requestHandler
-    set invoker [Invoker new -context $context]
-    $invoker destroy_on_cleanup
-    set r [$invoker invoke]
-    # / / / / / / / / / / / / / / /
-    # process result
-    $requestHandler handleResponse $context $r
+  
+  ServerRequestHandler proc handle {context listener} {
+    my transport $listener
+    next $context
   }
   
+  ServerRequestHandler proc dispatch {context} {
+    set invoker [Invoker new -context $context]
+    $invoker destroy_on_cleanup
+    $context result [$invoker invoke]
+  }
+  
+  ServerRequestHandler proc deliver {context} {
+    # do nothing
+  }
+  
+  ServerRequestHandler proc plug {context} {
+    my mixin add [$context protocol] end
+  } 
+  
+  ServerRequestHandler proc unplug {context} {
+    my mixin delete [$context protocol]
+  }
+
   # / / / / / / / / / / / / / / / / / / /
   # Main consumer-side handler class
   ::xorb::HandlerManager ::xorb::client::ClientRequestHandler \
       -superclass ::xorb::BasicRequestHandler \
       -chain "consumer_chain"
-  ::xorb::client::ClientRequestHandler instproc handleRequest {
-    invocationContext
-  } {
-    ::xorb::client::TransportProvider handle $invocationContext
-    next;# BasicRequestHandler->handleRequest
+
+  ::xorb::client::ClientRequestHandler proc dispatch {invocationContext} {
+    # PASSIFIED: TransportProvider only takes over, if no
+    # marshalled response is present!
+    if {![$invocationContext exists marshalledResponse]} {
+      ::xorb::client::TransportProvider handle $invocationContext
+    }
+  }
+  ::xorb::client::ClientRequestHandler proc deliver {invocationContext} {
+    # do nothing
+  }
+  ::xorb::client::ClientRequestHandler proc plug {context} {
+    my mixin add [$context protocol]::Client end
+  } 
+  ::xorb::client::ClientRequestHandler proc unplug {context} {
+    my mixin delete [$context protocol]::Client
   }
 
   # # # # # # # # # # # # # # # #

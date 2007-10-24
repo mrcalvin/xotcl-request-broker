@@ -79,8 +79,7 @@ namespace eval ::xorb {
   # # # # # # # # # # # # # 
   # # # # # # # # # # # # # 
   
-  PluginClass AcsSc -superclass LocalPlugin \
-      -contextClass ::xorb::AcsScInvocationContext
+  PluginClass AcsSc -contextClass ::xorb::AcsScInvocationContext
   
   AcsSc instproc handleRequest {invocationContext} {
     ::xorb::Invoker instmixin add [self class]::Invoker

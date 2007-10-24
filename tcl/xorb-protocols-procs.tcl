@@ -9,75 +9,11 @@ ad_library {
 }
 
 namespace eval ::xorb::protocols {
-
+  
   ::xotcl::Class PluginClass -superclass ::xotcl::Class -slots {
-    Attribute prettyName
     Attribute contextClass
   }
-  PluginClass instproc init args {
-    if {![my exists prettyName]} {
-      my prettyName [string tolower [namespace tail [self]] 0 0]
-    }
-    my instvar prettyName
-    [self class] set registry($prettyName) [self]
-    next
-  }
-  PluginClass proc getClass {-uri:switch protocolKey} {
-    my instvar registry
-    if {$uri} {
-      set pKeys [join [[self] getKeys] "|"]
-      set rExpr [subst {^($pKeys)://\[^ \].+}]
-      if {[regexp -nocase $rExpr [string trim $bind]]} {
-	set protocolKey [lindex [split $protocolKey "://"] 0]
-      }
-    } else {
-      set protocolKey tcl
-    }
-    set protocolKey [string tolower $protocolKey 0 0]
-    if {[info exists registry($protocolKey)]} {
-      return $registry($protocolKey)
-    } 
-  }
-  PluginClass proc getKeys {} {
-    my instvar registry
-    if {[array exists registry]} {
-      return [array names registry]
-    }
-  }
-  PluginClass instproc plug {-listener:required} {
-    ::xorb::ServerRequestHandler mixin add [self]
-    ::xorb::ServerRequestHandler listener $listener
-  }
-  PluginClass instproc unplug {} {
-    if {[::xorb::ServerRequestHandler info mixin [self]] ne {}} {
-      ::xorb::ServerRequestHandler mixin delete [self]
-    }
-  }
   
-  PluginClass instproc registerInterceptors {interceptors} {
-    set cmds {}
-    foreach i $interceptors {
-      append cmds [subst {
-	::xorb::Configuration::Element new \
-	    -interceptor $i \
-	    -array set properties {
-	      position 0
-	      protocol [string tolower [namespace tail [self]] 0 0]
-	      listen all
-	    }}] 
-    }
-    if {$cmds ne {}} {
-      ::xorb::Standard contains $cmds
-    }
-  }
-  
-  PluginClass Plugin -parameter {
-    listener
-  } -prettyName "all"
-  
-  PluginClass RemotingPlugin -superclass Plugin -prettyName "remote"
-  PluginClass LocalPlugin -superclass Plugin -prettyName "local"
-    
-  namespace export PluginClass Plugin RemotingPlugin LocalPlugin Tcl
+  namespace export PluginClass
 }
 

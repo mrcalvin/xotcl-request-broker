@@ -47,6 +47,7 @@ namespace eval ::xorb::context {
     unmarshalledResponse
     {protocol ::xorb::AcsSc}
     {package {[::xorb::Package require]}}
+    result
   }
 
   InvocationContext instproc setData {key value} {
@@ -63,6 +64,11 @@ namespace eval ::xorb::context {
   InvocationContext instproc dataExists {key} {
     my instvar data
     return [info exists data($key)]
+  }
+
+  InvocationContext instproc clearData {} {
+    my instvar data
+    array unset data
   }
  
   InvocationContext instproc getProtocolTree {} {

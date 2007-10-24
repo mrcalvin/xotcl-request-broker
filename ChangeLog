@@ -1,3 +1,22 @@
+2007-10-24  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-interceptors-procs.tcl: Again, rewrite (and
+          re-conceptualisation) of request handler and interceptor
+          logic. Should now have stabilised. There is now a
+          consolidated scheme for consumer- and provider-side request
+          handlers. The overall flow of action (marshaling,
+          interception, invocation data extraction, dispatch,
+          delivery) has been generalised and
+          "passified". Passification means that interceptors by
+          setting properties of the invocation context can easily
+          interfere with the flow of requests and responses (to avoid
+          unnessary dispatches, etc.). Somewhat, interceptors can
+          overrule protocol plug-ins. Also, interceptors and protocol
+          plug-ins mixins can now change the type of invocation
+          context to realise protocol switches, for instance.
+
+	* tcl/xorb-protocols-procs.tcl: Major clean-up. Removed legacy code.
+
 2007-10-23  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* New dependency set: compat to xotcl-core 0.74+: This
