@@ -7,25 +7,36 @@ ad_library {
     @cvs-id $Id$
     
 }
-
-# / / / / / / / / / / / / / / / /
-# The lines below are just needed
-# for a smooth installation, 
-# it is just a kind of work-around
-# for particularities of the
-# new xotcl-core db layer!
-
-::xotcl::Class ::xo::db::Class::NoInit \
-    -instproc init {} {;}
-::xo::db::Class instmixin add ::xo::db::Class::NoInit
-::xo::db::require function_args \
-    -package_key_and_version_older_than "acs-service-contract 5.4.0d1" \
-    -check_function "acs_sc_contract__new" \
-    [acs_package_root_dir xotcl-request-broker]/www/doc/patches/0.4/acs-service-contract-function-args.sql
-::xo::db::Class instmixin delete ::xo::db::Class::NoInit
-
+  
 namespace eval ::xorb::aux {
-
+  
+  # / / / / / / / / / / / / / / / /
+  # Seamless installation block
+  # for compatibility with
+  # xotcl-core's db facilities.
+  # Starting with 0.74+, xotcl-core
+  # auto-generates db stubs from
+  # the dbms' internal catalogues,
+  # so the nasty compat fix here
+  # is not mandatory anymore.
+  # We, however, leave it for the
+  # the moment to assure if someone
+  # has a mixed (in terms of versions
+  # used) environment or wants to do
+  # a backport. Might be subject
+  # to removal.
+  apm_version_get -package_key xotcl-core -array info
+  if {[apm_version_names_compare $info(version_name) 0.74] < 1} {
+    ::xotcl::Class ::xo::db::Class::NoInit \
+	-instproc init {} {;}
+    ::xo::db::Class instmixin add ::xo::db::Class::NoInit
+    ::xo::db::require function_args \
+	-package_key_and_version_older_than "acs-service-contract 5.4.0d1" \
+	-check_function "acs_sc_contract__new" \
+	[acs_package_root_dir xotcl-request-broker]/www/doc/patches/0.4/acs-service-contract-function-args.sql
+    ::xo::db::Class instmixin delete ::xo::db::Class::NoInit
+  }
+  
   # # # # # # # # # # # # # # 
   # # # # # # # # # # # # # # 
   # Class AcsObjectType
@@ -285,7 +296,7 @@ namespace eval ::xorb::aux {
 	}
 	set declare [subst {
 	  declare
-	  [join $declaration]
+	  [join $declaration "\n\t  "]
 	  v_object_id integer;
 	}]
 	

@@ -1,4 +1,39 @@
+2007-10-25  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Installs smoothly with new environment (xotcl-core etc.)
+
+	* New xotcl-core dependency: 0.75+ (starting with r1.47). The
+          xotcl-core db-stub generator for postgresql is now patched
+          to provide a "stable" ordering of pg_procs. Background:
+          There is a tension between the non-availability of multiple
+          dispatch in tcl/xotcl and the variable binding mechanism for
+          db procs. Idempotent db procs (having the identical number
+          of arguments) haven't been discriminated so far for the
+          argument type when selecting a single variant to be turned
+          into a xotcl db stub. In certain situations, the interfaces
+          casted into stubs might have suggested numeric arguments
+          while the variable binding enforced the non-numeric version
+          to be called at the db level. This is now solved by ranking
+          non-numeric versions of idempotent procs higher than numeric
+          ones. this ranking assumes that the oids of non-numeric
+          types are higher than those of numeric ones. this seems to
+          be valid except from 'char' vs. int*, which might not be an
+          issue in OACS as char is not used. 
+
 2007-10-24  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/15-xorb-aux-procs.tcl: Rendered the acs_function_args
+          update for acs-kernels pre 5.4.0d1 (due to acs-sc-related
+          function_args) conditional upon the xotcl-core version
+          installed (<0.74). As 0.4.2 comes with a strict dependency on
+          xotcl-core >=0.74, this is mainly measure to allow for backports
+          and custom environments.
+	  
+	  Provided a compat fix for the new db-stub generator: the
+	  xorb acs_object infrastructure automatically creates
+	  constructors for new types. the parameters need to be
+	  streamed into the plpgsql statement in particular manner
+	  (eof and tab chars) to be recognised by the new stub generator.
 
 	* tcl/xorb-interceptors-procs.tcl: Again, rewrite (and
           re-conceptualisation) of request handler and interceptor
