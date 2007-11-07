@@ -20,7 +20,7 @@ namespace eval ::xorb {
   # A tentative package class for
   # the native ca plugin
   PackageMgr AcsScPackage -superclass ProtocolPackage
-  AcsScPackage instproc acquireInvocationContext {} {
+  AcsScPackage instproc acquireInvocationInformation {} {
     my instvar listener
     $listener instvar payload
     set ctx [next];# ProtocolPackage->acquireInvocatioContext
@@ -30,7 +30,7 @@ namespace eval ::xorb {
     return $ctx
   }
   AcsScPackage instproc solicit=invocation {} {
-    set context [my acquireInvocationContext]
+    set context [my acquireInvocationInformation]
     $context package [self]
     next $context
   }
@@ -38,7 +38,7 @@ namespace eval ::xorb {
   # / / / / / / / / / / / / / / /
   # Invocation context sub-class
 
-  ::xotcl::Class AcsScInvocationContext -superclass InvocationContext
+  ::xotcl::Class AcsScInvocationInformation -superclass InvocationInformation
 
 
   # / / / / / / / / / / / / / / /
@@ -62,13 +62,13 @@ namespace eval ::xorb {
 	-listener [self]
 
     set r [::$package_id solicit invocation]
-    my debug solicit-response=$r
+   #my debug solicit-response=$r
     
   }
   AcsScListener instproc dispatchResponse {payload} {
 
 
-    my debug dispatchResponse=[$payload serialize]
+   #my debug dispatchResponse=[$payload serialize]
     my set payload $payload
   }
 
@@ -79,7 +79,7 @@ namespace eval ::xorb {
   # # # # # # # # # # # # # 
   # # # # # # # # # # # # # 
   
-  PluginClass AcsSc -contextClass ::xorb::AcsScInvocationContext
+  PluginClass AcsSc -contextClass ::xorb::AcsScInvocationInformation
   
   AcsSc instproc handleRequest {invocationContext} {
     ::xorb::Invoker instmixin add [self class]::Invoker
@@ -139,9 +139,9 @@ namespace eval ::xorb {
   AcsScTransportProvider instproc handle {invocationObject} {
     ::xorb::AcsScListener initialise
     ::xorb::AcsScListener redirect $invocationObject
-    my debug trace=[my stackTrace]
+   #my debug trace=[my stackTrace]
     set r [::xorb::AcsScListener::listener set payload]
-    my debug ===1===r=$r
+   #my debug ===1===r=$r
     return $r
   }
 
@@ -187,6 +187,6 @@ namespace eval ::xorb {
   }
   
   namespace export AcsScGlueObject AcsScTransportProvider \
-      AcsScInvocationContext AcsScPackage
+      AcsScInvocationInformation AcsScPackage
 }
 

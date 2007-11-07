@@ -22,13 +22,11 @@ namespace eval ::xorb {
   } -superclass Class
 
   HandlerManager instproc handle {context} {
-    # -1- / / / / clear context data / / / /
-    $context clearData
-    # -2- / / / / process request flow / / / /
+    # -1- / / / / process request flow / / / /
     my plug $context
     set requestFlow [my handleRequest $context]
     if {![my isobject $requestFlow] || \
-	    ![$requestFlow istype ::xorb::context::InvocationContext]} {
+	    ![$requestFlow istype ::xorb::context::InvocationInformation]} {
       my debug "===RequestFlow=== WARNING: Fallback to original context object"
       set requestFlow $context
     }
@@ -36,11 +34,11 @@ namespace eval ::xorb {
     my switch $context $requestFlow
     my dispatch $requestFlow
     # -4- / / / / clear context data / / / /
-    $requestFlow clearData
+    $requestFlow clearContext
     # -5- / / / / process response flow / / / /
     set responseFlow [my handleResponse $requestFlow]
     if {![my isobject $responseFlow] || \
-	    ![$responseFlow istype ::xorb::context::InvocationContext]} {
+	    ![$responseFlow istype ::xorb::context::InvocationInformation]} {
       my debug "===ResponseFlow=== WARNING: Fallback to original context object"
       set responseFlow $requestFlow
     }
@@ -52,6 +50,7 @@ namespace eval ::xorb {
     # $responseFlow might not exist
     # after deliver!
     # my unplug $responseFlow
+    # $responseFlow clearContext
     return $responseFlow
   }
   HandlerManager instproc handleRequest {context} {

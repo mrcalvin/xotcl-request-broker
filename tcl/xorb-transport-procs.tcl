@@ -18,7 +18,7 @@ namespace eval ::xorb::transport {
   ::xotcl::Class ListenerClass -superclass Class -parameter {
     protocol
     plugin
-    {contextClass "::xorb::context::InvocationContext"}
+    {contextClass "::xorb::context::InvocationInformation"}
   }
   ListenerClass instproc terminate {} {
     [my plugin] unplug

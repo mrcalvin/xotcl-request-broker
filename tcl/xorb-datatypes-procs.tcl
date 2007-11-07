@@ -355,6 +355,7 @@ namespace eval ::xorb::datatypes {
 	in the realm of protocol '[my protocol]'.}]
     }
     set any $sp
+    my debug IN-READER=$sp/any=$any
   }
   
   AnyReader instproc get {what} {

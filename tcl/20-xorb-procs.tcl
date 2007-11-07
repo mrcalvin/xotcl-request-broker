@@ -50,17 +50,17 @@ namespace eval xorb {
 
   Object instproc deploy args {
     if {[nsv_exists ::xotcl::THREAD ::XorbManager]} {
-      my debug "DEPLOYMENT: instant"
+     #my debug "DEPLOYMENT: instant"
       my mixin add ::xorb::Synchronizable
       my sync
       my mixin delete ::xorb::Synchronizable
     } else {
       # synchronise in a batch + lazy manner
       # in fact, only upon server startup!
-      my debug "DEPLOYMENT: lazy"
+     #my debug "DEPLOYMENT: lazy"
       [my info class] lappend __syncees__(names) [my name]
       [my info class] lappend __syncees__(objects) [self]
-      my debug DEPLOY-SYNCEES([my info class])=[[my info class] array get __syncees__]
+     #my debug DEPLOY-SYNCEES([my info class])=[[my info class] array get __syncees__]
     }
   }
   Object abstract instproc stream {}
@@ -167,11 +167,11 @@ namespace eval xorb {
     -instproc requireNamespace args {
       next
       set ns [namespace qualifiers [self class]]
-      my debug NamespaceHandler(ns)=$ns,[self],exists=[namespace exists [self]]
+     #my debug NamespaceHandler(ns)=$ns,[self],exists=[namespace exists [self]]
       if {[namespace exists [self]] && $ns ne {} && [self] ne $ns} {
 	namespace eval [self] \
 	    "namespace import -force ${ns}::*"
-	my debug PASST
+#my debug PASST
       }
     }
 
@@ -325,7 +325,7 @@ namespace eval xorb {
     set arr(description) [my contract_desc]
     set ops [list]
     foreach {n s} [my slotInfo ordered] {
-      my debug "+++s=$s,n=$n"
+     #my debug "+++s=$s,n=$n"
       if {[$s istype ::xorb::Abstract] && ![$s isDeleted]} {
 	#lappend ops [$obj $n]
 	lappend ops [$s stream]
@@ -338,10 +338,10 @@ namespace eval xorb {
   ServiceContract proc sync {} {
     foreach sub [concat [self] [my getAllSubClasses]] {
       $sub instvar __syncees__
-      my debug SYNC-SYNCEES=[$sub array get __syncees__]
+     #my debug SYNC-SYNCEES=[$sub array get __syncees__]
       if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
 	foreach object $__syncees__(objects) {
-	  my debug "SYNC'ING: $object (ofType: $sub)"
+	 #my debug "SYNC'ING: $object (ofType: $sub)"
 	  $object mixin add ::xorb::Synchronizable
 	  $object [self proc]
 	  $object mixin delete ::xorb::Synchronizable
@@ -541,7 +541,7 @@ namespace eval xorb {
 			      -recreate:switch
 			    } {
     set isRecreation [expr {$id ne {} && $recreate}]
-    my debug FETCH-STACK=[my stackTrace]
+   #my debug FETCH-STACK=[my stackTrace]
     set sql {
       select distinct ctrs.contract_name,
                       ctrs.contract_id, 
@@ -721,9 +721,9 @@ namespace eval xorb {
   
   ::xotcl::Class Delegate::SideKick \
     -instproc init args {
-      my debug PROCSEARCH(manager)=[self next]
+     #my debug PROCSEARCH(manager)=[self next]
       next;# init
-      my debug MIXIN-SLOT-INIT
+     #my debug MIXIN-SLOT-INIT
       my declareServant
     }
 
@@ -1019,7 +1019,7 @@ namespace eval xorb {
    # measures to avoid 
    # object system corruption
    # upon local failure
-   my debug SLOT-RESET
+  #my debug SLOT-RESET
  }
 
  ServiceImplementation instproc expandAlias {
@@ -1059,7 +1059,7 @@ namespace eval xorb {
     db_transaction {
       
       set implementationId [next];# ::xorb::AcsObject->save 
-      my debug IMPL-ID=$implementationId
+     #my debug IMPL-ID=$implementationId
       
       foreach {operation aSpec} $impl(aliases) {
 	my expandAlias \
@@ -1084,7 +1084,7 @@ namespace eval xorb {
     set arr(owner) [my impl_owner_name]
     set arr(contract_name) [my implements]
     set ops [list]
-    my debug "orig-line=[my slotInfo ordered]"
+   #my debug "orig-line=[my slotInfo ordered]"
     foreach {n s} [my slotInfo ordered] {
       if {[$s istype ::xorb::Delegate]} {
 	lappend ops [$s stream]
@@ -1110,10 +1110,10 @@ namespace eval xorb {
   ServiceImplementation proc sync {} {
     foreach sub [concat [self] [my getAllSubClasses]] {
       $sub instvar __syncees__
-      my debug SYNC-SYNCEES=[$sub array get __syncees__]
+     #my debug SYNC-SYNCEES=[$sub array get __syncees__]
       if {[array exists __syncees__] && [llength $__syncees__(objects)] > 0} {
 	foreach s $__syncees__(objects) {
-	  my debug "SYNC'ING: $s"
+	 #my debug "SYNC'ING: $s"
 	  $s mixin add ::xorb::Synchronizable
 	  $s [self proc]
 	  $s mixin delete ::xorb::Synchronizable
@@ -1206,10 +1206,10 @@ namespace eval xorb {
     my clearState
     # continue with new sync
     array set __status__ [my action]
-    my debug "PRE_ACTION:exists?[info exists __status__(action)]"
+   #my debug "PRE_ACTION:exists?[info exists __status__(action)]"
     if {[info exists __status__(action)]} {
       set action $__status__(action)
-      my debug "ACTION([self])=$action"
+     #my debug "ACTION([self])=$action"
       my filter notificationFilter
       my set object_id [expr {[info exists __status__(object_id)]?\
 				  $__status__(object_id):{}}]
@@ -1231,9 +1231,9 @@ namespace eval xorb {
   }
 
   Synchronizable instproc action {} {
-    my debug "==orig-stream==> [my stream]"
+   #my debug "==orig-stream==> [my stream]"
     set sig [my getSignature]
-    my debug class=[my info class],SER=[my serialize]
+   #my debug class=[my info class],SER=[my serialize]
     return [eval ::XorbManager do ::xorb::manager::Repository getAction \
 		-type [my info class] \
 		-name [my name] \
@@ -1514,7 +1514,7 @@ namespace eval xorb {
 			      -impl $name \
 			      -contract $contract]
       }
-      my debug "LOCALSTREAM=[array get stream]"
+     #my debug "LOCALSTREAM=[array get stream]"
       my set lightweight $lightweight
       set name [::xorb::Object canonicalName $name]
       # / / / / / / / / / / / / / / / / /
@@ -1531,7 +1531,7 @@ namespace eval xorb {
 	error [::xorb::exceptions::CalleeInterfaceNotFound new \
 		   "look-up name: $name"]
       }
-      my debug iname=$name
+     #my debug iname=$name
       # impl obj
       Delegate instmixin add [self]
       eval $stream(impl)
@@ -1549,7 +1549,7 @@ namespace eval xorb {
       error $e
     } catch {error e} {
       global errorInfo
-      my debug LOG4=$errorInfo
+     #my debug LOG4=$errorInfo
       error [::xorb::exceptions::SkeletonGenerationException new \
 		 "impl: $name, msg: $e"]
     }
@@ -1560,7 +1560,7 @@ namespace eval xorb {
     try {
       set implObj [my getImplementation -name $impl -contract $contract]
       set contractObj [my getContract -name [$implObj implements]]
-      my debug "SER=[$contractObj serialize]"
+     #my debug "SER=[$contractObj serialize]"
       
       # TODO: contract class as mixin or instmixin?
       set skeletonObj [$implObj new -mixin $contractObj] 
@@ -1612,7 +1612,7 @@ namespace eval xorb {
       lappend arguments -$arg,required
     }
    
-    my debug HERE
+   #my debug HERE
     $__skeleton__ instproc xorb=[my name] $arguments [subst {
       # / / / / / / / / / / / / / / / /
       # a generic container for storing
@@ -1636,7 +1636,7 @@ namespace eval xorb {
 		   #global errorInfo
 		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$e\]
 		 }}]:""}]
-      my debug "r=\$r"
+     #my debug "r=\$r"
       return \$r
     }]
   }
@@ -1711,9 +1711,9 @@ namespace eval xorb {
 	# of the return value(s) as
 	# anythings
 	# TODO: multiple values/ anythings
-	my debug vars=[info vars]
+#my debug vars=[info vars]
 	if {[info exists returnObjs]} {
-	  my debug returnObjs=$returnObjs
+	 #my debug returnObjs=$returnObjs
 	  return $returnObjs 
 	}
       }
@@ -1776,7 +1776,7 @@ namespace eval xorb {
 	    }]:""}]
 	  
 	    ::xoexception::try {
-	      my debug indirection=\[my serialize\],args=\$args
+	     #my debug indirection=\[my serialize\],args=\$args
 	      set r \[eval my xorb=__[my name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
 	      }\]\] 
@@ -1794,7 +1794,7 @@ namespace eval xorb {
 	    }]:""}]
 	  } catch {Exception e} {
 	    #rethrow
-	    my debug "---PERROR=\[\$e message\]"
+	   #my debug "---PERROR=\[\$e message\]"
 	    error \$e
 	  } catch {error e} {
 	    error \[::xorb::exceptions::ArgumentTransformationException\
@@ -1816,7 +1816,7 @@ namespace eval xorb {
 	set type [my identify $servant]
 	set obj [namespace qualifiers $servant]
 	set p [namespace tail $servant]
-	my debug type=$type
+#my debug type=$type
 	switch -- $type {
 	  0 { return [info args $servant] }
 	  1 {
@@ -2091,12 +2091,12 @@ namespace eval xorb {
       # / / / / / / / / / / / / /
       # TODO: set context for actual
       # invocation
-      my debug "NEXT=[$skeleton procsearch $call],arguments=$arguments"
+     #my debug "NEXT=[$skeleton procsearch $call],arguments=$arguments"
       # / / / / / / / / / / / / /
       # enforce ruling deployment policy
       # - - - - - - - - - - - - -
       set pkg [$context package]
-      my debug rulingPolicy=[$pkg getPolicy]
+     #my debug rulingPolicy=[$pkg getPolicy]
       set granted [$pkg check_permissions [$skeleton info class] $context]
       if {$granted} {
 	::xotcl::nonposArgs mixin add \
@@ -2120,7 +2120,7 @@ namespace eval xorb {
       # invocation
     } catch {Exception e} {
       # re-throw
-      my debug "---IERROR: [$e message]"
+     #my debug "---IERROR: [$e message]"
       error $e
     } catch {error e} {
       error [::xorb::exceptions::InvocationException new \

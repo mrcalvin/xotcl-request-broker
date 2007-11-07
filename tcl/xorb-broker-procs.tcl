@@ -38,7 +38,7 @@ ad_library {
       }
       # current state of bindings
       my instvar bindings
-      db_foreach init_bindings {
+      db_foreach [my qn init_bindings] {
 	select contract_id, impl_id
 	from acs_sc_bindings;
       } {

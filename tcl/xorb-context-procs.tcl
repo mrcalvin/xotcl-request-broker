@@ -34,60 +34,168 @@ namespace eval ::xorb::context {
     return [expr {$httpMethod eq "POST"}]
   }
 
-  # / / / / / / / / / / / / / 
-  # Class InvocationContext
+  # / / / / / / / / / / / / / / / / / / / / / / / / / / 
+  # To avoid the escalation of the class tree and
+  # keep the two concerns of invocation contexts seperated 
+  # (i.e. provider-side vs. consumer-side / generic vs.
+  # protocol-specific), we introduce a variation of
+  # the TYPE OBJECT pattern for invocation data objects.
+  # see Riehle et al. (2007): "Dynamic Object Model", 
+  # in: PLPD 5, Addison-Wesley
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # We, however, provide for slight adaptations,
+  # involving behaviour sharing from type objects to the
+  # component. Also, we use native XOTcl concepts to achieve
+  # a more flexible design ...
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # While the InvocationInformationType and its sub-classes
+  # represent the protocol-specific concern, the basic 
+  # InvocationInformation class tree realises provider- 
+  # or consumer-side.
 
-  ::xotcl::Class InvocationContext -parameter {
-    virtualObject
-    virtualCall
-    virtualArgs
-    marshalledRequest
-    marshalledResponse
-    unmarshalledRequest
-    unmarshalledResponse
-    {protocol ::xorb::AcsSc}
-    {package {[::xorb::Package require]}}
-    result
+  # / / / / / / / / / / / / / / / / / / / / /
+  # Class InvocationInformationType
+  # - - - - - - - - - - - - - - - - - - - - - 
+  # `- takes the role of the 'ComponentType' in the 
+  # TYPE OBJECT structure
+  Class InvocationInformationType -slots {
+    Attribute name
   }
 
-  InvocationContext instproc setData {key value} {
-    my set data($key) $value
+  # / / / / / / / / / / / / / / / / / / /
+  # Basic 'invocation context' interface
+  # - - - - - - - - - - - - - - - - - - -
+
+  InvocationInformationType instproc setContext {key value} {
+    my set context($key) $value
   }
 
-  InvocationContext instproc getData {key} {
-    my instvar data
-    if {[info exists data($key)]} {
-      return $data($key)
+  InvocationInformationType instproc getContext {key} {
+    my instvar context
+    if {[info exists context($key)]} {
+      return $context($key)
     }
   }
 
-  InvocationContext instproc dataExists {key} {
-    my instvar data
-    return [info exists data($key)]
+  InvocationInformationType instproc contextExists {key} {
+    my instvar context
+    my debug EXISTS=[my serialize]
+    return [info exists context($key)]
   }
 
-  InvocationContext instproc clearData {} {
-    my instvar data
-    array unset data
+  InvocationInformationType instproc clearContext {} {
+    my instvar context
+    array unset context
   }
  
-  InvocationContext instproc getProtocolTree {} {
-    my instvar protocol
 
-    set p [string toupper $protocol 0 0]
-    if {[$p istype ::xorb::protocols::PluginClass]} {
-      set l [$p prettyName]
-      foreach h [$p info heritage] {
-	lappend l [$h prettyName]
-      }
-      return $l
-    }
+  # / / / / / / / / / / / / / / / / / / / / /
+  # Class InvocationInformation
+  # - - - - - - - - - - - - - - - - - - - - - 
+  # `- takes the role of the 'component' in the 
+  # TYPE OBJECT structure
+
+  ::xotcl::Class InvocationInformation -slots {
+    # / / / / / / / / / / / / / / / / / / / / /
+    # Being the 'component', each instance
+    # refers to its type object by association
+    # through contextType:
+    Attribute informationType -type ::xorb::context::InvocationInformationType
+    # - - - - - - - - - - - - - - - - - - - - - 
+    # Attributes shared by all invocation contexts
+    # in the scope of both concerns.
+    Attribute virtualObject
+    Attribute virtualCall
+    Attribute virtualArgs
+    Attribute marshalledRequest
+    Attribute marshalledResponse
+    Attribute unmarshalledRequest
+    Attribute unmarshalledResponse
+    Attribute result
+    Attribute proxy
+    # / / / / / / / / / / / / / / / / / / / / /
+    # Candidates for being moved to
+    # the basic InvocationInformationType class
+    Attribute protocol -default ::xorb::AcsSc
+    Attribute package -default {[::xorb::Package require]}
   }
 
-  ::xotcl::Class RemotingInvocationContext -parameter {
-    method
-    {transport {}}
-  } -superclass InvocationContext
+  # / / / / / / / / / / / / / / / / / /
+  # type-object delegation by using
+  # XOTcl per-instance filters ...
+  
+  InvocationInformation instproc typeFilter args {
+    set cp [self calledproc]
+    if {[my procsearch $cp] eq {}} {
+      if {![my exists informationType]} {
+	set c [my info class]
+	my informationType [[$c set __informationType] new -childof [self]]
+      }
+      if {[[my informationType] procsearch $cp] ne {}} {
+	return [eval [my informationType] $cp $args]
+      }
+    }
+    uplevel [list next]
+  }
 
-  namespace export ContextClass InvocationContext RemotingInvocationContext 
+  InvocationInformation instfilter typeFilter
+
+  # / / / / / / / / / / / / / / / / / /
+  # solution based on unknown
+  # - - - - - - - - - - - - - - - - - - 
+  # Context instproc unknown {m args} {
+  #  my instvar contextType
+  #  if {[info exists contextType] && \
+      #	  [my isobject $contextType] && \
+      #	  [$contextType procsearch $m] ne {}} {
+  #    return [eval $contextType $m $args]
+  #  } else {
+  #    error "Unable to dispatch to a method '$m'."
+  #  }
+  #}
+
+  # / / / / / / / / / / / / / / / / / /
+  # Some uniform interface for 
+  # introspecting on the invocation
+  # informations >shared< state ...
+
+  InvocationInformation instproc isSet {attribute} {
+    my instvar informationType
+    my debug INFO=[::Serializer deepSerialize [self]]
+    return [expr {[my exists $attribute] || \
+		      [$informationType exists $attribute] || \
+		      [my array exists $attribute] || \
+		      [$informationType array exists $attribute]}]
+  }
+
+  InvocationInformation instproc clone {reference} {
+    my copy $reference
+    # -- adjust infotype reference
+    set typeObject [my informationType]
+    $reference informationType \
+	[string map  [list [self] $reference] $typeObject]
+    my debug CLONE=[::Serializer deepSerialize $reference]
+    return $reference
+  }
+
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+  # / / / / / / / / / / / / / / / / / /
+
+  # / / / / / / / / / / / / / / / / / /
+  # Concern: provider vs. consumer
+  # - - - - - - - - - - - - - - - - - -
+  # `- consumer side is realised by
+  # ::xorb::stub::ContextObject ...
+
+  ::xotcl::Class ProviderInformation -slots {
+    # / / / / / / / / / / / / / / / / / /
+    # TODO: candidate for removal?
+    # Attribute method
+    # - - - - - - - - - - - - - - - - - -
+    Attribute transport -default ""
+  } -superclass InvocationInformation
+
+  namespace export InvocationInformation InvocationInformationType \
+      ProviderInformation
 }

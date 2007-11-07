@@ -1,3 +1,17 @@
+2007-11-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-context-procs.tcl: Major rewrite of the reification
+          infrastructure for invocation information and contexts. To
+          more neatly support the overlapping concerns of
+          "PROVIDER-versus-CONSUMER-side" and
+          "PROTOCOL1-versus-PROTOCOL2" and the requirements for a
+          uniform interface, we based the re-implementation on the
+          TYPE OBJECT pattern. While the first concern
+          (broker-related) is modelled as the 'components objects',
+          protocol-specific information is contained by 'component
+          type objects', associated to the former. Started renaming to
+          'invocation information' and 'invocation context'. 
+
 2007-10-25  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Installs smoothly with new environment (xotcl-core etc.)

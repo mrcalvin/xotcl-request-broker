@@ -148,7 +148,7 @@ namespace eval ::xorb {
     }
   }
   
-  ProtocolPackage instproc acquireInvocationContext {} {
+  ProtocolPackage instproc acquireInvocationInformation {} {
     my instvar protocol
     set ctxClass [$protocol contextClass]
     return [$ctxClass new \

@@ -19,15 +19,13 @@ namespace eval ::xorb::stub {
   namespace import -force ::xorb::datatypes::*
   namespace import -force ::xorb::exceptions::*
   namespace import -force ::xoexception::try
-  # / / / / / / / / / / / / / / / / / / /
-  # merry with ::xorb::InvocationContext
 
   ::xotcl::Class ContextObjectClass -slots {
     Attribute clientPlugin
   } -superclass ::xotcl::Class
 
   ::xotcl::Class ContextObject \
-      -superclass ::xorb::context::InvocationContext \
+      -superclass ::xorb::context::InvocationInformation \
       -slots {
 	# / / / / / / / / / / / / / / / / / /
 	# Setting the property 'asynchronous'
@@ -40,7 +38,7 @@ namespace eval ::xorb::stub {
       } -ad_doc {
 	<p>The class ContextObject realises a specific pattern
 	of parameter passing which is used in xorb's client-side
-	interfaces. Instances (of refining sub-classes) serve as
+	interfaces. Instances (of refining sub-classes) serve as 
 	generic container for parameters that are handed down the 
 	various layers of the stub/ client proxy infrastructure.</p>
 	
@@ -73,9 +71,21 @@ namespace eval ::xorb::stub {
     # This escapes
     # procentage chars
     # specified like: '%%'
-    set value [my set $attribute]
+    my instvar informationType
+    if {[my exists $attribute]} {
+      set value [my set $attribute]
+    } elseif {[$informationType exists $attribute]} {
+      set value [$informationType set $attribute]
+    } else {
+      error {
+	Cannot resolve '$attribute' in either 
+	invocation information or information type.
+      }
+    }
     set value [string map {%% % % \$} $value]
-    return [my subst $value]
+    set value [my subst $value]
+    set value [$informationType subst $value]
+    return $value
   }
 
   # # # # # # # # # # # # #
@@ -103,15 +113,19 @@ namespace eval ::xorb::stub {
     
   Requestor instproc call args {
    if {[catch {
-      my instvar earlyBoundContext stubObject callName \
-	  signatureMask returntype contextObject protocol
+     my instvar callName signatureMask returntype \
+	 contextObject protocol
      
      # / / / / / / / / / / / / /
      # 1-) derive from context object
      # a clone!
-     $contextObject copy [self]::co
-     set contextObject [self]::co
-     
+     set contextObject [$contextObject clone [self]::co]
+     # 1a-) register cloned object as
+     # 'most recent' invocation information
+     # with the issueing client proxy
+     $contextObject instvar proxy
+     $proxy set __lastInformation $contextObject
+
      # / / / / / / / / / / / / /
      # 2-) turn context object into
      # proper invocation context?
@@ -217,6 +231,9 @@ namespace eval ::xorb::stub {
 		  $contextObj eq {}} {
       error "Requestor cannot resolve any context ('glue') object."
     }
+    # -- store reference to proxy
+    # object with context
+    $contextObj proxy $stubObject
     return $contextObj
   }
   
@@ -471,7 +488,7 @@ namespace eval ::xorb::stub {
     set responseFlow [::xorb::client::ClientRequestHandler \
 			  handleResponse $contextObj]
     if {![my isobject $responseFlow] || \
-	    ![$responseFlow istype ::xorb::context::InvocationContext]} {
+	    ![$responseFlow istype ::xorb::context::InvocationInformation]} {
       my debug "===ResponseFlow=== WARNING: Fallback to original context object"
       set responseFlow $contextObj
     }
@@ -1007,7 +1024,7 @@ namespace eval ::xorb::stub {
     uplevel [list [self] proc $methName args $stubBody]
     my __api_make_doc "" $methName
     # / / / / / / / / / / / / /
-    # TODO: Neophtos' 'next'
+    # TODO: Neophytos' 'next'
     # extension -> body
     if {![my isclass [self]::__indirector__]} {
       ::xotcl::Class create [self]::__indirector__
@@ -1016,6 +1033,30 @@ namespace eval ::xorb::stub {
     if {$indirector} {
       my debug INDIRECTOR-ARGLIST=$argList
       [self]::__indirector__ instproc $methName $argList $body
+    }
+  }
+
+  # / / / / / / / / / / / / / / / / / / / / 
+  # Provide for basic consumer-side 
+  # user introspection, e.g. inspecting the
+  # most recent call issued by the client 
+  # proxy etc.
+
+  ProxyObject instproc getInvocationInformation {} {
+    if {[my exists __lastInformation]} {
+      return [my set __lastInformation]
+    }
+  }
+
+  ProxyObject instproc renderInvocationInformation {
+    {-decoration ::xorb::context::InvocationInformation::Plain}
+  } {
+    set ii [my getInvocationInformation] 
+    if {$ii ne {}} {
+      $ii mixin add $decoration
+      set r [$ii render] 
+      $ii mixin delete $decoration
+      return $r
     }
   }
 
