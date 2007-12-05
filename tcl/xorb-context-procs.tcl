@@ -100,7 +100,8 @@ namespace eval ::xorb::context {
     # Being the 'component', each instance
     # refers to its type object by association
     # through contextType:
-    Attribute informationType -type ::xorb::context::InvocationInformationType
+    Attribute informationType \
+	-type ::xorb::context::InvocationInformationType
     # - - - - - - - - - - - - - - - - - - - - - 
     # Attributes shared by all invocation contexts
     # in the scope of both concerns.
@@ -120,6 +121,24 @@ namespace eval ::xorb::context {
     Attribute package -default {[::xorb::Package require]}
   }
 
+  InvocationInformation instproc init args {
+    # -- provide for type object acquisition,
+    # in case, the typefilter has not taken
+    # care of it at that point ...
+    my acquireTypeObject
+    next
+  }
+
+  InvocationInformation instproc acquireTypeObject {} {
+    my instvar informationType
+    if {![info exists informationType]} {
+      set c [my info class]
+      if {[$c exists __informationType]} {
+	set informationType [[$c set __informationType] new -childof [self]]
+      }
+    }
+  }
+
   # / / / / / / / / / / / / / / / / / /
   # type-object delegation by using
   # XOTcl per-instance filters ...
@@ -127,10 +146,7 @@ namespace eval ::xorb::context {
   InvocationInformation instproc typeFilter args {
     set cp [self calledproc]
     if {[my procsearch $cp] eq {}} {
-      if {![my exists informationType]} {
-	set c [my info class]
-	my informationType [[$c set __informationType] new -childof [self]]
-      }
+      my acquireTypeObject
       if {[[my informationType] procsearch $cp] ne {}} {
 	return [eval [my informationType] $cp $args]
       }

@@ -181,8 +181,14 @@ namespace eval ::xorb::datatypes {
 	}
 	set value $tmp($s)
       }
-      my debug CLASS=[$ar any],object=$value,isobject?[my isobject $value]
-      if {[my isobject $value]} {
+      my debug CLASS=[$ar any],value=$value,valueisobject?[my isobject $value]
+      # -- Note, we need to make sure that, in case of
+      # an object value, the value stores an absolute reference
+      # to the object. Otherwise, this might be conflicting
+      # because 'isobject' defaults to the global namespace 
+      # provided that the stored object identifier is not absolute.
+      if {[my isobject $value] && $value eq [$value self]} {
+	my debug SER=[$value serialize]
 	my add -parse true [[$ar any] new \
 			   -childof [self] \
 			   -name__ $tagName \

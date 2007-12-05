@@ -1,74 +1,167 @@
   \section{Advanced usage}\label{sec:advanced}
   \subsection{How to test your services}
     \subsection{Public interface}\label{sec:interface}
-  \subsubsection{What is the structure of xorb's and xosoap's public interfaces?}\label{sec:advanced:interface:what}
-As can be seen from Figure \ref{fig:advanced:interface:1}, the interface available is organised in three 
-packages and at the same time levels of granularity. The \emph{lowest-level interface} is deeply 
-integrated with XOTcl constructs, especially \xotclref{Object}{::xotcl::Object} and \xotclref{Class}{::xotcl::Class}. xorb, therefore, allows to turn 
-any XOTcl object into a client proxy to take advantage of call abstractions (either in a distributed or non-
-distributed scenario). At this level, xorb introduces two particular keywords (i.e. methods) that allow to 
-define proxy methods in the literal sense of the word on ::xotcl::Object and its sub classes, \proclink{::xotcl::Object}{instproc}{glue}
-(or \proclink{::xotcl::Object}{instproc}{ad\_glue}). These methods appear as keywords (one might refer to modifiers, though this is 
-not appropriate strictly speaking) to ordinary proc or instproc declarations, however, these method 
-declaration don't require or allow method bodies to be defined. The example provided in the quickstart 
-guide (see \ref{sec:quickstart:xosoap} can be realised with any XOTcl object, by simply writing:
-  \begin{enumerate}
-\item First, again, create a "glue" object and pass the necessary call information: 
-\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
-\lstinputlisting[firstnumber=1,firstline=6,lastline=10]{../examples/xosoap/example-03-soap-consumer.tcl}
-\item In this step, you can simply revert to the use of an ordinary object. Either create one (as shown in the example below) or use existing objects and make them proxy objects by, first, attaching the glue object to it and, second, declare a proxy interface by means of \proclink{::xotcl::Object}{instproc}{ad\_glue} (or \proclink{::xotcl::Object}{instproc}{glue}):
-\lstinputlisting[firstnumber=last,firstline=13,lastline=13]{../examples/xosoap/example-03-soap-consumer.tcl}
-\lstinputlisting[firstnumber=last,firstline=17,lastline=23]{../examples/xosoap/example-03-soap-consumer.tcl}
-\item The actual call is effectuated the same way as in the previous example:
-\lstinputlisting[firstnumber=last,firstline=26,lastline=26]{../examples/xosoap/example-03-soap-consumer.tcl}
-  \end{enumerate}
-At this level, proxy methods appear in their purest forms as mere placeholders for abstract calls 
-realising a local representation of a remote (object) interface. Please, note that declarations by means of 
-\proclink{::xotcl::Object}{instproc}{glue}/ \proclink{::xotcl::Object}{instproc}{ad\_glue} don't take a method body as they are mere interface descriptors. This makes them 
-syntactically comparable to the \xotclref{Object-abstract}{abstract keyword} that comes with XOTcl to 
-mimic abstract classes. However, do not align them at the semantic level.
-  \begin{figure}[htbp]
-\begin{center}
-\includegraphics[width=0.75\textwidth]{img/xorb-xosoap-consumer-interface.png}
-\caption{Class diagram of interface entities}
-\label{fig:advanced:interface:1}
-\end{center}
-\end{figure}
-
-The \emph{medium-level interface} is already familiar to you when reviewing the quick start 
-section. It is provided by xorb and more or less introduces two xorb-specific constructs, 
-i.e. \objlink{::xorb::stub::ProxyObject} and \objlink{::xorb::stub::ProxyClass}. While they inherit all capabilities of the low-
-level interface, they provide additional facilities to create and use proxy objects. A glimpse at Figure \ref
-{fig:advanced:interface:1} reveals that they overwrite the methods \emph{ad\_proc} provided 
-by \objlink{::xotcl::Object} and \emph{ad\_instproc} offered by \objlink{::xotcl::Class}. This already suggests that proxy interfaces can 
-now be declared in a slightly different manner than by \proclink{::xotcl::Object}{instproc}{glue}/ \proclink{::xotcl::Object}{instproc}{ad\_glue}. While you can still revert to the 
-former, \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and \proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc} allow for interface descriptors with method bodies. When looking at 
-Listing \ref{lst:quickstart:xosoap:3}, you might notice that the argument declaring the method body is empty (corresponds to an empty Tcl string). For the sake of simplicity, we did not introduce a notable feature of the medium-level interface at this stage that we refer to as \emph{proxy templates}. For a primer on this concept and examples see Section \ref{sec:advanced:template}.
-
-The \emph{high-level interface}, as can been seen from Figure \ref{fig:advanced:interface:1}, is a purely 
-protocol plug-in-specific one. As for xosoap, we provide two intregating 
-constructs: \objlink{::xosoap::client::SoapObject} and \objlink{::xosoap::client::SoapClass} inherit, expose, and combine 
-properties of glue objects and proxy clients in one. This allows for an abbreviated and compact writing of 
-SOAP client code, with all facilities introduced by lower interface levels. For an introductory example see 
-the quick start section on xosoap (see Section \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref
-{lst:quickstart:xosoap:3}.
+    \subsubsection{What is the structure of xorb's and xosoap's public interfaces?}\label{sec:advanced:interface:what}
+    As can be seen from Figure \ref{fig:advanced:interface:1}, the
+    interface available is organised in three packages and at the same
+    time levels of granularity. The \emph{lowest-level interface} is
+    deeply integrated with XOTcl constructs, especially
+    \xotclref{Object}{::xotcl::Object} and
+    \xotclref{Class}{::xotcl::Class}. xorb, therefore, allows to turn any
+    XOTcl object into a client proxy to take advantage of call
+    abstractions (either in a distributed or non- distributed
+    scenario). At this level, xorb introduces two particular keywords
+    (i.e. methods) that allow to define proxy methods in the literal sense
+    of the word on ::xotcl::Object and its sub classes,
+    \proclink{::xotcl::Object}{instproc}{glue} (or
+    \proclink{::xotcl::Object}{instproc}{ad\_glue}). These methods appear
+    as keywords (one might refer to modifiers, though this is not
+    appropriate strictly speaking) to ordinary proc or instproc
+    declarations, however, these method declaration don't require or allow
+    method bodies to be defined. The example provided in the quickstart
+    guide (see \ref{sec:quickstart:xosoap} can be realised with any XOTcl
+    object, by simply writing:
+    \begin{enumerate}
+    \item First, again, create a "glue" object and pass the necessary
+      call information:
+      \lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single,tabsize=2}
+      % \lstinputlisting[firstnumber=1,firstline=6,lastline=10]{../examples/xosoap/example-03-soap-consumer.tcl}
+      \lstinputlisting[firstnumber=auto,linerange=lst:quickstart:xosoap:3:step1-end,name=lst_quickstart_xosoap_3,label=lst:quickstart:xosoap:3:step1]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+    \item In this step, you can simply revert to the use of an
+      ordinary object. Either create one (as shown in the example below) or
+      use existing objects and make them proxy objects by, first, attaching
+      the glue object to it and, second, declare a proxy interface by means
+      of \proclink{::xotcl::Object}{instproc}{ad\_glue} (or
+      \proclink{::xotcl::Object}{instproc}{glue}):
+      % \lstinputlisting[firstnumber=last,firstline=13,lastline=13]{../examples/xosoap/example-03-soap-consumer.tcl}
+      \lstinputlisting[firstnumber=auto,linerange=lst:quickstart:xosoap:3:step2-end,name=lst_quickstart_xosoap_3]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+      % \lstinputlisting[firstnumber=last,firstline=17,lastline=23]{../examples/xosoap/example-03-soap-consumer.tcl}
+      \lstinputlisting[firstnumber=auto,linerange=lst:quickstart:xosoap:3:step3-end,name=lst_quickstart_xosoap_3]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+    \item The actual call is effectuated the same way as in the
+      previous example:
+      % \lstinputlisting[firstnumber=last,firstline=26,lastline=26]{../examples/xosoap/example-03-soap-consumer.tcl}
+      \lstinputlisting[firstnumber=auto,linerange=lst:quickstart:xosoap:3:step4-end,name=lst_quickstart_xosoap_3]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+    \end{enumerate}
+    At this level, proxy methods appear in their purest forms as mere
+    placeholders for abstract calls realising a local representation of a
+    remote (object) interface. Please, note that declarations by means of
+    \proclink{::xotcl::Object}{instproc}{glue}/
+    \proclink{::xotcl::Object}{instproc}{ad\_glue} don't take a method
+    body as they are mere interface descriptors. This makes them
+    syntactically comparable to the \xotclref{Object-abstract}{abstract
+      keyword} that comes with XOTcl to mimic abstract classes. However, do
+    not align them at the semantic level.
+    \begin{figure}[htbp]
+      \begin{center}
+        \includegraphics[width=0.75\textwidth]{img/xorb-xosoap-consumer-interface.png}
+        \caption{Class diagram of interface entities}
+        \label{fig:advanced:interface:1}
+      \end{center}
+    \end{figure}
+    
+    The \emph{medium-level interface} is already familiar to you when
+    reviewing the quick start section. It is provided by xorb and more or
+    less introduces two xorb-specific constructs,
+    i.e. \objlink{::xorb::stub::ProxyObject} and
+    \objlink{::xorb::stub::ProxyClass}. While they inherit all
+    capabilities of the low- level interface, they provide additional
+    facilities to create and use proxy objects. A glimpse at Figure \ref
+    {fig:advanced:interface:1} reveals that they overwrite the methods
+    \emph{ad\_proc} provided by \objlink{::xotcl::Object} and
+    \emph{ad\_instproc} offered by \objlink{::xotcl::Class}. This already
+    suggests that proxy interfaces can now be declared in a slightly
+    different manner than by \proclink{::xotcl::Object}{instproc}{glue}/
+    \proclink{::xotcl::Object}{instproc}{ad\_glue}. While you can still
+    revert to the former,
+    \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and
+    \proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc} allow for
+    interface descriptors with method bodies. When looking at Listing
+    \ref{lst:quickstart:xosoap:3}, you might notice that the argument
+    declaring the method body is empty (corresponds to an empty Tcl
+    string). For the sake of simplicity, we did not introduce a notable
+    feature of the medium-level interface at this stage that we refer to
+    as \emph{proxy templates}. For a primer on this concept and examples
+    see Section \ref{sec:advanced:template}.
+    
+    The \emph{high-level interface}, as can been seen from Figure
+    \ref{fig:advanced:interface:1}, is a purely protocol plug-in-specific
+    one. As for xosoap, we provide two intregating constructs:
+    \objlink{::xosoap::client::SoapObject} and
+    \objlink{::xosoap::client::SoapClass} inherit, expose, and combine
+    properties of glue objects and proxy clients in one. This allows for
+    an abbreviated and compact writing of SOAP client code, with all
+    facilities introduced by lower interface levels. For an introductory
+    example see the quick start section on xosoap (see Section
+    \ref{sec:quickstart:xosoap}) and, in particular, Listing \ref
+    {lst:quickstart:xosoap:3}.
 \subsection{Data type infrastructure}\label{sec:avanced:types}
-Providing framework support for data type handling, especially in a cross-language and multi-protocol setup is a challenging task. Nevertheless, framework designers and developers may revert to well documented experiences on these issues and do not have to start from scratch. By these documented experiences, we primarily refer to a set of design patterns, some of them to be found in \cite{zdun:2005b,sommerlad:1998,maetzel:1996}. For the very moment, we do not want to go into details of the framework implementation, rather provide a quick overview on, first, terminology and, second, facilities to be used by you, the developer.
+Providing framework support for data type handling, especially in a
+cross-language and multi-protocol setup is a challenging
+task. Nevertheless, framework designers and developers may revert to
+well documented experiences on these issues and do not have to start
+from scratch. By these documented experiences, we primarily refer to a
+set of design patterns, some of them to be found in
+\cite{zdun:2005b,sommerlad:1998,maetzel:1996}. For the very moment, we
+do not want to go into details of the framework implementation, rather
+provide a quick overview on, first, terminology and, second,
+facilities to be used by you, the developer.
 
-As for terminology, there are just very few concepts to remember. If you recall the examples in specifying client proxies or service contracts (see Section \ref{sec:quickstart:xosoap}), the way you specified the signature of a proxy method or \objlink{::xorb::Abstract} always involved specific \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check options}. These might look familar: 
+As for terminology, there are just very few concepts to remember. If
+you recall the examples in specifying client proxies or service
+contracts (see Section \ref{sec:quickstart:xosoap}), the way you
+specified the signature of a proxy method or
+\objlink{::xorb::Abstract} always involved specific
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check
+  options}. These might look familiar:
 
- \lstinputlisting[numbers=none,firstline=17,lastline=17]{../examples/xosoap/example-01-soap-consumer.tcl}
+\lstinputlisting[numbers=none,firstline=17,lastline=17]{../examples/xosoap/example-01-soap-consumer.tcl}
 
-     \lstinputlisting[numbers=none,firstline=10,lastline=13]{../examples/xosoap/example-07-soap-provider-init.tcl}
+\lstinputlisting[numbers=none,firstline=10,lastline=13]{../examples/xosoap/example-07-soap-provider-init.tcl}
 
-\href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{Check options}, again, are a native XOTcl concept to formulate constraints of various types on non-positional arguments. In xorb, however, we use this native XOTcl mechanism to specify special, i.e. protocol-specific type constraints. "xsFloat", as used and shown in the above examples, is referred to as \emph{type code}, i.e. a short-cut identifier for a specific type handler. The actual type handler, i.e. \objlink{::xosoap::xsd::Float} is named \emph{anything type}, or simply \emph{anything}. The main idea of anythings are nicely elaborated on by \cite{sommerlad:1998,maetzel:1996}, however, the main idea is to provide a generic and uniform value container that comes with on-demand casting. 
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{Check
+  options}, again, are a native XOTcl concept to formulate constraints
+of various types on non-positional arguments. In xorb, however, we use
+this native XOTcl mechanism to specify special, i.e. protocol-specific
+type constraints. "xsFloat", as used and shown in the above examples,
+is referred to as \emph{type code}, i.e. a short-cut identifier for a
+specific type handler. The actual type handler,
+i.e. \objlink{::xosoap::xsd::Float} is named \emph{anything type}, or
+simply \emph{anything}. The main idea of anythings are nicely
+elaborated on by \cite{sommerlad:1998,maetzel:1996}, however, the main
+idea is to provide a generic and uniform value container that comes
+with on-demand casting.
 \begin{hints}
-\item Note, some clarifying side notes might be required at this point: The term casting may not be mistaken for what it refers to in compiled and (strongly) typed languages. In the realm of xorb, it simply refers to exposing a value in accordance with some value space and representation constraints.
-\item Another side note might be appropriate. The term "type code" is prominently used in another, pure-SOAP framework written in and for Python, i.e. the Zolera SOAP infrastructure (ZSI, \cite{zsi:2007}). However, type codes though realising a comparable aim, are properties to Python objects later used by type-specific (de-)marshalers. In xorb, type code serve a more declarative purpose, simply by hijacking the \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check option mechanism} of XOTcl.
+\item Note, some clarifying side notes might be required at this
+  point: The term casting may not be mistaken for what it refers to in
+  compiled and (strongly) typed languages. In the realm of xorb, it
+  simply refers to exposing a value in accordance with some value space
+  and representation constraints.
+\item Another side note might be appropriate. The term "type code" is
+  prominently used in another, pure-SOAP framework written in and for
+  Python, i.e. the Zolera SOAP infrastructure (ZSI,
+  \cite{zsi:2007}). However, type codes though realising a comparable
+  aim, are properties to Python objects later used by type-specific
+  (de-)marshalers. In xorb, type code serve a more declarative purpose,
+  simply by hijacking the
+  \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check
+    option mechanism} of XOTcl.
 \end{hints}
-The third and last concept realises what is need to provide for multi-protocol support. Just imagine, you want to re-use, or rather, expose a service contract originally defined for the local use in an OpenACS instance as interface description for a SOAP-based service. Type codes such as string, integer, etc. need to be resolved for the scope of SOAP and WSDL handling. Therefore, xorb comes with the idea of \emph{type sponsorships}. A \emph{type sponsor} is a data type handler, i.e. an anything, that comes with a protocol plug-in and announces, upon initialisation, itself as sponsor to a xorb general-purpose anything. The xorb-specific anything then, upon being processed during the handling of invocation dispatches, resolves its sponsor for the actually used protocol. 
+The third and last concept realises what is need to provide for
+multi-protocol support. Just imagine, you want to re-use, or rather,
+expose a service contract originally defined for the local use in an
+OpenACS instance as interface description for a SOAP-based
+service. Type codes such as string, integer, etc. need to be resolved
+for the scope of SOAP and WSDL handling. Therefore, xorb comes with
+the idea of \emph{type sponsorships}. A \emph{type sponsor} is a data
+type handler, i.e. an anything, that comes with a protocol plug-in and
+announces, upon initialisation, itself as sponsor to a xorb
+general-purpose anything. The xorb-specific anything then, upon being
+processed during the handling of invocation dispatches, resolves its
+sponsor for the actually used protocol.
 
-Find below a list of currently supported types, providing the type codes at hand and the anythings acting in the background. Rows read as sponsorship relationships (if realised).
+Find below a list of currently supported types, providing the type
+codes at hand and the anythings acting in the background. Rows read as
+sponsorship relationships (if realised).
 
 \begin{center}
 \begin{footnotesize}
@@ -121,85 +214,128 @@ style we either go for the SOAP encoded array or the WS-I compliant array notati
 \end{center}
 
  \subsection{Proxy templates}\label{sec:advanced:template}
-Proxy templates or rather template methods on proxy objects follow a primary intention: Extending the 
-use of pure interface descriptors to full-featured methods that allow to pack program logic along with a 
-call abstraction in a single method body. Our intention can be best summarised when following the idea 
-of the Template Method pattern as documented by \cite{gof:1994}. As the term "template" suggests, there 
-might be scenarios that integrate call abstraction, or in our remoting scenario simply remote calls, in 
-more complex (i.e. multi-step) behaviour. This is, certainly, also realisable with the lower-level interface. 
-However, it would require another construct, either a proc, or a sub class etc., that combines the general 
-behaviour and the invocation references to the abstract calls. By means of proxy template methods as 
-introduced by the medium-level interface you can know write template code and invocations of 
-abstract calls in the same method block, making encapsulation in this respect more seamless. A 
-primary, and still easily graspable example are conditional invocations of abstract calls. Let's take the 
-following example of Listing \ref{lst:quickstart:xosoap:2} where we simply rewrite lines 16 -- 21. This 
-yields the following (see Listing \ref{lst:quickstart:xosoap:5} for the complete example): 
-\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
-\lstinputlisting[firstnumber=1,firstline=16,lastline=28]{../examples/xosoap/example-04-soap-consumer.tcl}
-We draw your attention to the last argument of the \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} call which perfectly resembles the declaration of a method body. The exemplary condition we introduce here is only to simplistic but 
-delivers the message. You might have noticed that the floating point number used in the EchoClient/
-EchoService example corresponds to the decimal representation of the golden ratio phi. We, now, in our 
-proxy template method, introduce a constraint which limits the value space accepted to all decimals that 
-round to the same integer as the most accurate decimal expansion of the golden ratio, given by the 
-formula \begin{math} (1 + \sqrt{5}) / 2\end{math}. If, and only if this value validation is passed, we want 
-the abstract call to be invoked. At this point, you might have realised that the \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next} command is the 
-forwarder to the actual proxy method. 
+Proxy templates or rather template methods on proxy objects follow a
+primary intention: Extending the use of pure interface descriptors to
+full-featured methods that allow to pack program logic along with a
+call abstraction in a single method body. Our intention can be best
+summarised when following the idea of the Template Method pattern as
+documented by \cite{gof:1994}. As the term "template" suggests, there
+might be scenarios that integrate call abstraction, or in our remoting
+scenario simply remote calls, in more complex (i.e. multi-step)
+behaviour. This is, certainly, also realisable with the lower-level
+interface.  However, it would require another construct, either a
+proc, or a sub class etc., that combines the general behaviour and the
+invocation references to the abstract calls. By means of proxy
+template methods as introduced by the medium-level interface you can
+know write template code and invocations of abstract calls in the same
+method block, making encapsulation in this respect more seamless. A
+primary, and still easily graspable example are conditional
+invocations of abstract calls. Let's take the following example of
+Listing \ref{lst:quickstart:xosoap:2} where we simply rewrite step
+3. This yields the following:
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single,tabsize=2}
+%\lstinputlisting[firstnumber=1,firstline=16,lastline=28]{../examples/xosoap/example-04-soap-consumer.tcl}
+\lstinputlisting[firstnumber=auto,linerange=lst:advanced:xosoap:4:step1-end,name=lst_advanced_xosoap_4]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 
-Now, once you got the main idea behind this example, take a closer look  at the declaration of 
-arguments in line 17. You might notice that there is a slight but important modification of how the 
-argument inputFloat is specified. In fact, we added an additional \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check option} "glue" which is 
-mandatory as soon as you provide a non-empty method body to either \proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and \proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc}. There 
-are two reasons for this requirement: First, regarding concepts and clarity for you as developer, you are 
-now specifying two method records (i.e. set of arguments plus check options)  within one single step. On 
-the one hand, the record for the decorating method (the proxy template method) called "echoFloat" and, 
-on the other hand, the actual proxy method "echoFloat". We, therefore, distinguish between an inner and 
-and outer record. Both records might be identical but not necessarily. Second, regarding internals, it is 
-required to explicitly distinguish between elements of either record. Lets have a look at another variation 
-of the previous example (see Listing \ref{lst:quickstart:xosoap:6}):
+We draw your attention to the last argument of the
+\proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} call which
+perfectly resembles the declaration of a method body. The exemplary
+condition we introduce here is only to simplistic but delivers the
+message. You might have noticed that the floating point number used in
+the EchoClient/ EchoService example corresponds to the decimal
+representation of the golden ratio phi. We, now, in our proxy template
+method, introduce a constraint which limits the value space accepted
+to all decimals that round to the same integer as the most accurate
+decimal expansion of the golden ratio, given by the
+formula \begin{math} (1 + \sqrt{5}) / 2\end{math}. If, and only if
+this value validation is passed, we want the abstract call to be
+invoked. At this point, you might have realised that the
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}
+command is the forwarder to the actual proxy method.
+
+Now, once you got the main idea behind this example, take a closer
+look at the declaration of arguments. You might notice that
+there is a slight but important modification of how the argument
+inputFloat is specified. In fact, we added an additional
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{check
+option} "glue" which is mandatory as soon as you provide a non-empty
+method body to either
+\proclink{::xorb::stub::ProxyObject}{instproc}{ad\_proc} and
+\proclink{::xorb::stub::ProxyClass}{instproc}{ad\_instproc}. There are
+two reasons for this requirement: First, regarding concepts and
+clarity for you as developer, you are now specifying two method
+records (i.e. set of arguments plus check options) within one single
+step. On the one hand, the record for the decorating method (the proxy
+template method) called "echoFloat" and, on the other hand, the actual
+proxy method "echoFloat". We, therefore, distinguish between an inner
+and and outer record. Both records might be identical but not
+necessarily. Second, regarding internals, it is required to explicitly
+distinguish between elements of either record. Lets have a look at
+another variation of the previous example (see Listing
+\ref{lst:quickstart:xosoap:6}):
 %
-\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
-\footnotesize,firstnumber=1,firstline=16,lastline=34]{../examples/xosoap/example-05-soap-consumer.tcl}
+%\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=1,firstline=16,lastline=34]{../examples/xosoap/example-05-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:5:step1-end,name=lst_advanced_xosoap_5]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 %
-Referring to lines 3, we extended the method's record by an additional \href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{non-positional argument} and 
-two positional ones. In fact, "annotating" a non-positional argument with "glue" assigns it to be member in the proxy record, while all the others, especially the other non-positional arguments, won't be 
-interpreted as elements of the proxy interface. At the same time, you will be able to use equally named 
-variables containing the arguments" values in the scope of the proxy template method. The final call to 
-the proxy object by means of the template method might take the following form:
+We extended the method's record by an additional
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#non-pos-args}{non-positional
+argument} and two positional ones. In fact, "annotating" a
+non-positional argument with "glue" assigns it to be member in the
+proxy record, while all the others, especially the other
+non-positional arguments, won't be interpreted as elements of the
+proxy interface. At the same time, you will be able to use equally
+named variables containing the arguments" values in the scope of the
+proxy template method. The final call to the proxy object by means of
+the template method might take the following form:
 %
-\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
-\footnotesize,firstnumber=last,firstline=37,lastline=41]{../examples/xosoap/example-05-soap-consumer.tcl}
+%\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=last,firstline=37,lastline=41]{../examples/xosoap/example-05-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:5:step2-end,name=lst_advanced_xosoap_5]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 %
-Apart from the constraint scenario, template methods also proof useful when you (for whatever reason) 
-want to deviate from the proxy interface (i.e. the inner record). This might true in the following cases:
+Apart from the constraint scenario, template methods also proof useful
+when you (for whatever reason) want to deviate from the proxy
+interface (i.e. the inner record). This might true in the following
+cases:
 \begin{itemize}
-\item In case you need to mangle the argument values before being passed to the remote method, or
-\item if you do not expose all arguments stipulated by the proxy interface (i.e. the inner record) in the 
-outer record.
+\item In case you need to mangle the argument values before being
+  passed to the remote method, or
+\item if you do not expose all arguments stipulated by the proxy
+  interface (i.e. the inner record) in the outer record.
 \end{itemize}
 %
-In the following variation of an initial listing (see Listing \ref{lst:quickstart:xosoap:5}), we give provide an 
-example for the first case. Let" see:
+In the following variation of an initial listing (see Listing
+\ref{lst:quickstart:xosoap:5}), we give provide an example for the
+first case. Let's see:
 %
-\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=
-\footnotesize,firstline=29,lastline=33]{../examples/xosoap/example-06-soap-consumer.tcl}
+%\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstline=29,lastline=33]{../examples/xosoap/example-06-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:6:step1-end,name=lst_advanced_xosoap_6,label=lst:advanced:xosoap:6:step1]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 %
-Here, we simply take the inbound value for inputFloat and increase it by 1. This updated value should 
-then be passed to the remote method to be communicated to the call point. Two important aspects 
-should be retained from this snippet: First, if you do so, you have to explicitly append argument-value 
-pairs to \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}. Otherwise, \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}, if called without any appended terms, passes on the last 
-argument list on the call stack. Second, if you decide to do so, you have to provide all arguments 
-to \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next} that are required by the method shadowed by \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}. Required arguments are both 
-non-positional arguments flagged "glue" or "required" and positional arguments with no default values in 
-the record declaration.
+Here, we simply take the inbound value for inputFloat and increase it
+by 1. This updated value should then be passed to the remote method to
+be communicated to the call point. Two important aspects should be
+retained from this snippet: First, if you do so, you have to
+explicitly append argument-value pairs to
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}. Otherwise,
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next},
+if called without any appended terms, passes on the last argument list
+on the call stack. Second, if you decide to do so, you have to provide
+all arguments to
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}
+that are required by the method shadowed by
+\href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next}. Required
+arguments are both non-positional arguments flagged "glue" or
+"required" and positional arguments with no default values in the
+record declaration.
 %
 \begin{hints}
-\item We assume that your are familiar with the basic mechanism of inheritance XOTcl delivers to you. If 
-you are new to XOTcl or its conceptual "sponsors" such as CLOS etc., you might want to consider 
-studying the relevant sections.
-\item You might want to give it a try. Just edit the last line of the example outlined above and change the 
-value passed as "inputFloat" so that it once validates correctly and once fails.
+\item We assume that your are familiar with the basic mechanism of
+  inheritance XOTcl delivers to you. If you are new to XOTcl or its
+  conceptual "sponsors" such as CLOS etc., you might want to consider
+  studying the relevant sections.
+\item You might want to give it a try. Just edit the last line of the
+  example outlined above and change the value passed as "inputFloat" so
+  that it once validates correctly and once fails.
 \end{hints}
-%
+% 
 Using \href{http://media.wu-wien.ac.at/doc/tutorial.html#class_method_chaining}{::xotcl::next} in this setting is both a slight redefinition of its semantics in view of XOTcl inheritance, 
 and a pointer to the internal implementation of our proxy templates or proxy template methods: The 
 declarative information passed to ad\_proc or ad\_instproc is used both (a) to specify a proxy method 
@@ -274,24 +410,29 @@ As shown in Figure \ref{fig:advanced:scoping:1}, upon issue of a call upon a cli
 \end{figure}
 A comparison of these three configurations yields some insights on (dis-)advantages and provides some  hands-on usage examples. Using both the per-method and per-object/ shared scope within a single proxy object allows to implement more than just one interface through a single proxy object. However, this decision needs to be taken upon declaration time as this is a limitation of the current per-method scoping. Also, we so provide the means to specify both proxies for remote methods (in the strict OO sense) and remote procedures in a single entity. Let's look at a slight modification of Listing \ref{lst:quickstart:xosoap:3} that aims at illustrating this first configuration. In a first step, we add a second glue object which contains a different set of configurations options, in particular it targets a different endpoint:
 %
-\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single}
-\lstinputlisting[firstnumber=1,firstline=6,lastline=8]{../examples/xosoap/example-08-soap-consumer.tcl}
+\lstset{breaklines=true,numbers=left,basicstyle=\footnotesize,frame=single,tabsize=2}
+%\lstinputlisting[firstnumber=1,firstline=6,lastline=8]{../examples/xosoap/example-08-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:7:step1-end,name=lst_advanced_xosoap_7]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+
 %
 Note, EchoClient as declared in Listing \ref{lst:quickstart:xosoap:3} already contains shadow information of a glue object. If we now pass the second glue object defined to the ad\_proc declaration, this second glue object takes precedence over the first one, i.e. EchoClient itself.
 %
-\lstinputlisting[firstnumber=last,firstline=18,lastline=24]{../examples/xosoap/example-08-soap-consumer.tcl}
+%\lstinputlisting[firstnumber=last,firstline=18,lastline=24]{../examples/xosoap/example-08-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:7:step2-end,name=lst_advanced_xosoap_3]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 %
-The ultimate result of this minor tweak in Listing \ref{lst:quickstart:xosoap:8} is that the call will be delivered to a remote object that listens at a different endpoint than the one in Listing \ref{lst:quickstart:xosoap:3}.\\\\
+The ultimate result of this minor tweak is that the call will be delivered to a remote object that listens at a different endpoint than the one in Listing \ref{lst:quickstart:xosoap:3}.\\\\
 Both, per-object and shared scope, allow for more simplified notations of proxy objects.  As for re-use, the per-object scope is primarily centred around the re-use of the proxy interface as represented by the proxy object while continuously, over the program flow, adapting the configuration in terms of glue object manipulations. The shared scope puts emphasis on the re-use of a given glue object on multiple proxy objects. Moreover, it allows for dynamic, non-hierarchical refinements through \href{http://media.wu-wien.ac.at/doc/tutorial.html#mixins}{mixins}. In doing so, we gain the opportunity can inject glue objects for a selected period of time upon certain conditions into client proxies. 
 
-Again, to provide a hands-on experience, let's have a look at Listing \ref{lst:quickstart:xosoap:9}. In fact, we try to achieve the same behaviour as realised in Listing \ref{lst:quickstart:xosoap:8} but by completely different means. This time we want to decorate our previously defined client proxy at an arbitrary moment during run time. For this purpose, we need an appropriate decorator, such as:
+Again, to provide a hands-on experience, let's have a look at Listing \ref{lst:quickstart:xosoap:8}. In fact, we try to achieve the same behaviour as realised in Listing \ref{lst:quickstart:xosoap:7} but by completely different means. This time we want to decorate our previously defined client proxy at an arbitrary moment during run time. For this purpose, we need an appropriate decorator, such as:
 %
-\lstinputlisting[firstnumber=last,firstline=27,lastline=33]{../examples/xosoap/example-09-soap-consumer.tcl}
+%\lstinputlisting[firstnumber=last,firstline=27,lastline=33]{../examples/xosoap/example-09-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:8:step1-end,name=lst_advanced_xosoap_7]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
 %
 The decorator, an XOTcl mixin class, can be realised in manifold ways, the above is only one of a couple of options at hand. The main idea, however, is that a new glue object (ProxyDecorator::GlueObject) is return upon calls to the decorator's "glueobject" method. The actual step of decorating the client proxy might take the following form:
 %
-\lstinputlisting[firstnumber=last,firstline=37,lastline=37]{../examples/xosoap/example-09-soap-consumer.tcl}
-%
+% \lstinputlisting[firstnumber=last,firstline=37,lastline=37]{../examples/xosoap/example-09-soap-consumer.tcl}
+\lstinputlisting[breaklines=true,numbers=left,frame=single,basicstyle=\footnotesize,firstnumber=auto,linerange=lst:advanced:xosoap:8:step2-end,name=lst_advanced_xosoap_7]{../../../admin/storm/XosoapQuickStartEchoConsumer.suite}
+% 
 Once this is achieved, calls to the accessor "glueobject" of the equally named attribute won't deliver the original glue object, but the decorator's one. This is due to the basic mixin mechanism provided by XOTcl with the decorator's "glueobject" method shadowing the actual accessor called "glueobject". 
 After the successful decoration, the call, again, is delivered to the endpoint stipulated in the second glue object.
 
@@ -302,8 +443,12 @@ Besides, the current implementation comes with a couple of minor that might not 
 %%%%%%%%%%
 %%%%%%%%%%
 %%%%%%%%%%
-\input{sections/interceptors}
+%\input{sections/interceptors}
 %%%%%%%%%%
 %%%%%%%%%%
 %%%%%%%%%%
 %%%%%%%%%%
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../../../../../../../win/workspace/dev/xotcl-request-broker/www/doc/manual/src/sections/manual"
+%%% End: 

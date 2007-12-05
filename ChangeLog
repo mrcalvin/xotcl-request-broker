@@ -1,3 +1,54 @@
+2007-12-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/admin/regression-test.tcl: Fixed the regression test suite,
+	i.e. stripped off the interceptor related parts (as they are
+	subject of rewrital) and made sure the regression tests run with
+	the 0.4.2. It helped to find some minor issues (see policy-related
+	changelog comment below).
+
+	* tcl/xorb-deployment-procs.tcl: Recent xotcl-core version,
+	i.e. 0.75+, introduce a "policy" privilege called public which
+	conflicts the public keyword as used in the invocation access
+	policies. While public in ::xo::Policy equals unrestricted access,
+	in xorb we refer to the somewhat public access modifier of
+	ad_proc/ad_instproc. We renamed the xorb concepts to
+	"public_member" and "private_member".
+
+2007-11-14  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-storm-procs.tcl (TestScenario): Resolved an issue with
+	the XML node for streaming the scenario-related report is not
+	existing when Guardian operations return (as they are queued
+	before the TestScenario ones due to the mixin status). Some fixes
+	for the sake of robustness ... 
+
+	* tcl/xorb-datatypes-procs.tcl: Encountered an issue with
+	xotcl-core 0.75+ (or even more general). It is common practice in
+	xotcl-core to generate object references out of ACS' object_ids,
+	e.g. ::xo::Package, ::xo::db::apm_parameter. The same, btw, is
+	also valid for ::xowiki::Pages. The issue is not so related to
+	this practise, but rather with the scoping of the object
+	representations which are created in the global or top-level
+	namespace "::". Taking both together, we end up with potential
+	conflicts. An example encountered with Anythings in their current
+	shape is the following: At some places, we try to discriminate
+	objectified or simple string values, to be more precise, whether a
+	string is a valid object reference or not, e.g. "::xotcl::Object
+	isobject $some_check_string". If $some_check_string stores an
+	absolute object reference (with tcl namespace qualifiers) then we
+	are fine, however, in case of an potentially unqalified reference,
+	e.g. an arbitrary number without any qualifiers, "isobject" will
+	fallback to the global namespace. Provided that the global namspace
+	is "polluted" by object representations, arbitrary strings
+	representing numbers might be resolved to objects and confuscate
+	the isobject check. Locally, we solved it by adding another check
+	which discriminates the absolutness of the assumed object
+	reference: expr {$some_check_string eq [$some_check_string self]}.
+
+	* tcl/xorb-context-procs.tcl: Factored-out the acquisition of a
+	type object (information type) and provide for the acquisition
+	check at some entry points. Should be more solid now.  
+
 2007-11-07  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-context-procs.tcl: Major rewrite of the reification

@@ -26,6 +26,8 @@ namespace eval ::xorb::deployment {
       #set pClass [::xorb::PluginClass set registry([::xo::ic protocol])]
       set hasPolicyLevelDefaults [expr {![my isobject [self]::$implementation] \
 					    && [my default_permission] ne {}}]
+      my debug CONTEXT=[$context serialize]
+      my debug Exists([self]::$implementation)=>[my isobject [self]::$implementation]
       if {$hasPolicyLevelDefaults} {
 	# inject default policy rule object
 	set cmd [subst {
@@ -63,7 +65,6 @@ namespace eval ::xorb::deployment {
     }
     return $granted
   }
-  
 
   # # # # # # # # # # # # # # # 
   # # # # # # # # # # # # # # # 
@@ -318,9 +319,9 @@ namespace eval ::xorb::deployment {
   # privilege implementations
 
   ::xotcl::Class Policy::Subject
-  Policy::Subject instforward privilege=public \
+  Policy::Subject instforward privilege=public_member \
       %self modifier -type public
-  Policy::Subject instforward privilege=private \
+  Policy::Subject instforward privilege=private_member \
       %self modifier -type private
   
   Policy::Subject instproc modifier {
@@ -339,16 +340,16 @@ namespace eval ::xorb::deployment {
     foreach {servant t} $registry($method) break
     set inst [expr {$t == 2?"inst":""}]
     set scope [::xotcl::api scope]
-   # my log "---1,scope=$scope"
+    my debug "---1,scope=$scope"
     set obj [namespace qualifiers $servant]
-    #my log "---2,obj=$obj"
+    my debug "---2,obj=$obj"
     set procName [namespace tail $servant]
-    #my log "---3,procName=$procName"
+    my debug "---3,procName=$procName"
     set index [::xotcl::api proc_index $scope $obj ${inst}proc $procName]
-    #my log "---4,index=$index"
+    my debug "---4,index=$index"
     if {[nsv_exists api_proc_doc $index]} {
       array set doc [nsv_get api_proc_doc $index]
-      #my debug "---5,index=$index"
+      my debug "---5,index=$index"
       return $doc(${type}_p)
     } else {
       return 0
@@ -394,5 +395,5 @@ namespace eval ::xorb::deployment {
   # # # # # # # # # # # # # # #
   # default per-package policy
   
-  Policy Default -default_permission {public}
+  Policy Default -default_permission {public_member}
 }

@@ -87,16 +87,11 @@ namespace eval ::xorb::storm {
   }
   Test instproc finalise {} {
     my instvar node attributes timestamp
-    #ns_write "[self]: FINALIZE\n"
     if {[my exists timestamp]} {
       my set attributes(grosstime) [$timestamp diff]
     }
-    #if {[my exists description]} {
-    #  my set attributes(description) [my set description]
-    #}
-    #ns_write finalise([array get attributes])\n
     foreach {attr val} [array get attributes] {
-      set val [subst $val]
+      catch {set val [subst $val]}
       if {$val ne {}} {
 	$node setAttribute $attr $val
       }
@@ -144,6 +139,15 @@ namespace eval ::xorb::storm {
   Guardian instproc report {{-stop:switch false} result} {
     if {[$result istype ConditionUnsatisfied] && [$result = [self]]} {
       my instvar node
+      # / / / / / / / / / / / / / / / / / / / /
+      # !!!! report could be called before
+      # run and, therefore, the init of 
+      # an element node. We lazily acquire one
+      # in that case.
+      if {![info exists node]} {
+	set node [my getNode]
+	my array set attributes [array get defaults]
+      }
       set doc [$node ownerDocument]
       set n [$doc createElement system-err]
       $node appendChild $n
@@ -319,12 +323,17 @@ namespace eval ::xorb::storm {
     #ns_write "[self] REPORT args=$result, stop=$stop\n"
     next;# Test->report
   }
+
+  TestCase instproc getNode {} {
+    return [next [string tolower [namespace tail [self class]]]];# Test->getNode
+  }
+
   TestCase instproc run {} {
     my instvar node
     my set timestamp [Timestamp new -destroy_on_cleanup]
     [self class] instvar defaults
     if {![info exists node]} {
-      set node [my getNode testcase]
+      set node [my getNode]
       my array set attributes [array get defaults]
     }
     #ns_write "[self]: RUN\n"
@@ -363,13 +372,17 @@ namespace eval ::xorb::storm {
     next;# Test->report
   }
 
+  TestScenario instproc getNode {} {
+    return [next [string tolower [namespace tail [self class]]]];# Test->getNode
+  }
+
   TestScenario instproc run {} {
     my instvar test_body
     my instvar node
     my set timestamp [Timestamp new -destroy_on_cleanup]
     [self class] instvar defaults
     if {![info exists node]} {
-      set node [my getNode testscenario]
+      set node [my getNode]
       my array set attributes [array get defaults]
     }
     next;# Guardian->run
@@ -381,6 +394,10 @@ namespace eval ::xorb::storm {
 
   TestScenario instproc evaluate {test_body} {
     my instvar expected_result
+    if {![info exists expected_result]} {
+      set msg "No 'expected_result' provided for comparand scenario."
+      my unsatisfied [Unexpected new $msg]
+    }
     set ts [Timestamp new -volatile]
     if {[catch { set r [my mockEval $test_body] } msg]} {
       # / / / / / / / / / / / /
@@ -455,6 +472,10 @@ namespace eval ::xorb::storm {
   Class FailureScenario -superclass TestScenario
   FailureScenario instproc evaluate {test_body} {
     my instvar expected_result
+    if {![info exists expected_result]} {
+      set msg "No 'expected_result' provided for comparand scenario."
+      my unsatisfied [Unexpected new $msg]
+    }
     set ts [Timestamp new -volatile]
     if {[catch { set r [my mockEval $test_body] } msg]} {
       my set attributes(nettime) [$ts diff]

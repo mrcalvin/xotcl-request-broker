@@ -1029,9 +1029,12 @@ namespace eval ::xorb::stub {
     if {![my isclass [self]::__indirector__]} {
       ::xotcl::Class create [self]::__indirector__
       my mixin add [self]::__indirector__
+    } elseif {[my isclass [self]::__indirector__] && \
+		  [[self]::__indirector__ info instprocs $methName] ne {}} {
+      [self]::__indirector__ instproc $methName {} {}
     }
+
     if {$indirector} {
-      my debug INDIRECTOR-ARGLIST=$argList
       [self]::__indirector__ instproc $methName $argList $body
     }
   }
@@ -1189,7 +1192,11 @@ namespace eval ::xorb::stub {
     if {![my isclass [self]::__indirector__]} {
       ::xotcl::Class create [self]::__indirector__
       my instmixin add [self]::__indirector__
+    } elseif {[my isclass [self]::__indirector__] && \
+		  [[self]::__indirector__ info instprocs $methName] ne {}} {
+      [self]::__indirector__ instproc $methName {} {}
     }
+    
     if {$indirector} {
       [self]::__indirector__ instproc $methName $argList $body
     }

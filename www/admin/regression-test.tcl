@@ -57,7 +57,7 @@ proc ?+ {cmd {msg ""}} {
     set r [uplevel $cmd]
     test okmsg "$msg passed ([t1 diff] ms)"
   } catch {Exception e} {
-    test errmsg "$msg failed: <pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+    test errmsg "$msg failed: <pre>[ad_quotehtml [$e message]]</pre>"
   } catch {error e} {
     global errorInfo
     test errmsg "$msg failed: $errorInfo"
@@ -75,7 +75,8 @@ proc ?++ {cmd expected {msg ""}} {
       test okmsg "$msg passed ([t1 diff] ms)"
     }
   } catch {Exception e} {
-    test errmsg "$msg failed: <pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+    test errmsg [$e serialize]
+    test errmsg "$msg failed: <pre>[ad_quotehtml [$e message]]</pre>"
   } catch {error e} {
     test errmsg "$msg failed: $e"
   }
@@ -104,9 +105,9 @@ proc ?-- {cmd expected {msg ""}} {
     test errmsg "$msg failed due to NO error"
   } catch {Exception e} {
     if {[$e istype $expected]} {
-      test okmsg "$msg passed ([t1 diff] ms):<pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+      test okmsg "$msg passed ([t1 diff] ms):<pre>[ad_quotehtml [$e message]]</pre>"
     } else {
-      test errmsg "$msg failed due to UNEXPECTED exception:<pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+      test errmsg "$msg failed due to UNEXPECTED exception:<pre>[ad_quotehtml [$e message]]</pre>"
     }
   } catch {error e} {
     test errmsg "$msg failed due to UNEXPECTED error: $e"
@@ -126,7 +127,9 @@ proc ?-- {cmd expected {msg ""}} {
     test errmsg "$msg failed due to NO error"
   } catch {Exception e} {
     if {[$e istype $expected]} {
-      test okmsg "$msg passed ([t1 diff] ms):<pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+      #test okmsg [$e serialize]
+      #test okmsg "$msg passed ([t1 diff] ms):<pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
+      test okmsg "$msg passed ([t1 diff] ms):<pre>[ad_quotehtml [$e message]]</pre>"
     } else {
       test errmsg "$msg failed due to UNEXPECTED exception:<pre>[ad_quotehtml [$e set __message__([[$e info class] contentType])]]</pre>"
     }
@@ -232,72 +235,72 @@ test case "xorb test cases"
     ns_cache flush xorb_skeleton_cache dummy
   } 0 "Initiating cache for skeleton objects"
 
-  # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # #
-  # CoI/ Configurations
-  # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # #
+#   # # # # # # # # # # # # # #
+#   # # # # # # # # # # # # # #
+#   # CoI/ Configurations
+#   # # # # # # # # # # # # # #
+#   # # # # # # # # # # # # # #
 
-  test section "Chain of Interceptors (CoI)"
+#   test section "Chain of Interceptors (CoI)"
 
-  # / / / / / / / / / / / / / / / / 
+#   # / / / / / / / / / / / / / / / / 
 
-  ?- { 
-    Interceptor DummyInterceptor
-    DummyInterceptor instproc handleRequest {requestObj} { next }
-    DummyInterceptor instproc handleResponse {responseObj} { next }
+#   ?- { 
+#     Interceptor DummyInterceptor
+#     DummyInterceptor instproc handleRequest {requestObj} { next }
+#     DummyInterceptor instproc handleResponse {responseObj} { next }
 
-    Interceptor AuthenticationInterceptor
-    AuthenticationInterceptor instproc handleRequest {requestObj} { next }
-    AuthenticationInterceptor instproc handleResponse {responseObj} { next }
+#     Interceptor AuthenticationInterceptor
+#     AuthenticationInterceptor instproc handleRequest {requestObj} { next }
+#     AuthenticationInterceptor instproc handleResponse {responseObj} { next }
 
-    Interceptor CachingInterceptor
-    CachingInterceptor instproc handleRequest {requestObj} { next }
-    CachingInterceptor instproc handleResponse {responseObj} { next }
+#     Interceptor CachingInterceptor
+#     CachingInterceptor instproc handleRequest {requestObj} { next }
+#     CachingInterceptor instproc handleResponse {responseObj} { next }
 
-    Interceptor LoggingInterceptor2
-    LoggingInterceptor2 instproc handleRequest {requestObj} { next }
-    LoggingInterceptor2 instproc handleResponse {responseObj} { next }
+#     Interceptor LoggingInterceptor2
+#     LoggingInterceptor2 instproc handleRequest {requestObj} { next }
+#     LoggingInterceptor2 instproc handleResponse {responseObj} { next }
     
-  } 0 "Declaring custom interceptors"
+#   } 0 "Declaring custom interceptors"
 
 
-  test subsection "Configurations"
+#   test subsection "Configurations"
 
-  # / / / / / / / / / / / / / / / / /
+#   # / / / / / / / / / / / / / / / / /
 
-  ?- {
-    Configuration DummySuper -contains {
-      ::xorb::Configuration::Element el1 \
-	  -interceptor ::template::CachingInterceptor \
-	  -array set properties {
-	    listen all
-	  }
-      ::xorb::Configuration::Element el2 \
-	  -interceptor ::template::DummyInterceptor \
-	  -array set properties {
-	    listen myImplementation
-	    position 5
-	  }
-      ::xorb::Configuration::Element el3 \
-	  -interceptor ::template::AuthenticationInterceptor \
-	  -array set properties {
-	    protocol soap
-	    position 2
-	  }
-    }
-  } 0 "Creating super configuration for testing purposes." 
+#   ?- {
+#     Configuration DummySuper -contains {
+#       ::xorb::Configuration::Element el1 \
+# 	  -interceptor ::template::CachingInterceptor \
+# 	  -array set properties {
+# 	    listen all
+# 	  }
+#       ::xorb::Configuration::Element el2 \
+# 	  -interceptor ::template::DummyInterceptor \
+# 	  -array set properties {
+# 	    listen myImplementation
+# 	    position 5
+# 	  }
+#       ::xorb::Configuration::Element el3 \
+# 	  -interceptor ::template::AuthenticationInterceptor \
+# 	  -array set properties {
+# 	    protocol soap
+# 	    position 2
+# 	  }
+#     }
+#   } 0 "Creating super configuration for testing purposes." 
 
-  ?- {
-    Configuration DummySub -superclass ::template::DummySuper -contains {
-      ::xorb::Configuration::Element el1 \
-	  -interceptor ::template::LoggingInterceptor2 \
-	  -array set properties {
-	    protocol remote
-	    position 5
-	  }
-    }
-  } 0 "Creating custom CoI Configuration, including custom interceptor"
+#   ?- {
+#     Configuration DummySub -superclass ::template::DummySuper -contains {
+#       ::xorb::Configuration::Element el1 \
+# 	  -interceptor ::template::LoggingInterceptor2 \
+# 	  -array set properties {
+# 	    protocol remote
+# 	    position 5
+# 	  }
+#     }
+#   } 0 "Creating custom CoI Configuration, including custom interceptor"
 
   # / / / / / / / / / / / / / / / / /
   # environment set-up
@@ -305,34 +308,34 @@ test case "xorb test cases"
   # requiring a package
   # object
   ?+ {::xorb::AcsScPackage initialize} "Requiring a package object (xorb acs sc)."
-  ?+ {InvocationContext ::xorb::ic} "Requiring invocation context object"
-  ::xorb::ic package ::$package_id
+  ?+ {InvocationInformation ::xorb::ii} "Requiring invocation information object"
+  ::xorb::ii package ::$package_id
   ?+ {::xo::ConnectionContext require -user_id "-5"} "Requiring a xo connection object"
   # - - - - - - - - - - - - - - - - -
-  ?- { ::xorb::rhandler load ::template::DummySub ::xorb::ic } 0 \
-      "Loading custom configuration into request and response flow"
+#   ?- { ::xorb::rhandler load ::template::DummySub ::xorb::ic } 0 \
+#       "Loading custom configuration into request and response flow"
 
-  # / / / / / / / / / / / / / / / / /
-  set reqMixins [::xorb::rhandler::RequestFlow info mixin]
-  set compare [list ::template::CachingInterceptor \
-		   ::template::AuthenticationInterceptor \
-		   ::template::DummyInterceptor \
-		   ::template::LoggingInterceptor2]
-  ? {expr {$reqMixins eq $compare}} 1 \
-      "Validating RequestFlow configuration ($reqMixins=$compare)" 
+#   # / / / / / / / / / / / / / / / / /
+#   set reqMixins [::xorb::rhandler::RequestFlow info mixin]
+#   set compare [list ::template::CachingInterceptor \
+# 		   ::template::AuthenticationInterceptor \
+# 		   ::template::DummyInterceptor \
+# 		   ::template::LoggingInterceptor2]
+#   ? {expr {$reqMixins eq $compare}} 1 \
+#       "Validating RequestFlow configuration ($reqMixins=$compare)" 
 
-  # / / / / / / / / / / / / / / / / /
-  set resMixins [::xorb::rhandler::ResponseFlow info mixin]
-  set compare  [list ::template::LoggingInterceptor2 \
-		    ::template::DummyInterceptor \
-		    ::template::AuthenticationInterceptor \
-		    ::template::CachingInterceptor]
-  ? {expr {$resMixins eq $compare}} 1 \
-      "Validating ResponseFlow configuration ($resMixins=$compare)" 
+#   # / / / / / / / / / / / / / / / / /
+#   set resMixins [::xorb::rhandler::ResponseFlow info mixin]
+#   set compare  [list ::template::LoggingInterceptor2 \
+# 		    ::template::DummyInterceptor \
+# 		    ::template::AuthenticationInterceptor \
+# 		    ::template::CachingInterceptor]
+#   ? {expr {$resMixins eq $compare}} 1 \
+#       "Validating ResponseFlow configuration ($resMixins=$compare)" 
 
-  # / / / / / / / / / / / / / / / / /
-  ?- { ::xorb::rhandler load Standard ::xorb::ic} 0 \
-      "Re-establishing STANDARD configuration into request and response flow"
+#   # / / / / / / / / / / / / / / / / /
+#   ?- { ::xorb::rhandler load Standard ::xorb::ic} 0 \
+#       "Re-establishing STANDARD configuration into request and response flow"
 
 
 
@@ -617,8 +620,8 @@ test case "xorb test cases"
   # / / / / / / / / / / / / / / / / / / /
   test subsection "Deployment"
 
-  Interceptor GeneralInterceptor
-  Interceptor SoapInterceptor
+#  Interceptor GeneralInterceptor
+#  Interceptor SoapInterceptor
   ServiceImplementation CalleeInterface \
       -implements ::template::CallerInterface \
       -using {
@@ -628,12 +631,13 @@ test case "xorb test cases"
 	    -for ::template::servantProc
       }
 
+#  -interceptors {
+#    {soap ::template::SoapInterceptor}
+#    ::template::GeneralInterceptor
+#	  }
+
   ?+ {CalleeInterface deploy \
-	  -interceptors {
-	    {soap ::template::SoapInterceptor}
-	    ::template::GeneralInterceptor
-	  } \
-	  -defaultPermission public \
+	  -defaultPermission public_member \
 	  -requirePermission {
 	    abstractCallTwo none
 	    abstractCallOne login
@@ -878,14 +882,14 @@ test case "xorb test cases"
   # / / / / / / / / / / / / /
   # preparing call to 
   # AAImplementation -> m1
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m1
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m1
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance (1st call)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance (1st call)"
 
   # / / / / / / / / / / / / / / / / / / / /
   # 1st call test
@@ -899,8 +903,8 @@ test case "xorb test cases"
     return {}
   }
   ?+ {$i invoke} [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / / / / / / / / /
@@ -909,7 +913,7 @@ test case "xorb test cases"
   # - ! argument conversion
   # - ! return value check
 
-  ::xorb::ic virtualCall m2
+  ::xorb::ii virtualCall m2
   # --
   ServantObj proc servantMethod {arg1 arg2 arg3} {
     ns_write "<pre>[self]->[self proc]:</pre>"
@@ -917,11 +921,11 @@ test case "xorb test cases"
     return 1
   }
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance (2nd call)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance (2nd call)"
   #ns_write 2nd-call-invoke=[$i invoke]
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / / / / / / / / /
@@ -930,7 +934,7 @@ test case "xorb test cases"
   # - ! argument conversion
   # - ! return value check
 
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualCall m3
   # --
   ServantClass instproc servantMethod {
     -arg1:required 
@@ -942,10 +946,10 @@ test case "xorb test cases"
     return 1
   }
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance (3rd call)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance (3rd call)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / /
@@ -961,10 +965,10 @@ test case "xorb test cases"
     return one
   }
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance (ReturnValueTypeMismatch)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance (ReturnValueTypeMismatch)"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::ReturnValueTypeMismatch" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), non-conforming return value
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), non-conforming return value
   }]
 
 
@@ -972,18 +976,18 @@ test case "xorb test cases"
   # preparing call to non-existant
   # method on Implementation
   # AAImplementation -> m4
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m4
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m4
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (non-existant servant (method))"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::InvocationException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), non-existant servant (method)
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), non-existant servant (method)
   }]
 
   # / / / / / / / / / / / / /
@@ -992,19 +996,19 @@ test case "xorb test cases"
   # no adhereing to contracted
   # signature
   # AAImplementation -> m4
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (record mismatch (contract))"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::InvocationException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), contract mismatch (contract)
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), contract mismatch (contract)
   }]
 
   test subsubsection "Implementation hosting per-object servants"
@@ -1041,56 +1045,56 @@ test case "xorb test cases"
   # preparing call to 
   # per-instance Delegate
 
-  ::xorb::ic virtualObject ::template::PerObjectImplementation
-  ::xorb::ic virtualCall m1
+  ::xorb::ii virtualObject ::template::PerObjectImplementation
+  ::xorb::ii virtualCall m1
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance for dispatch to per-object implementation (per-instance delegate"
  # set x [$i invoke]
 #  ns_write $x,isobj=[::xotcl::Object isobject $x],[$x serialize]
   ?++ {[$i invoke] set __value__} {} [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / /
   # preparing call to 
   # per-object Delegate
 
-  ::xorb::ic virtualObject ::template::PerObjectImplementation
-  ::xorb::ic virtualCall m2
+  ::xorb::ii virtualObject ::template::PerObjectImplementation
+  ::xorb::ii virtualCall m2
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance for dispatch to per-object implementation (per-object delegate)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / /
   # preparing call to 
   # per-object Method
 
-  ::xorb::ic virtualObject ::template::PerObjectImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::PerObjectImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance for dispatch to per-object implementation (per-object method)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
 
@@ -1103,8 +1107,8 @@ test case "xorb test cases"
 
   # # # # # # # # # # # # # # #
   # re-set Default policy
-  # to "public"
-  ::xorb::deployment::Default default_permission public
+  # to "public_member"
+  ::xorb::deployment::Default default_permission public_member
 
   # # # # # # # # # # # # # #
   # # # # # # # # # # # # # #
@@ -1181,19 +1185,19 @@ test case "xorb test cases"
 
   # setting the call environment
   # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-  ::xorb::ic virtualObject ::template::AA-2-LC-Adapter
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AA-2-LC-Adapter
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - class)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - class)"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
-    Dispatching invocation call (negative class adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (negative class adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # adapter method (handle signature mismatches)
@@ -1207,10 +1211,10 @@ test case "xorb test cases"
   }
 
   # 2) POSITIVE test
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - class)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - class)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call (positive class adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive class adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / /
@@ -1251,18 +1255,18 @@ test case "xorb test cases"
 
   # setting the call environment
   # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-  ::xorb::ic virtualObject ::template::AA-2-LO-Adapter
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AA-2-LO-Adapter
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - object)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - object)"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
-    Dispatching invocation call (negative class adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (negative class adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # adapter method (handle signature mismatches)
@@ -1276,10 +1280,10 @@ test case "xorb test cases"
   }
 
   # 2) POSITIVE test
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - object)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - object)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call (positive class adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive class adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # 3) legacy procs
@@ -1318,18 +1322,18 @@ test case "xorb test cases"
 
   # setting the call environment
   # 1) NEGATIVE test -> no record adaptation to legacy instproc!
-  ::xorb::ic virtualObject ::template::AA-2-LP-Adapter
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AA-2-LP-Adapter
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - proc)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - proc)"
   ?-- {[$i invoke] set __value__} "::xorb::exceptions::ServantDispatchException" [subst {
-    Dispatching invocation call (negative proc adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (negative proc adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # adapter method (handle signature mismatches)
@@ -1343,10 +1347,10 @@ test case "xorb test cases"
   }
 
   # 2) POSITIVE test
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('adaptor implementation' - proc)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('adaptor implementation' - proc)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call (positive proc adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive proc adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # / / / / / / / / / / / / / / / / / / / /
@@ -1408,59 +1412,59 @@ test case "xorb test cases"
 
   # 3) POSITIVE test -> m1
 
-  ::xorb::ic virtualObject ::template::AATreaty-2-mSearch-Adapter
-  ::xorb::ic virtualCall m1
+  ::xorb::ii virtualObject ::template::AATreaty-2-mSearch-Adapter
+  ::xorb::ii virtualCall m1
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
   ?++ {[$i invoke] set __value__} {} [subst {
-    Dispatching invocation call (positive MIXED proc adaptor test): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive MIXED proc adaptor test): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # 3a) POSITIVE test -> m2
-  ::xorb::ic virtualObject ::template::AATreaty-2-mSearch-Adapter
-  ::xorb::ic virtualCall m2
+  ::xorb::ii virtualObject ::template::AATreaty-2-mSearch-Adapter
+  ::xorb::ii virtualCall m2
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
   #ns_write SER=[[$i invoke] serialize]
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call (positive MIXED proc adaptor test, calling m2): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive MIXED proc adaptor test, calling m2): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # 3b) POSITIVE test -> m3
 
-  ::xorb::ic virtualObject ::template::AATreaty-2-mSearch-Adapter
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AATreaty-2-mSearch-Adapter
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
+  ::xorb::ii virtualArgs [$aus now]
 
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
+  ?+ {set i [Invoker new -context ::xorb::ii]} "Creating invoker instance ('AATreaty-2-mSearch-Adapter' - mixed proc adapter)"
   ?++ {[$i invoke] set __value__} 1 [subst {
-    Dispatching invocation call (positive MIXED proc adaptor test, calling m3): [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]).
+    Dispatching invocation call (positive MIXED proc adaptor test, calling m3): [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]).
   }]
 
   # # # # # # # # # # # # # # #
   # re-set Default policy
-  # to "public"
-  ::xorb::deployment::Default default_permission public
+  # to "public_member"
+  ::xorb::deployment::Default default_permission public_member
 
   # # # # # # # # # # # # # #
   # # # # # # # # # # # # # #
@@ -1477,14 +1481,14 @@ test case "xorb test cases"
   ns_write <pre>[::xo::cc user_id]</pre>
   # Policy test 1:
   # - per-implementation defaults
-  # - private (modifier) primitive
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  # - private_member (modifier) primitive
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
   ServantClass instproc servantMethod {
     -arg1:required 
@@ -1496,17 +1500,17 @@ test case "xorb test cases"
     return 1
   }
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (Policy test 1)"
 
   ::xorb::deployment::Default contains {
-    ::xotcl::Object AAImplementation -set default_permission public
+    ::xotcl::Object __template__AAImplementation -set default_permission public_member
   }
 
   # negative test
   ?-- {$i invoke} "::xorb::exceptions::BreachOfPolicyException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), negative (denying) policy check ('public')
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), negative (denying) policy check ('public_member')
   }]
 
   # positive test
@@ -1514,8 +1518,8 @@ test case "xorb test cases"
     return 1
   }
   ?+ {$i invoke}  [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), positive (granting) policy check ('public')
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), positive (granting) policy check ('public_member')
   }]
 
   # - cleanup
@@ -1528,13 +1532,13 @@ test case "xorb test cases"
   # - per-implementation, per-call rules
   # - deny primitive
 
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
   ServantClass instproc servantMethod {
     -arg1:required 
@@ -1546,11 +1550,11 @@ test case "xorb test cases"
     return 1
   }
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (Policy test 2)"
 
   ::xorb::deployment::Default contains {
-    ::xotcl::Object AAImplementation -array set require_permission {
+    ::xotcl::Object __template__AAImplementation -array set require_permission {
       m3 	deny
       m1	none
       m2	none
@@ -1559,8 +1563,8 @@ test case "xorb test cases"
 
   # negative test
   ?-- {$i invoke} "::xorb::exceptions::BreachOfPolicyException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), negative (denying) policy check ('deny')
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), negative (denying) policy check ('deny')
   }]
 
   # / / / / / / / / / / / / /
@@ -1568,15 +1572,15 @@ test case "xorb test cases"
   # - per-implementation, per-call rules
   # - login primitive
 
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (Policy test 3)"
 
   ::xorb::deployment::Default contains {
@@ -1590,8 +1594,8 @@ test case "xorb test cases"
   # negative test
   ns_write <pre>[::xo::cc user_id]</pre>
   ?-- {$i invoke} "::xorb::exceptions::BreachOfPolicyException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), negative (denying) policy check ('login')
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), negative (denying) policy check ('login')
   }]
 
   # positive test
@@ -1599,8 +1603,8 @@ test case "xorb test cases"
   ::xo::cc user_id 1
   ns_write <pre>[::xo::cc user_id]</pre>
   ?+ {$i invoke}  [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), positive (granting) policy check ('login')
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), positive (granting) policy check ('login')
   }]
   #cleanup
   ::xorb::deployment::Default::__template__AAImplementation destroy
@@ -1610,15 +1614,15 @@ test case "xorb test cases"
   # - isImplementation condition
   # - none, login primitives
 
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (Policy test 4)"
 
   ::xorb::deployment::Default default_permission \
@@ -1627,16 +1631,16 @@ test case "xorb test cases"
   # negative test
   ::xo::cc user_id 0
   ?-- {$i invoke} "::xorb::exceptions::BreachOfPolicyException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), negative (denying) policy check 
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), negative (denying) policy check 
     ('isImplementation')
   }]
 
   # positive test
   ::xo::cc user_id 1
   ?+ {$i invoke}  [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), positive (granting) policy check
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), positive (granting) policy check
     ('isImplementation')
   }]
 
@@ -1647,16 +1651,16 @@ test case "xorb test cases"
   # - isProtocol condition
   # - none, login primitives
 
-  ::xorb::ic virtualObject ::template::AAImplementation
-  ::xorb::ic virtualCall m3
+  ::xorb::ii virtualObject ::template::AAImplementation
+  ::xorb::ii virtualCall m3
   set aus  [AnythingUs new \
 		-signature {{-arg1:string -arg2:string -arg3:string}} \
 		-arguments {{-arg1 v1 -arg2 v2 -arg3 v3}}]
-  ::xorb::ic virtualArgs [$aus now]
-  #::xorb::ic virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
-  ::xorb::ic protocol ::xosoap::Soap
+  ::xorb::ii virtualArgs [$aus now]
+  #::xorb::ii virtualArgs [list -arg1 v1 -arg2 v2 -arg3 v3]
+  ::xorb::ii protocol ::xosoap::Soap
 
-  ?+ {set i [Invoker new -context ::xorb::ic]} \
+  ?+ {set i [Invoker new -context ::xorb::ii]} \
       "Creating invoker instance (Policy test 5)"
 
   ::xorb::deployment::Default default_permission \
@@ -1666,30 +1670,30 @@ test case "xorb test cases"
   # negative test
   ::xo::cc user_id 0
   ?-- {$i invoke} "::xorb::exceptions::BreachOfPolicyException" [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), negative (denying) policy check 
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), negative (denying) policy check 
     ('isProtocol')
   }]
 
   # positive test 1
   ::xo::cc user_id 1
   ?+ {$i invoke}  [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), positive (granting) policy check
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), positive (granting) policy check
     ('isProtocol', condition fulfilled)
   }]
 
   # positive test 2
   ::xo::cc user_id 0
-  ::xorb::ic protocol ::xorb::AcsSc
+  ::xorb::ii protocol ::xorb::AcsSc
   ?+ {$i invoke}  [subst {
-    Dispatching invocation call: [::xorb::ic virtualObject]->[::xorb::ic virtualCall]\
-	([::xorb::ic virtualArgs]), positive (granting) policy check
+    Dispatching invocation call: [::xorb::ii virtualObject]->[::xorb::ii virtualCall]\
+	([::xorb::ii virtualArgs]), positive (granting) policy check
     ('isProtocol', condition NOT fulfilled)
   }]
 
 
-  ::xorb::deployment::Default default_permission public
+  ::xorb::deployment::Default default_permission public_member
 
   test subsection "Implementations: unstaging"
   #myImplementation mixin add ::xorb::Synchronizable

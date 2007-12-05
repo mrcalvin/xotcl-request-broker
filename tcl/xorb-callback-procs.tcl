@@ -96,13 +96,14 @@ namespace eval ::xorb {
     -from_version_name
     -to_version_name
   } { 
-      if {$from_version_name < 0.3} {
-	ns_log warn {
-	  Please note that upgrades from versions below 0.3
-	  are not supported. Consider a complete re-install!
-	}
-      return
+    if {$from_version_name < 0.3} {
+      ns_log warn {
+	Please note that upgrades from versions below 0.3
+	are not supported. Consider a complete re-install!
       }
+      return
+    }
+    # -- 0.3 -> 0.4
     if {[apm_version_names_compare $from_version_name "0.3"] == 0 &&
 	[apm_version_names_compare $to_version_name "0.4"] > -1} {
       
@@ -134,10 +135,27 @@ namespace eval ::xorb {
 	set n [$si set name]
 	lappend impls $n
       }
-      ns_log notice "Removing ctrs=$ctrs, msgt=$msgTypes, impls=$impls"
       ConfigurationManager deleteContracts $ctrs
       ConfigurationManager deleteMsgTypes $msgTypes
       ConfigurationManager deleteImplementations $impls
+    }
+    
+    # -- 0.4(.x) -> 0.4.2
+    if {[apm_version_names_compare $from_version_name "0.4"] > -1 &&
+	[apm_version_names_compare $to_version_name "0.4.2"] == 0} {
+      # / / / / / / / / / / / / / / / / / / / / / / / /
+      # Background: in 0.4.2, we introduced the
+      # dependency for xotcl-core 0.75+ which required
+      # changing the auto-generation of type-related
+      # stored procedures according to OpenACS conventions,
+      # i.e. in order to be compatible with the ::xo::db
+      # stub compiler. Previously released versions, i.e.
+      # 0.4 and 0.4.1 (depending on the revision in the
+      # latter case) were not compliant. Therefore, we
+      # have to force the re-creation of the constructor
+      # stored procedure.
+      ::xorb::ServiceContract releaseConstructor
+      ::xorb::ServiceImplementation releaseConstructor 
     }
   }
 }

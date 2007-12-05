@@ -2096,7 +2096,7 @@ namespace eval xorb {
       # enforce ruling deployment policy
       # - - - - - - - - - - - - -
       set pkg [$context package]
-     #my debug rulingPolicy=[$pkg getPolicy]
+      my debug rulingPolicy=[$pkg getPolicy]
       set granted [$pkg check_permissions [$skeleton info class] $context]
       if {$granted} {
 	::xotcl::nonposArgs mixin add \

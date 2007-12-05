@@ -1,0 +1,389 @@
+namespace eval ::xosoap::tests {
+
+  namespace import ::xorb::storm::*
+
+  TestSuite XosoapQuickStartEchoConsumer -ad_doc {
+    
+    Consumer-side test suite realising the quickstart consumer
+    examples as delivered in the combined xorb/xosoap manual.  Thanks
+    to Michael Totschnig for coming up with the idea of having
+    ready-made examples turned into proper tests.
+    
+  } -setup_script {
+    namespace import ::xorb::stub::*
+    namespace import ::xosoap::client::*
+  } -contains {
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_quickstart_xosoap_1 -preconditions {
+      {::xotcl::Object isobject ::xorb::stub::ProxyObject}
+      {::xotcl::Object isobject ::xosoap::client::SoapGlueObject}
+    } -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateGlueObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:1:step1 >#
+	    set glueObject [SoapGlueObject new \
+				-endpoint "http://localhost:8000/xosoap/services/xorb/manual/EchoServiceImpl" \
+				-messageStyle ::xosoap::RpcEncoded]
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:1:step2 >#
+	    ProxyObject EchoClient -glueobject $glueObject
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario PopulateProxyObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:1:step3 >#
+	    EchoClient ad_proc -returns xsFloat \
+		echoFloat {-inputFloat:xsFloat} {
+		  By calling this proc, a remote call is issued \
+		      against the previously defined endpoint
+		} {}
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:quickstart:xosoap:1:step4 >#
+	    EchoClient echoFloat -inputFloat 1.6180339887
+	    #< end >#
+	  } -expected_result 1.6180339887
+    } -cleanup_script {
+      $glueObject destroy
+      EchoClient destroy
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_quickstart_xosoap_2 -preconditions {
+      {expr {![::xotcl::Object isobject EchoClient]}}
+    } -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateCombinedProxyGlueObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:2:step1 >#
+	    SoapObject EchoClient\
+		-endpoint "http://localhost:8000/xosoap/services/xorb/manual/EchoServiceImpl"\
+		-messageStyle ::xosoap::RpcEncoded
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario PopulateProxyGlueObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:2:step2 >#
+	    EchoClient ad_proc -returns xsFloat \
+		echoFloat {-inputFloat:xsFloat} {
+		  By calling this proc, a remote call is issued \
+		      against the previously defined endpoint
+		} {}
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnGlueProxy \
+	  -test_body {
+	    #< lst:quickstart:xosoap:2:step3 >#
+	    EchoClient echoFloat -inputFloat 1.61805
+	    #< end >#
+	  } -expected_result 1.61805
+    } -cleanup_script {
+      EchoClient destroy
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_quickstart_xosoap_3 -preconditions {
+      {expr {![::xotcl::Object isobject EchoClient]}}
+    } -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateGlueObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:3:step1 >#
+	    set glueObject [SoapGlueObject new \
+				-endpoint "http://localhost:8000/xosoap/services/xorb/manual/EchoServiceImpl" \
+				-messageStyle ::xosoap::RpcEncoded]
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:3:step2 >#
+	    ProxyObject EchoClient -glueobject $glueObject
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario PopulateProxyObject \
+	  -test_body {
+	    #< lst:quickstart:xosoap:3:step3 >#
+	    EchoClient ad_glue -returns xsFloat\
+		proc echoFloat {-inputFloat:xsFloat,glue} {
+		  By calling this proc, a remote call is issued \
+		      against the previously defined endpoint
+		}
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:quickstart:xosoap:3:step4 >#
+	    EchoClient echoFloat -inputFloat 1.6180339887
+	    #< end >#
+	  } -expected_result 1.6180339887
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_advanced_xosoap_4 -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyTemplate -test_body {
+	#< lst:advanced:xosoap:4:step1 >#
+	EchoClient ad_proc -returns xsFloat \
+	    echoFloat {-inputFloat:xsFloat,glue} \
+	    {
+	      By calling this proc, a remote call is issued against
+	      the previously defined endpoint.  However, this
+	      time, the call only gets executed when the floating
+	      number matches a certain value space.
+	    } {
+	      if {[expr {round(0.5 * (1 + sqrt(5)))}] == [expr round($inputFloat)]} {
+		next;# invoke on remote method / procedure
+	      }
+	    }
+	#< end >#
+      }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy1 \
+	  -test_body {
+	    EchoClient echoFloat -inputFloat 5.12345
+	  } -expected_result ""
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy2 \
+	  -test_body {
+	    #< lst:advanced:xosoap:4:step2 >#
+	    EchoClient echoFloat -inputFloat 1.6180339887
+	    #< end >#
+	  } -expected_result 1.6180339887
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_advanced_xosoap_5 -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyTemplate -test_body {
+	#< lst:advanced:xosoap:5:step1 >#
+	EchoClient ad_proc -returns xsFloat \
+	    echoFloat {
+	      -inputFloat:xsFloat,glue
+	      -nonpositionalArgument
+	      positionalArgument1
+	      positionalArgument2
+	    } {
+	      By calling this proc, a remote call is issued against
+	      the previously defined endpoint.  However, this time,
+	      the call only gets executed when the floating number
+	      matches a certain value space. In addition, the
+	      variables "nonpositionArgument", "positionalArgument1",
+	      and "positionalArgument2" will be bound and restricted
+	      to the template's scope.
+	    } {
+	      my log "Variables in this scope: [info vars]"
+	      if {[expr {round(0.5 * (1 + sqrt(5)))}] == [expr round($inputFloat)]} {
+		next;# invoke on remote method / procedure
+	      }
+	    }
+	#< end >#
+      }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:advanced:xosoap:5:step2 >#
+	    EchoClient echoFloat \
+		-nonpositionalArgument "npValue" \
+		-inputFloat 1.6180339887 \
+		"val1" "val2"
+	    #< end >#
+	  } -expected_result 1.6180339887
+    } 
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_advanced_xosoap_6 -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyTemplate -test_body {
+	#< lst:advanced:xosoap:6:step1 >#
+	EchoClient ad_proc -returns xsFloat \
+	    echoFloat {
+	      -inputFloat:xsFloat,glue
+	      -nonpositionalArgument
+	      positionalArgument1
+	      positionalArgument2
+	    } {
+	      By calling this proc, a remote call is issued against
+	      the previously defined endpoint.  However, this time,
+	      the call only gets executed when the floating number
+	      matches a certain value space. In addition, the
+	      variables "nonpositionArgument", "positionalArgument1",
+	      and "positionalArgument2" will be bound and restricted
+	      to the template's scope. Besides, the proxy
+	      argument/parameter "inputFloat" will be increased before
+	      being sent to the remote object to be echoed.
+	    } {
+	      my log "Variables in this scope: [info vars]"
+	      set inputFloat [expr "$inputFloat + 1"]
+	      next -inputFloat $inputFloat;
+	    }
+	#< end >#
+      }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:advanced:xosoap:6:step2 >#
+	    EchoClient echoFloat \
+		-nonpositionalArgument "npValue" \
+		-inputFloat 1.6180339887 \
+		"val1" "val2"
+	    #< end >#
+	  } -expected_result 2.6180339887
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_advanced_xosoap_7 -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateGlueObject -test_body {
+	#< lst:advanced:xosoap:7:step1 >#
+	set glueObject2 [SoapGlueObject new \
+			    -endpoint "http://dietrich.ganx4.com/nusoap/testbed/round2_base_server.php"\
+			    -messageStyle ::xosoap::RpcEncoded]
+	#< end >#
+      }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyAndAssignGlue \
+	  -test_body {
+	    #< lst:advanced:xosoap:7:step2 >#
+	    EchoClient ad_proc -glueobject $glueObject2 -returns xsFloat\
+		echoFloat {
+		  -inputFloat:xsFloat
+		} {
+		  By calling this proc, a remote call is issued
+		  against the endpoint, previously defined at the
+		  per-method level.
+		} {}
+	    #< end >#
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:advanced:xosoap:7:step3 >#
+	    EchoClient echoFloat -inputFloat 1.6180339887
+	    #< end >#
+	  } -expected_result 1.6180339887
+    } -cleanup_script {
+      $glueObject2 destroy
+    }
+    # # # # # # # # # # # # # # #
+    # #       TestCase        # # 
+    # # # # # # # # # # # # # # #
+    ::xorb::storm::TestCase lst_advanced_xosoap_8 -contains {
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario CreateProxyDecorator -test_body {
+	#< lst:advanced:xosoap:8:step1 >#
+	::xotcl::Class ProxyDecorator
+	SoapGlueObject ProxyDecorator::GlueObject \
+	    -endpoint "http://dietrich.ganx4.com/nusoap/testbed/round2_base_server.php"\
+	    -messageStyle ::xosoap::RpcEncoded
+	ProxyDecorator instproc glueobject args {
+	  return [self class]::GlueObject
+	}
+	#< end >#
+      }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario ResetProxyMethod \
+	  -test_body {
+	    EchoClient ad_proc -returns xsFloat\
+		echoFloat {
+		  -inputFloat:xsFloat
+		} {
+		  By calling this proc, a remote call is issued
+		  against the endpoint.
+		} {}
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::NonFailureScenario DecorateProxy \
+	  -test_body {
+	    #< lst:advanced:xosoap:8:step2 >#
+	    EchoClient mixin add [ProxyDecorator self]
+	    #< end >#
+	  } -postconditions {
+	    {expr {[EchoClient info mixin [ProxyDecorator self]] ne {}}}
+	  }
+      # # # # # # # # # # # # # # #
+      # #      TestScenario     # # 
+      # # # # # # # # # # # # # # #
+      ::xorb::storm::TestScenario InvokeOnProxy \
+	  -test_body {
+	    #< lst:advanced:xosoap:8:step3 >#
+	    EchoClient echoFloat -inputFloat 1.6180339887
+	    #< end >#
+	  } -expected_result 1.6180339887
+    } -cleanup_script {
+      $glueObject destroy
+      EchoClient destroy
+    }
+  }
+}
+
+
