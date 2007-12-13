@@ -21,7 +21,7 @@ if {[::xotcl::Object isobject $name] && [$name istype ::xorb::Object]} {
   # 2-) not given, resolve it from broker
   set flag [expr {$type eq "::xorb::ServiceContract"?"contract":"impl"}]
   array set stream [eval XorbManager do \
-			::xorb::manager::Broker stream \
+			::xorb::manager::Broker get \
 			-what [namespace tail $type] \
 			-$flag $name]
   ns_log debug stream=[array get stream]  

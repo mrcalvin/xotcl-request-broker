@@ -1,3 +1,28 @@
+2007-12-13  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-stub-procs.tcl: Moved the history preserving of the
+	previous context object into the BlockingRequestor. The feature,
+	for now, only makes sense in the blocking context.
+
+	* tcl/xorb-interceptors-procs.tcl: The request handler needs to
+	discriminate between blocking/non-blocking mode when proceeding
+	from request to the response flow (as there might be a time gap
+	and gap of control inbetween). This should be realised in a more
+	generic manner in the upcoming state-machine based rewrite, but is
+	stable for the time being ... 
+
+2007-12-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: Descriptors of Abstracts are mandatory,
+	to easen this requirement, we provided a default (should be
+	exchanged by a message key) at some point in time. 
+
+	* www/admin/delete.tcl: Fixed legacy issue with the script still
+	calling Broker->stream instead of Broker->get
+
+	* tcl/xorb-broker-procs.tcl: Fixed bug (uninitialised variable
+	condition) when deleting orphaned service implementation.
+
 2007-12-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/admin/regression-test.tcl: Fixed the regression test suite,

@@ -120,11 +120,6 @@ namespace eval ::xorb::stub {
      # 1-) derive from context object
      # a clone!
      set contextObject [$contextObject clone [self]::co]
-     # 1a-) register cloned object as
-     # 'most recent' invocation information
-     # with the issueing client proxy
-     $contextObject instvar proxy
-     $proxy set __lastInformation $contextObject
 
      # / / / / / / / / / / / / /
      # 2-) turn context object into
@@ -302,13 +297,20 @@ namespace eval ::xorb::stub {
   BlockingRequestor instproc call args {
     next;# Requestor->call
     my instvar contextObject
+    # 1a-) register cloned object as
+    # 'most recent' invocation information
+    # with the issueing client proxy
+    $contextObject instvar proxy
+    $proxy set __lastInformation $contextObject
     # / / / / / / / / / / / / /
     # verify returntype constraint
     # introducing anythings:
     # unmarshalledResponse is of 
     # type Anything
     set any [$contextObject result]
-    return [my unwrap $any]
+    set r [my unwrap $any]
+    my debug RESULT=$r
+    return $r
   }
 
   # / / / / / / / / / / / / / / / / / /

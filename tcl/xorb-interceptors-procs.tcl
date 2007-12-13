@@ -35,23 +35,30 @@ namespace eval ::xorb {
     my dispatch $requestFlow
     # -4- / / / / clear context data / / / /
     $requestFlow clearContext
-    # -5- / / / / process response flow / / / /
-    set responseFlow [my handleResponse $requestFlow]
-    if {![my isobject $responseFlow] || \
-	    ![$responseFlow istype ::xorb::context::InvocationInformation]} {
-      my debug "===ResponseFlow=== WARNING: Fallback to original context object"
-      set responseFlow $requestFlow
+    # / / / / / / / / / / / / / / / / / / / 
+    # Only continue for blocking calls
+    # TODO: This should be handled more elegantly 
+    # by a state-machine implementation of
+    # the request handler ...
+    if {![$context asynchronous]} {
+      # -5- / / / / process response flow / / / /
+      set responseFlow [my handleResponse $requestFlow]
+      if {![my isobject $responseFlow] || \
+	      ![$responseFlow istype ::xorb::context::InvocationInformation]} {
+	my debug "===ResponseFlow=== WARNING: Fallback to original context object"
+	set responseFlow $requestFlow
+      }
+      # -6- / / / / deliver / / / /
+      my switch $requestFlow $responseFlow
+      my deliver $responseFlow
+      # / / / / / / / / / / / /
+      # in a non-blocking scenario
+      # $responseFlow might not exist
+      # after deliver!
+      # my unplug $responseFlow
+      # $responseFlow clearContext
+      return $responseFlow
     }
-    # -6- / / / / deliver / / / /
-    my switch $requestFlow $responseFlow
-    my deliver $responseFlow
-    # / / / / / / / / / / / /
-    # in a non-blocking scenario
-    # $responseFlow might not exist
-    # after deliver!
-    # my unplug $responseFlow
-    # $responseFlow clearContext
-    return $responseFlow
   }
   HandlerManager instproc handleRequest {context} {
     set i [my getInstance $context]

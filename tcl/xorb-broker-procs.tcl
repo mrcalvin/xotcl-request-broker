@@ -117,6 +117,7 @@ ad_library {
       if {[info exists $iMiddle]} {
 	# 3.
 	eval set iName $$iMiddle
+	if {![info exists contract]} {set contract ""}
 	set obj [::xorb::manager::IRepository resolve \
 		     -name $iName \
 		     -contract $contract]
@@ -226,10 +227,11 @@ ad_library {
       }
 	my debug "+++STREAM-RETURN:[array get stream]"
       } msg]} {
+	global errorInfo
 	# - explicit cleanup!
 	my cleanup
 	# - after cleanup, we provide for a re-throw.
-	error $msg
+	error $errorInfo
       }
       return [array get stream]
     } 

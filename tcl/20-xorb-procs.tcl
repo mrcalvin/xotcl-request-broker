@@ -395,6 +395,7 @@ namespace eval xorb {
     # the key element and the extended
     # type info.
     set elementConstraints [db_null]
+    my debug elementType=$elementType
     ::xorb::datatypes::Anything tokenise $elementType
     if {$typeInfo ne {}} {set elementConstraints $typeInfo}
 
@@ -514,8 +515,6 @@ namespace eval xorb {
 	    -operation_inputtype $inputTypeName \
 	    -operation_outputtype $outputTypeName \
 	    
-	# 2) execute bulk call per operation
-	
       }
     }
   }
@@ -572,7 +571,11 @@ namespace eval xorb {
   ::xotcl::Class Abstract -superclass ::xorb::Attribute -slots {
     Attribute arguments -default {}
     Attribute returns -default {}
-    Attribute description -default {}
+    Attribute description -default {
+      This is an auto-generated description for this abstract operation. 
+      You can provide a more useful one by using ad_doc on the 
+      operation specification object.
+    }
   } -ad_doc {
     <p>The slot class is a specialisation of <a href="http://media.wu-wien.ac.at/langRef-xotcl.html#Attribute">XOTcl's Attribute
     class</a> and allows to specify abstract elements of interface
