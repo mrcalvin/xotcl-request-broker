@@ -35,6 +35,11 @@ namespace eval ::xorb::stub {
 	# objects or result callbacks.
 	Attribute asynchronous -default false
 	Attribute callback
+	# / / / / / / / / / / / / /
+	# Timout constraint applied
+	# to non-blocking kind of 
+	# connections ...
+	Attribute timeout -default 10000
       } -ad_doc {
 	<p>The class ContextObject realises a specific pattern
 	of parameter passing which is used in xorb's client-side
@@ -415,6 +420,7 @@ namespace eval ::xorb::stub {
 	asynchronous
 	callNamespace
 	httpHeader
+	timeout
       }] "\\\n "]\]
     }]
     $contextObject mixin delete ::xorb::aux::Streamable
