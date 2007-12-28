@@ -267,8 +267,7 @@ only two declarative ones. Let's rewrite the example:
       of your package. In either case, whether you choose a *-procs or a
       *-init file, make sure that you place the following line before the
       actual code block depicted in step 1 and 2:
-      \lstinline[breaklines=true]!::xo::db::package require
-      xotcl-request-broker!. Besides, there is a subtle difference between
+      \lstinline[breaklines=true]!::xo::db::package require xotcl-request-broker!. Besides, there is a subtle difference between
       the *-procs and *-init files. The latter are evaluated only once,
       during server start-up. This means, contracts and implementations are
       only evaluate once. If you constantly develop, let's say, the servant

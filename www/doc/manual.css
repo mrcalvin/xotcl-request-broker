@@ -6,6 +6,7 @@
 .phvr8t-x-x-92{ font-family: sans-serif;}
 .phvr8t-x-x-92{ font-family: sans-serif;}
 .phvr8t-x-x-92{ font-family: sans-serif;}
+.phvr8t-x-x-92{ font-family: sans-serif;}
 .phvb8t-x-x-92{font-size:92%;font-family: sans-serif; font-weight: bold;}
 .phvb8t-x-x-92{font-family: sans-serif; font-weight: bold;}
 .phvb8t-x-x-190{font-size:190%;font-family: sans-serif; font-weight: bold;}
@@ -14,9 +15,16 @@
 .phvr8t-x-x-132{ font-family: sans-serif;}
 .phvr8t-x-x-132{ font-family: sans-serif;}
 .phvr8t-x-x-132{ font-family: sans-serif;}
+.phvr8t-x-x-132{ font-family: sans-serif;}
 .ectt-1000{ font-family: monospace;}
 .ectt-1000{ font-family: monospace;}
+.phvr8t-x-x-82{font-size:82%; font-family: sans-serif;}
+.phvr8t-x-x-82{ font-family: sans-serif;}
+.phvr8t-x-x-82{ font-family: sans-serif;}
+.phvr8t-x-x-82{ font-family: sans-serif;}
+.phvr8t-x-x-82{ font-family: sans-serif;}
 .phvr8t-x-x-73{font-size:73%; font-family: sans-serif;}
+.phvr8t-x-x-73{ font-family: sans-serif;}
 .phvr8t-x-x-73{ font-family: sans-serif;}
 .phvr8t-x-x-73{ font-family: sans-serif;}
 .phvr8t-x-x-73{ font-family: sans-serif;}
@@ -24,6 +32,7 @@
 .ectt-0800{font-size:80%; font-family: monospace;}
 .ectt-0800{ font-family: monospace;}
 .phvr8t-x-x-46{font-size:46%; font-family: sans-serif;}
+.phvr8t-x-x-46{ font-family: sans-serif;}
 .phvr8t-x-x-46{ font-family: sans-serif;}
 .phvr8t-x-x-46{ font-family: sans-serif;}
 .phvr8t-x-x-46{ font-family: sans-serif;}
@@ -152,9 +161,11 @@ td.td11{ padding-left:5pt; padding-right:5pt; }
 table[rules] {border-left:solid black 0.4pt; border-right:solid black 0.4pt; }
 .hline hr, .cline hr{ height : 1px; margin:0px; }
 div.array {text-align:center;}
+.uline{ text-decoration:underline; }
+.uuline{ text-decoration:underline; }
 span.sout {text-decoration: line-through }
 span.xout {text-decoration: line-through }
-span.uwave {text-decoration: line-through }
+span.uwave {text-decoration:underline }
 .lstlisting .label{margin-right:0.5em; }
 div.lstlisting{font-family: monospace; white-space: nowrap; }
 div.lstinputlisting{ font-family: monospace; white-space: nowrap; }

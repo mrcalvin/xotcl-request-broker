@@ -2,15 +2,38 @@
      	\subsection{Prerequisites}
 	\subsubsection{Dependencies}
 	\begin{itemize}
-	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy xorb and its plug-ins on both the 4.0.10 and 4.5 family of AOLServer.
-	\item \emph{AOLServer} (\textbf{2.6.2+}): We have been developing and running xorb under version 2.6.2, 2.6.4 and, recently, 2.6.5; under both AOLServer versions, respectively.
-	\item \emph{XOTcl module} (\textbf{1.5.4+}): We require XOTcl in version \href{http://media.wu-wien.ac.at/download/xotcl-1.5.4.tar.gz}{1.5.4} (or higher) installed.
-	\item \emph{xotcl-core} (\textbf{0.70+}): xorb/ xosoap are built upon version 0.70 (or higher).
-	 Please, make sure that you comply with the install instructions specified in the \href{http://openacs.org/forums/message-view?message_id=1165990}{OACS developer forum}: In a PostgreSQL environment, there are strict requirements on the completeness and correctness of entries to the acs\_function\_args relation. This will be settled in the near future by patches to the acs-kernel, till then, xotcl-core requires these prior manual backend patch.
-	\item \emph{acs-service-contract} (\textbf{5.2.3+}): xorb/ xosoap use the abstraction layer for stored procedures as it comes with recent versions of xotcl-core (::xo:: db::sql::*). This xotcl-core facility (in PostgreSQL environments) requires certain acs\_function\_args entries to be in place. Since versions 5.4.0d1+, PosgreSQL-based stored procedures defined for acs-service-contract  are registered accordingly (acs\_function\_args table) and therefore exposed through the abstraction layer. However, having installed 5.4.0d1+ is not mandatory, as we provide for a generic upgrade and therefore compatibility to lower versions of the package (at least 5.2.3). This upgrade is non-invasive and non-critical to the overall functioning of your OpenACS installation.
+	\item \emph{AOLServer} (\textbf{4.0.10/ 4.5}): You can deploy
+          xorb and its plug-ins on both the 4.0.10 and 4.5 family of AOLServer.
+	\item \emph{AOLServer} (\textbf{2.6.2+}): We have been
+          developing and running xorb under version 2.6.2, 2.6.4 and, recently,
+          2.6.5; under both AOLServer versions, respectively.
+	\item \emph{XOTcl module} (\textbf{1.5.6+}): We require XOTcl
+          in version
+          \href{http://media.wu-wien.ac.at/download/xotcl-1.5.6.tar.gz}{1.5.6}
+          (or higher) installed.
+	\item \emph{xotcl-core} (\textbf{0.79+}): xorb/ xosoap are
+          built upon version 0.79 (or higher).\footnote{
+            Note that xotcl-core version starting from 0.75+ might be
+            supported, however, we have only sufficiently tested this
+            xorb version with 0.79. Note further that the manual (or
+            automatic) patching of the acs\_function\_args relation in
+            PostgreSQL environments is no longer required. For
+            historical consistency, refer to the following
+            \href{http://openacs.org/forums/message-view?message_id=1165990}{thread
+              in the OACS developer forum}
+          }
+	\item \emph{acs-service-contract} (\textbf{5.2.3+}): xorb/
+          xosoap use the abstraction layer for stored procedures as it comes
+          with recent versions of xotcl-core (::xo:: db::sql::*). In
+          xotcl-core versions prior to 0.74/0.75, this required
+          patching the acs\_function\_args description table. This is
+          not required anymore as the new xotcl-core (starting with
+          0.74/0.75) uses PostgreSQL catalogues to extract the
+          information needed.
 	\end{itemize}
 	\subsubsection{Patches}
-	Provided that you meet the above requirements, no manual patching is needed.
+	Provided that you meet the above requirements, no manual
+        patching is needed.
 %	\begin{itemize}
 %	\item \emph{acs-service-contract}: For versions below 5.4.0d1, we require that you apply the following patch to your PostgreSQL-based backend before proceeding with the actual installation. This means running a SQL script or statements against your data base, for instance, by the following means.
 %	\begin{lstlisting}[breaklines=true,frame=single,basicstyle=

@@ -15,11 +15,11 @@
 
         <provides url="xotcl-request-broker" version="0.4.2"/>
         <requires url="acs-service-contract" version="5.2.3"/>
-        <requires url="xotcl-core" version="0.75"/>
+        <requires url="xotcl-core" version="0.79"/>
 
         <callbacks>
-            <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
             <callback type="before-uninstall"  proc="::xorb::before-uninstall"/>
+            <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
         </callbacks>
         <parameters>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="consumer_chain"  default="::xorb::client::consumer_chain" description="xorb allows for injecting specific handlers (&quot;interceptors&quot;) that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::client::consumer_chain as responsible chain of interceptors for the consumner side. You may add your interceptors to this chain or provide your own chain object."/>

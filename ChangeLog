@@ -1,3 +1,8 @@
+2007-12-28  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Manual: Adapting manual to recent 0.4.2 changes, clean-up of demos/
+	examples. Thanks to Justis Peters for pointing this out.
+
 2007-12-13  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-stub-procs.tcl: Moved the history preserving of the
