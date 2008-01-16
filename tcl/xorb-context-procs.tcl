@@ -114,6 +114,8 @@ namespace eval ::xorb::context {
     Attribute unmarshalledResponse
     Attribute result
     Attribute proxy
+    # only temporarily!
+    Attribute asynchronous -default false
     # / / / / / / / / / / / / / / / / / / / / /
     # Candidates for being moved to
     # the basic InvocationInformationType class

@@ -628,21 +628,11 @@ namespace eval ::xorb::datatypes {
 
 	  } elseif {([my isobject $argValue] || \
 			 ![catch {array set tmp $argValue} msg]) && $isObj} {
-	    #if {$class eq {}} {
-	    #  set class [$argValue info class]
-	    #} else {
-	    #  set class [string trimleft $class =]
-	    #}
-	    #my log "ARANY-INSIDE=[$ar any]"
 	    my debug ===2
 	    uplevel [list lappend returnObjs \
 			 [[$ar any] new \
 			      -name__ $argName \
 			      -parseObject $ar $argValue]]
-	    #  uplevel [list lappend returnObjs \
-		# 			 [$anyBase new \
-		# 			      -name $argName \
-		# 			      -parseObject $class $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
 	    my debug ===3,$argValue,$argName

@@ -33,7 +33,14 @@ namespace eval ::xorb::stub {
 	# invocation mode at the consumer
 	# side, either using poll
 	# objects or result callbacks.
-	Attribute asynchronous -default false
+	# TODO: Due to the current state of the
+	# request handler and the unorthogonal 
+	# call to InvocationInformation->asynchronous
+	# even in the provider mode, we need to
+	# transfer back the attribute declaration
+	# to the top-level. This should be reverted, 
+	# as soon as we have fixed the request handler ...
+	# Attribute asynchronous -default false
 	Attribute callback
 	# / / / / / / / / / / / / /
 	# Timout constraint applied

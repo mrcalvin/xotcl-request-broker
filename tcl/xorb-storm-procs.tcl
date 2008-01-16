@@ -530,8 +530,7 @@ namespace eval ::xorb::storm {
   }
 
   TestCase instmixin add FailureScenario::TestCase
-  
-  
+    
   namespace export TestSuite TestCase TestScenario \
       TestResult
 }

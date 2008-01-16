@@ -1,3 +1,13 @@
+2008-01-16  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Bumped version number of trunk to 0.4.3
+
+	* tcl/xorb-context-procs.tcl (InvocationInformation): Added
+	attribute 'asynchronous' to the top-level class as it is used
+	unorthogonally in the request handler (i.e. $context
+	asynchronous). This is just a temporary fix and should finally be
+	resolved in the upcoming rewrite of the request handler.
+
 2007-12-28  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Manual: Adapting manual to recent 0.4.2 changes, clean-up of demos/
