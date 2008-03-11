@@ -14,7 +14,7 @@ namespace eval xorb::client {
   ::xotcl::Class TransportProvider
   TransportProvider proc getClass {key} {
     foreach p [my info subclass] {
-      if {[$p set key] eq $key} {
+      if {[lsearch -exact [$p set key] $key] != -1} {
 	return $p
       }
     }
@@ -27,7 +27,7 @@ namespace eval xorb::client {
     # protocol provider
     set objectId [$invocationObject virtualObject]
     if {[regexp {^(\w+)://(.*)$} $objectId _ providerKey absObjRef]} {
-      $invocationObject virtualObject $absObjRef
+      #$invocationObject virtualObject $absObjRef
       set pc [my getClass $providerKey]
     } else {
       error "Invalid object id when trying to resolve transport provider."

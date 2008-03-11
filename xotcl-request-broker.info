@@ -8,18 +8,18 @@
     <singleton-p>t</singleton-p>
     <auto-mount>request-broker</auto-mount>
 
-    <version name="0.4.3" url="http://media.wu-wien.ac.at/download/xotcl-request-broker-0.4.3.apm">
+    <version name="0.4.4" url="http://media.wu-wien.ac.at/download/xotcl-request-broker-0.4.4.apm">
         <owner url="mailto:stefan.sobernig@wu-wien.ac.at">stefan sobernig</owner>
-        <release-date>2008-01-16</release-date>
+        <release-date>2008-03-10</release-date>
         <maturity>0</maturity>
 
-        <provides url="xotcl-request-broker" version="0.4.3"/>
+        <provides url="xotcl-request-broker" version="0.4.4"/>
         <requires url="acs-service-contract" version="5.2.3"/>
         <requires url="xotcl-core" version="0.79"/>
 
         <callbacks>
-            <callback type="before-uninstall"  proc="::xorb::before-uninstall"/>
             <callback type="after-upgrade"  proc="::xorb::after-upgrade"/>
+            <callback type="before-uninstall"  proc="::xorb::before-uninstall"/>
         </callbacks>
         <parameters>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="consumer_chain"  default="::xorb::client::consumer_chain" description="xorb allows for injecting specific handlers (&quot;interceptors&quot;) that are capable of intercepting and mangling requests and responses (in a chain of interceptors). By default, xorb loads ::xorb::client::consumer_chain as responsible chain of interceptors for the consumner side. You may add your interceptors to this chain or provide your own chain object."/>

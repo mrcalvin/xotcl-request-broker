@@ -1,3 +1,34 @@
+2008-03-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/10-xorb-exceptions-procs.tcl: LoggableException.__classDoc__
+	is now defaulted to an empty string, to avoid errors due to
+	non-intialisation of this very variable. Thanks to Michael
+	Totschnig for reporting.
+	Besides, we now report the error stack in both debug and non-debug
+	mode. Thanks, again, to Michael Totschnig for the justified
+	objection to former default behaviour.
+
+	* tcl/20-xorb-procs.tcl: ::xorb::Abstract->arguments are now
+	trimmed for possible dashes before being streamed for storage in
+	the back-end. This is promising to increase robustness of the
+	::xorb::Abstract interface, allowing for intended or erroneous use
+	of dashes when declaring the record parts of the explicit
+	interfaces.
+	Abstract->stream(): Provide for defaulting of return value
+	flags. This was a missing bit, having been intended since the 0.4
+	release but forgotten about somehow. Behaviour now corresponds to
+	documented one, especially there is no storing error anymore when
+	omitting a return value label. 
+
+	* Final maintenance release in 0.4.* genealogy: 0.4.4
+	
+	* tcl/20-xorb-procs.tcl: Improved robustness of ::xorb::Method
+	argument passing behaviour. Formerly, invalid arguments passed
+	might have been silently accepted (e.g. missing documentation
+	block) causing erroneous behaviour at a later point in time. We,
+	now, use internally a parser proc which leverages default XOTcl
+	argument parsing behaviour to our method slot implementation.
+
 2008-01-16  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Bumped version number of trunk to 0.4.3

@@ -605,7 +605,7 @@ namespace eval xorb {
     </li>
     <li>
     description: Allows to specify a documentary bit of information, targeting
-    the developer.
+    the developer (alternatively, one may call "ad_doc <docString>").
     </li>
     </ul>
     </p>
@@ -628,13 +628,26 @@ namespace eval xorb {
     set argList [list]
     foreach a [my arguments] {
       if {![regexp {^(.+):(.+)$} $a _ npName checkoption]} {
-	lappend argList [string trim ${a} :]:[$domain defaultType]
+	lappend argList [string trim ${a} -:]:[$domain defaultType]
       } else {
-	lappend argList $a
+	lappend argList [string trim $a -]
       }
     }
     set arr(input) [join $argList]
-    set arr(output)  [join [my returns]]
+    #
+    # Fix returnValue defaulting
+    #
+    set i 1
+    set returnList [list]
+    foreach r [my returns] {
+      if {![regexp {^(.+):(.+)$} $r _ label checkoption]} {
+	lappend returnList returnValue${i}:${r}
+	incr i
+      } else {
+	lappend returnList $r
+      }
+    }
+    set arr(output) [join $returnList]
     set arr(description) [string trim [my description]]
     set arrOperation([my name]) [string trim [array get arr]]
     return [string trim [array get arrOperation]]
@@ -855,27 +868,43 @@ namespace eval xorb {
   }
 
   ::xotcl::Class Method::SideKick \
-    -instproc configure args {
-      foreach {flag value} $args {
-	switch -- $flag {
-	  -mixin 	{my mixin $value}
-	  -per-object 	{my per-object $value}
-	  -private_p	{my private_p $value}
-	  -deprecated_p	{my deprecated_p $value}
-	  -warn_p	{my warn_p $value}
-	  -debug_p	{my debug_p $value}
-	  default break
+      -instproc configure args {
+	foreach {flag value} $args {
+	  switch -- $flag {
+	    -mixin 	{my mixin $value}
+	    -per-object 	{my per-object $value}
+	    -private_p	{my private_p $value}
+	    -deprecated_p	{my deprecated_p $value}
+	    -warn_p	{my warn_p $value}
+	    -debug_p	{my debug_p $value}
+	    default break
+	  }
+	}
+      } \
+      -instproc init args {
+	if {[catch {eval [self class] parse $args}]} {
+	  error "wrong # args when creating method slot '[my name]': valid arguments -per-object -private_p -deprecated_p -warn_p -debug_p arguments doc body"
+	}
+	my set __arguments__ $arguments
+	#my set __doc__ $doc
+	my set __body__ $body
+	next $doc;#Delegate->init
+      } \
+      -proc parse {
+	-per-object
+	-private_p 		
+	-deprecated_p 	
+	-warn_p 		
+	-debug_p
+	arguments
+	doc
+	body
+      } {
+	foreach posarg {arguments doc body} {
+	  uplevel 1 [list set $posarg [set $posarg]]
 	}
       }
-    } \
-    -instproc init args {
-      foreach {arguments doc body} [lrange $args end-2 end] break
-      my set __arguments__ $arguments
-      #my set __doc__ $doc
-      my set __body__ $body
-      next $doc;#Delegate->init
-    }
-
+  
   # / / / / / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / / / / / /
   # Xorb's Service Implementation class  
@@ -2123,7 +2152,7 @@ namespace eval xorb {
       # invocation
     } catch {Exception e} {
       # re-throw
-     #my debug "---IERROR: [$e message]"
+      # my debug "---IERROR: [$e serialize]"
       error $e
     } catch {error e} {
       error [::xorb::exceptions::InvocationException new \

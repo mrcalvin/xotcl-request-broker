@@ -16,7 +16,7 @@ namespace eval ::xorb::manual {
   ServiceContract EchoService -defines {
     Abstract echoFloat \
 	-arguments {
-	  inputDate:xsFloat
+	  inputFloat:xsFloat
 	} -returns returnValue:xsFloat \
 	-description {
 	  Here, we outline an abstract call "echoFloat"
@@ -36,16 +36,24 @@ namespace eval ::xorb::manual {
   
   # 2-) Provide 'servant' code and register it with the invoker: 
   # 'service implementation'
+#   ServiceImplementation EchoServiceImpl \
+#       -implements EchoService \
+#       -using {
+# 	Delegate echoFloat \
+# 	    -per-object true \
+# 	    -private_p true \
+# 	    -for ::some_name_space::servantProc \
+# 	    {Echoes an incoming float}
+#       }
+
   ServiceImplementation EchoServiceImpl \
       -implements EchoService \
       -using {
-	Delegate echoFloat \
-	    -per-object true \
-	    -private_p true \
-	    -for ::some_name_space::servantProc \
+	Method echoFloat {}
 	    {Echoes an incoming float}
       }
-  
+
+
   # 3a-) deploy your service implementation
   EchoServiceImpl deploy
 }

@@ -76,7 +76,7 @@ namespace eval xorb::exceptions {
 
   Loggable instproc getLogMessage {} {
     my instvar node origin
-    # -- in debug mode?
+    # -- stack trace available?
     if {[$origin exists stackNode]} {
       set sNode [$origin set stackNode]
       set document [$node ownerDocument]
@@ -88,11 +88,6 @@ namespace eval xorb::exceptions {
     }
     return $msg
   }
-
-  Loggable instproc getStackMessage {} {
-    my instvar origin
-    return [$origin set stack]
-  }
   
   ::xotcl::Class LoggableException -superclass Class -parameter {
     {logCmd "ns_log"}
@@ -100,6 +95,12 @@ namespace eval xorb::exceptions {
     {contentType "text/plain"}
   }
   LoggableException instproc init args {
+    #
+    # default __classDoc__ to empty
+    # string to avoid errors due
+    # to non-init variable
+    #
+    my set __classDoc__ ""
     my superclass ::xoexception::Exception
     my instproc init {{message "n/a"}} {
       [self class] instvar __classDoc__
@@ -130,16 +131,13 @@ namespace eval xorb::exceptions {
 	$msgNode appendChild [$document createTextNode $message]
 	$node appendChild $msgNode
 	set origin [self]
-	if {[ns_config "ns/parameters" debug]} {
-	  # / / / / / / / / / / / / / / / / / / /
-	  # Depending on the run mode (production vs. debug)
-	  # we preserve the original stack trace.
-	  global errorInfo
-	  my instvar stackNode
-	  set stackNode [$document createElement errorStack]
-	  $stackNode appendChild [$document createTextNode $errorInfo]
-	  #my set errorInfo $errorInfo
-	}
+	#
+	# preserve error stack
+	#
+	global errorInfo
+	my instvar stackNode
+	set stackNode [$document createElement errorStack]
+	$stackNode appendChild [$document createTextNode $errorInfo]
       }
       if {[info exists __classDoc__]} {
 	set descNode [$document createElement description]
