@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   A simplistic, xorb-based realisation
   of native ACS service contracts

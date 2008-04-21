@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   Package facility for xorb and protocol plug-ins
   

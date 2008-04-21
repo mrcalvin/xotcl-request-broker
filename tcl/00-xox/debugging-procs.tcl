@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   Adapted from xotcllib, see 
   http://xotcllib.cvs.sourceforge.net/xotcllib/xox

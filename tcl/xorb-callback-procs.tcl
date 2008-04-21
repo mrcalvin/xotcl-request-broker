@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   
   Library specifying xorb-specific package-level callbacks
   

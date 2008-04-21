@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   
   Providing for (remoting) invocation contexts, based upon 
   the xotcl-core's context framework.

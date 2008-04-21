@@ -36,7 +36,7 @@
 # } 
 
 
-ad_library {
+::xo::library doc {
     
   xorb-specific exception types,
   extending xoexception facilities

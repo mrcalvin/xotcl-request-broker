@@ -1,6 +1,4 @@
-#package provide xoexception::Throwable 1.0
 
-#package require xoexception
 
 namespace eval ::xoexception {
 

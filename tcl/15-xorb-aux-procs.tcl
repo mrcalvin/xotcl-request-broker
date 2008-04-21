@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
     
     xorb auxiliary library
     

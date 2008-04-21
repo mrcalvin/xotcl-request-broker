@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   
   Basic datatype handling infrastructure
   for protocol plug-ins. The main idea
@@ -133,7 +133,6 @@ namespace eval ::xorb::datatypes {
   # called 'expand' and therefore make it overloadable
   # by subclasses
   Anything proc getTypeClass {key} {
-    #  && [$key info superclass [self]] needed?
     if {[my isclass $key]} {
       return $key
     } else {
@@ -143,7 +142,7 @@ namespace eval ::xorb::datatypes {
   }
 
   Anything proc resolve {key} {
-    if {[my isclass $key] && [$key info superclass [self]]} {
+    if {[my isclass $key] && [$key info superclass [self]] ne ""} {
       return $key
     } else {
       set key [string toupper $key 0 0]

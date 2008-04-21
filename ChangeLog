@@ -1,3 +1,16 @@
+2008-03-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* Introduced ::xo::library and articulated first file-level
+	dependencies.
+
+	* Bumped version number to 0.5d.
+
+	* In XOTcl 1.6+, the semantics of some info subcommands accepting
+	string-match kind of patterns has changed (or is more in line with
+	Tcl's info) as they return a list of pattern matches rather than
+	boolean values. Needed to modify use of some "Class info superclass"
+	occurrences.
+
 2008-03-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/10-xorb-exceptions-procs.tcl: LoggableException.__classDoc__

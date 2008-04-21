@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
     
   Re-use facilities (following the ADAPTER pattern)
   

@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   
   This library collection provides the basic request
   handler infrastructure. We, ontop, introduce a 

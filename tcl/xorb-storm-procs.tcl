@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   
   An adaptation of the scenario-based testing framework (STORM),
   orginally developed by Mark Strembeck (c), for the use within xorb 

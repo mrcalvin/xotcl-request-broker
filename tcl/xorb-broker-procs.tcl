@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date January 30, 2006
@@ -308,7 +308,7 @@ ad_library {
     Repository proc which {type} {
       foreach i [my allinstances] {
 	if {[$i itemType] eq $type || \
-		[$type info superclass [$i itemType]]} {return $i}
+		[$type info superclass [$i itemType]] ne ""} {return $i}
       }
     }
     Repository proc event {call type args} {

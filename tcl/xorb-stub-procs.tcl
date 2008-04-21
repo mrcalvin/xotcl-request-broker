@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   Basic Stub infrastructure, implementing the
   Client Proxy pattern. The current state of the concept 

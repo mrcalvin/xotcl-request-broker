@@ -5,14 +5,14 @@
 #::xox::Package ::xoexception
 #::xoexception load
 
-ad_library {
+::xo::library doc {
 
   Java-inspired exception handling facility, originally coming
   bundled in xotcllib, see 
   http://xotcllib.cvs.sourceforge.net/xotcllib/xoexception/
   Slightly adapted for OpenACS deployment by
   stefan.sobernig@wu-wien.ac.at; 
-  see LICENCE for distribution-specific details.
+  see LICENSE for distribution-specific details.
 
   @author ben.thomasson@gmail.com
   

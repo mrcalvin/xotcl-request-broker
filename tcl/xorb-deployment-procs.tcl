@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   Deployment infrastructure for xorb services,
   including access policies

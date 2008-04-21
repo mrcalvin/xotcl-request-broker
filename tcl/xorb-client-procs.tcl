@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   @author stefan.sobernig@wu-wien.ac.at
   @creation-date July, 25 2006
