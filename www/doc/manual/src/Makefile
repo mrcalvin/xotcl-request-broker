@@ -1,6 +1,6 @@
 # $Id$
 
-ENGINE = /usr/local/gwTeX/bin/powerpc-apple-darwin-current/
+ENGINE = /usr/local/gwTeX/bin/i386-apple-darwin-current/
 TEMP = tmp
 
 ifdef APM

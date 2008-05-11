@@ -1,3 +1,16 @@
+2008-05-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* www/doc/manual/src: Added new listings package to complete the
+	manual build environment. 
+
+	* tcl/20-xorb-procs.tcl: Finally, provide compatibility to naming
+	scheme of message types as used by acs-workflow (at least, some
+	older versions). Once, you have got acs-workflow installed,
+	previous xorb versions might fail or show irritating behaviour as
+	they could not handle the four-element scheme to name message
+	types. The issue was originally reported by Malte and Emma, thanks
+	to you guys for raising hands.
+
 2008-03-26  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* Introduced ::xo::library and articulated first file-level

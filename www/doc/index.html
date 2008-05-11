@@ -10,7 +10,7 @@
 <meta name="originator" content="TeX4ht (http://www.cse.ohio-state.edu/~gurari/TeX4ht/)" /> 
 <!-- html,xhtml,png,fn-in,NoFonts,fonts,sections+,imgdir:manual/src/img/ --> 
 <meta name="src" content="manual.tex" /> 
-<meta name="date" content="2007-12-28 18:16:00" /> 
+<meta name="date" content="2008-05-12 00:14:00" /> 
 <link rel="stylesheet" type="text/css" href="manual.css" /> 
 </head><body><div id="container">Note: This is an automatically generated
 XHTML document, provided for convenience. The authoritative version is the <a 
@@ -27,7 +27,7 @@ href="manual/manual.pdf" id="PDF" >pdf</a>&#x00A0;version.
 OpenACS</h2>
  <div class="author" >Stefan Sobernig</div>
 <br />
-<div class="date" >November 2007</div>
+<div class="date" >May 2008</div>
   </div>
   <h3 class="likesectionHead"><a 
 href="#x1-1000" id="x1-1000"></a></h3>
@@ -183,7 +183,7 @@ href="#QQ2-1-7" id="x1-70002.1.1">Dependencies</a></h5>
      <li class="itemize"><span class="emph"><span class="uline">AOLServer</span></span> (<span class="textbf">2.6.2+</span>): We have been developing and running xorb under version 2.6.2,
      2.6.4 and, recently, 2.6.5; under both AOLServer versions, respectively.
      </li>
-     <li class="itemize"><span class="emph"><span class="uline">XOTcl module</span></span> (<span class="textbf">1.5.6+</span>): We require XOTcl in version <a href="http://media.wu-wien.ac.at/download/xotcl-1.5.6.tar.gz">1.5.6</a> (or higher) installed.
+     <li class="itemize"><span class="emph"><span class="uline">XOTcl module</span></span> (<span class="textbf">1.6.0+</span>): We require XOTcl in version <a href="http://media.wu-wien.ac.at/download/xotcl-1.6.0.tar.gz">1.6.0</a> (or higher) installed.
      </li>
      <li class="itemize"><span class="emph"><span class="uline">xotcl-core</span></span> (<span class="textbf">0.79+</span>): xorb/ xosoap are built upon version 0.79 (or higher).<span class="footnote-mark"><a 
  id="fn1x0-bk"><sup class="textsuperscript">1</sup></a></span><a 
@@ -890,15 +890,15 @@ using <a href="/xotcl/show-object?object=::xorb::Delegate">::xorb::Delegate</a>.
 <a 
  id="x1-19044"></a>
 &#x00A0;<br /><span class="label"><a 
- id="x1-19045r6"></a>6</span>&#x00A0;&#x00A0;ServiceImplementation&#x00A0;EchoServiceImpl&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19046r7"></a>7</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-implements&#x00A0;EchoService&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19047r8"></a>8</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-using&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-19048r9"></a>9</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;Delegate&#x00A0;echoFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19049r10"></a>10</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-per-object&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19050r11"></a>11</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-private_p&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19051r12"></a>12</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-for&#x00A0;::some_name_space::servantProc&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-19052r13"></a>13</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;{Echoes&#x00A0;an&#x00A0;incoming&#x00A0;float}&#x00A0;<br /><span class="label"><a 
- id="x1-19053r14"></a>14</span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;}
+ id="x1-19045r6"></a>6</span>#&#x00A0;&#x00A0;&#x00A0;ServiceImplementation&#x00A0;EchoServiceImpl&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19046r7"></a>7</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-implements&#x00A0;EchoService&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19047r8"></a>8</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-using&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-19048r9"></a>9</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;Delegate&#x00A0;echoFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19049r10"></a>10</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-per-object&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19050r11"></a>11</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-private_p&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19051r12"></a>12</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-for&#x00A0;::some_name_space::servantProc&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-19052r13"></a>13</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;{Echoes&#x00A0;an&#x00A0;incoming&#x00A0;float}&#x00A0;<br /><span class="label"><a 
+ id="x1-19053r14"></a>14</span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;}
 
   </div>
 <!--l. 329--><p class="indent" >  Let&#8217;s, for a second, neglect some minor varations we introduced in the above lines and that might
@@ -2067,7 +2067,7 @@ href="#x1-30034r7">7<!--tex4ht:ref: fig:advanced:ca:1 --></a>:
  id="x1-32168r8"></a><a 
  id="x1-32187r9"></a><a 
  id="x1-32209r10"></a><a 
- id="x1-32262r11"></a>
+ id="x1-32270r11"></a>
 <div class="center" 
 >
 <!--l. 22--><p class="noindent" >
@@ -2449,7 +2449,7 @@ implementation</td></tr></table><!--tex4ht:label?: x1-32209r6 -->&#x00A0;<br /><
  id="x1-32226r16"></a></span>&#x00A0;&#x00A0;ServiceContract&#x00A0;EchoService&#x00A0;-defines&#x00A0;{&#x00A0;<br /><span class="label"><a 
  id="x1-32227r17"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;Abstract&#x00A0;echoFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
  id="x1-32228r18"></a></span>&#x00A0;&#x00A0;-arguments&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32229r19"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;inputDate:xsFloat&#x00A0;<br /><span class="label"><a 
+ id="x1-32229r19"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;inputFloat:xsFloat&#x00A0;<br /><span class="label"><a 
  id="x1-32230r20"></a></span>&#x00A0;&#x00A0;}&#x00A0;-returns&#x00A0;returnValue:xsFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
  id="x1-32231r21"></a></span>&#x00A0;&#x00A0;-description&#x00A0;{&#x00A0;<br /><span class="label"><a 
  id="x1-32232r22"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;Here,&#x00A0;we&#x00A0;outline&#x00A0;an&#x00A0;abstract&#x00A0;call&#x00A0;"echoFloat"&#x00A0;<br /><span class="label"><a 
@@ -2469,96 +2469,104 @@ implementation</td></tr></table><!--tex4ht:label?: x1-32209r6 -->&#x00A0;<br /><
  id="x1-32246r36"></a></span>&#x00A0;<br /><span class="label"><a 
  id="x1-32247r37"></a></span>&#x00A0;&#x00A0;#&#x00A0;2-)&#x00A0;Provide&#x00A0;&#8217;servant&#8217;&#x00A0;code&#x00A0;and&#x00A0;register&#x00A0;it&#x00A0;with&#x00A0;the&#x00A0;invoker:&#x00A0;<br /><span class="label"><a 
  id="x1-32248r38"></a></span>&#x00A0;&#x00A0;#&#x00A0;&#8217;service&#x00A0;implementation&#8217;&#x00A0;<br /><span class="label"><a 
- id="x1-32249r39"></a></span>&#x00A0;&#x00A0;ServiceImplementation&#x00A0;EchoServiceImpl&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32250r40"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-implements&#x00A0;EchoService&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32251r41"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-using&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32252r42"></a></span>&#x00A0;&#x00A0;Delegate&#x00A0;echoFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32253r43"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-per-object&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32254r44"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-private_p&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32255r45"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-for&#x00A0;::some_name_space::servantProc&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32256r46"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;{Echoes&#x00A0;an&#x00A0;incoming&#x00A0;float}&#x00A0;<br /><span class="label"><a 
- id="x1-32257r47"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
+ id="x1-32249r39"></a></span>#&#x00A0;&#x00A0;&#x00A0;ServiceImplementation&#x00A0;EchoServiceImpl&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32250r40"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-implements&#x00A0;EchoService&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32251r41"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-using&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32252r42"></a></span>#&#x00A0;Delegate&#x00A0;echoFloat&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32253r43"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-per-object&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32254r44"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-private_p&#x00A0;true&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32255r45"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-for&#x00A0;::some_name_space::servantProc&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32256r46"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;{Echoes&#x00A0;an&#x00A0;incoming&#x00A0;float}&#x00A0;<br /><span class="label"><a 
+ id="x1-32257r47"></a></span>#&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
  id="x1-32258r48"></a></span>&#x00A0;<br /><span class="label"><a 
- id="x1-32259r49"></a></span>&#x00A0;&#x00A0;#&#x00A0;3a-)&#x00A0;deploy&#x00A0;your&#x00A0;service&#x00A0;implementation&#x00A0;<br /><span class="label"><a 
- id="x1-32260r50"></a></span>&#x00A0;&#x00A0;EchoServiceImpl&#x00A0;deploy&#x00A0;<br /><span class="label"><a 
- id="x1-32261r51"></a></span>}
+ id="x1-32259r49"></a></span>&#x00A0;&#x00A0;ServiceImplementation&#x00A0;EchoServiceImpl&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32260r50"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-implements&#x00A0;EchoService&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32261r51"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;-using&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32262r52"></a></span>&#x00A0;&#x00A0;Method&#x00A0;echoFloat&#x00A0;{}&#x00A0;<br /><span class="label"><a 
+ id="x1-32263r53"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;{Echoes&#x00A0;an&#x00A0;incoming&#x00A0;float}&#x00A0;<br /><span class="label"><a 
+ id="x1-32264r54"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
+ id="x1-32265r55"></a></span>&#x00A0;<br /><span class="label"><a 
+ id="x1-32266r56"></a></span>&#x00A0;<br /><span class="label"><a 
+ id="x1-32267r57"></a></span>&#x00A0;&#x00A0;#&#x00A0;3a-)&#x00A0;deploy&#x00A0;your&#x00A0;service&#x00A0;implementation&#x00A0;<br /><span class="label"><a 
+ id="x1-32268r58"></a></span>&#x00A0;&#x00A0;EchoServiceImpl&#x00A0;deploy&#x00A0;<br /><span class="label"><a 
+ id="x1-32269r59"></a></span>}
 
   </div>
 <!--l. 57--><div class="lstinputlisting">
 <a 
- id="x1-32262r11"></a>
+ id="x1-32270r11"></a>
 <a 
- id="x1-32263"></a>
+ id="x1-32271"></a>
 <br />
 <table class="caption" 
 ><tr style="vertical-align:baseline;" class="caption"><td class="id">Listing&#x00A0;11:
 </td><td  
 class="content">The
-SoapAuthenticationInterceptor</td></tr></table><!--tex4ht:label?: x1-32262r6 -->&#x00A0;<br /><span class="label"><a 
- id="x1-32264r1"></a></span>&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
- id="x1-32265r2"></a></span>&#x00A0;<br /><span class="label"><a 
- id="x1-32266r3"></a></span>&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
- id="x1-32267r4"></a></span>&#x00A0;&#x00A0;#&#x00A0;Class&#x00A0;AuthenticationInterceptor&#x00A0;<br /><span class="label"><a 
- id="x1-32268r5"></a></span>&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
- id="x1-32269r6"></a></span>&#x00A0;&#x00A0;#&#x00A0;We&#x00A0;provide&#x00A0;for&#x00A0;a&#x00A0;sample&#x00A0;authentication&#x00A0;<br /><span class="label"><a 
- id="x1-32270r7"></a></span>&#x00A0;&#x00A0;#&#x00A0;that&#x00A0;can&#x00A0;be&#x00A0;used&#x00A0;directly&#x00A0;or&#x00A0;specialised/adapted&#x00A0;<br /><span class="label"><a 
- id="x1-32271r8"></a></span>&#x00A0;&#x00A0;#&#x00A0;further.&#x00A0;We&#x00A0;provide&#x00A0;of&#x00A0;a&#x00A0;kind-of&#x00A0;chain-of-responsibility,&#x00A0;<br /><span class="label"><a 
- id="x1-32272r9"></a></span>&#x00A0;&#x00A0;#&#x00A0;following&#x00A0;an&#x00A0;order&#x00A0;of&#x00A0;precedence&#x00A0;for&#x00A0;resolving&#x00A0;<br /><span class="label"><a 
- id="x1-32273r10"></a></span>&#x00A0;&#x00A0;#&#x00A0;authentication&#x00A0;data:&#x00A0;<br /><span class="label"><a 
- id="x1-32274r11"></a></span>&#x00A0;&#x00A0;#&#x00A0;1-)&#x00A0;HTTP&#x00A0;basic&#x00A0;authentication&#x00A0;(see&#x00A0;RFC&#x00A0;2617&#x00A0;at&#x00A0;<br /><span class="label"><a 
- id="x1-32275r12"></a></span>&#x00A0;&#x00A0;#&#x00A0;http://www.ietf.org/rfc/rfc2617.txt)&#x00A0;<br /><span class="label"><a 
- id="x1-32276r13"></a></span>&#x00A0;&#x00A0;#&#x00A0;2-)&#x00A0;SOAP&#x00A0;Header&#x00A0;(header&#x00A0;fields:&#x00A0;&#8217;username&#8217;&#x00A0;+&#x00A0;&#8217;password&#8217;)&#x00A0;<br /><span class="label"><a 
- id="x1-32277r14"></a></span>&#x00A0;&#x00A0;#&#x00A0;3-)&#x00A0;HTTP&#x00A0;cookies&#x00A0;(see&#x00A0;RFC&#x00A0;2965&#x00A0;at&#x00A0;<br /><span class="label"><a 
- id="x1-32278r15"></a></span>&#x00A0;&#x00A0;#&#x00A0;http://tools.ietf.org/html/rfc2965)&#x00A0;<br /><span class="label"><a 
- id="x1-32279r16"></a></span>&#x00A0;&#x00A0;#&#x00A0;?-)&#x00A0;some&#x00A0;SSO&#x00A0;example?&#x00A0;<br /><span class="label"><a 
- id="x1-32280r17"></a></span>&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
- id="x1-32281r18"></a></span>&#x00A0;&#x00A0;#&#x00A0;Note&#x00A0;the&#x00A0;use&#x00A0;of&#x00A0;the&#x00A0;checkPointcuts&#x00A0;method,&#x00A0;<br /><span class="label"><a 
- id="x1-32282r19"></a></span>&#x00A0;&#x00A0;#&#x00A0;which&#x00A0;restricts&#x00A0;the&#x00A0;application&#x00A0;of&#x00A0;the&#x00A0;<br /><span class="label"><a 
- id="x1-32283r20"></a></span>&#x00A0;&#x00A0;#&#x00A0;the&#x00A0;interceptor&#x00A0;to&#x00A0;requests&#x00A0;that&#x00A0;<br /><span class="label"><a 
- id="x1-32284r21"></a></span>&#x00A0;&#x00A0;#&#x00A0;1-)&#x00A0;are&#x00A0;passed-in&#x00A0;from&#x00A0;the&#x00A0;soap&#x00A0;plug-in,&#x00A0;and&#x00A0;<br /><span class="label"><a 
- id="x1-32285r22"></a></span>&#x00A0;&#x00A0;#&#x00A0;2-)&#x00A0;and&#x00A0;we&#x00A0;require&#x00A0;the&#x00A0;plug-in&#x00A0;instance&#x00A0;<br /><span class="label"><a 
- id="x1-32286r23"></a></span>&#x00A0;&#x00A0;#&#x00A0;to&#x00A0;have&#x00A0;authentication&#x00A0;enabled&#x00A0;(package&#x00A0;<br /><span class="label"><a 
- id="x1-32287r24"></a></span>&#x00A0;&#x00A0;#&#x00A0;parameter)&#x00A0;<br /><span class="label"><a 
- id="x1-32288r25"></a></span>&#x00A0;<br /><span class="label"><a 
- id="x1-32289r26"></a></span>&#x00A0;&#x00A0;#&#x003C;&#x00A0;lst:authenticationinterceptor&#x00A0;&#x003E;#&#x00A0;<br /><span class="label"><a 
- id="x1-32290r27"></a></span>&#x00A0;&#x00A0;SoapInterceptor&#x00A0;AuthenticationInterceptor&#x00A0;<br /><span class="label"><a 
- id="x1-32291r28"></a></span>&#x00A0;&#x00A0;AuthenticationInterceptor&#x00A0;proc&#x00A0;checkPointcuts&#x00A0;{context}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32292r29"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;$context&#x00A0;instvar&#x00A0;package&#x00A0;<br /><span class="label"><a 
- id="x1-32293r30"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;return&#x00A0;[expr&#x00A0;{[next]&#x00A0;&amp;&amp;&#x00A0;[$package&#x00A0;get_parameter&#x00A0;authentication_support&#x00A0;0]}]&#x00A0;<br /><span class="label"><a 
- id="x1-32294r31"></a></span>&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
- id="x1-32295r32"></a></span>&#x00A0;&#x00A0;#&#x003C;&#x00A0;end&#x00A0;&#x003E;#&#x00A0;<br /><span class="label"><a 
- id="x1-32296r33"></a></span>&#x00A0;&#x00A0;AuthenticationInterceptor&#x00A0;instproc&#x00A0;handleRequest&#x00A0;{context}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32297r34"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;challenge&#x00A0;[ns_set&#x00A0;get&#x00A0;[ns_conn&#x00A0;headers]&#x00A0;Authorization]&#x00A0;<br /><span class="label"><a 
- id="x1-32298r35"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;cookie&#x00A0;[ns_set&#x00A0;get&#x00A0;[ns_conn&#x00A0;headers]&#x00A0;Cookie]&#x00A0;<br /><span class="label"><a 
- id="x1-32299r36"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;if&#x00A0;{$challenge&#x00A0;ne&#x00A0;{}}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32300r37"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-1-&#x00A0;http&#x00A0;basic&#x00A0;auth&#x00A0;<br /><span class="label"><a 
- id="x1-32301r38"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;--&#x00A0;get&#x00A0;credentials&#x00A0;<br /><span class="label"><a 
- id="x1-32302r39"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;decoded&#x00A0;[ns_uudecode&#x00A0;[lindex&#x00A0;$challenge&#x00A0;1]]&#x00A0;<br /><span class="label"><a 
- id="x1-32303r40"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;username&#x00A0;[lindex&#x00A0;[split&#x00A0;$decoded&#x00A0;":"]&#x00A0;0]&#x00A0;<br /><span class="label"><a 
- id="x1-32304r41"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;password&#x00A0;[lindex&#x00A0;[split&#x00A0;$decoded&#x00A0;":"]&#x00A0;1]&#x00A0;<br /><span class="label"><a 
- id="x1-32305r42"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;elseif&#x00A0;{[$context&#x00A0;contextExists&#x00A0;username&#x00A0;urn:org:vue:auth]&#x00A0;&amp;&amp;&#x00A0;\&#x00A0;<br /><span class="label"><a 
- id="x1-32306r43"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;[$context&#x00A0;contextExists&#x00A0;password&#x00A0;urn:org:vue:auth]}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32307r44"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-2-&#x00A0;soap&#x00A0;header&#x00A0;<br /><span class="label"><a 
- id="x1-32308r45"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;username&#x00A0;[$context&#x00A0;getContext&#x00A0;username&#x00A0;urn:org:vue:auth]&#x00A0;<br /><span class="label"><a 
- id="x1-32309r46"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;password&#x00A0;[$context&#x00A0;getContext&#x00A0;password&#x00A0;urn:org:vue:auth]&#x00A0;<br /><span class="label"><a 
- id="x1-32310r47"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;elseif&#x00A0;{$cookie&#x00A0;ne&#x00A0;{}}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32311r48"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-3-&#x00A0;http&#x00A0;cookie&#x00A0;<br /><span class="label"><a 
- id="x1-32312r49"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;TODO:&#x00A0;somewhat&#x00A0;mimic&#x00A0;sec_login_handler&#x00A0;<br /><span class="label"><a 
- id="x1-32313r50"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;else&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32314r51"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
- id="x1-32315r52"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;One&#x00A0;would&#x00A0;have&#x00A0;many&#x00A0;options&#x00A0;<br /><span class="label"><a 
- id="x1-32316r53"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;here,&#x00A0;but,&#x00A0;in&#x00A0;fact,&#x00A0;it&#x00A0;should&#x00A0;<br /><span class="label"><a 
- id="x1-32317r54"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;be&#x00A0;left&#x00A0;to&#x00A0;a&#x00A0;policy&#x00A0;to&#x00A0;decide&#x00A0;<br /><span class="label"><a 
- id="x1-32318r55"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;on&#x00A0;that.&#x00A0;we&#x00A0;just&#x00A0;do&#x00A0;nothing,&#x00A0;<br /><span class="label"><a 
- id="x1-32319r56"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;which&#x00A0;leaves&#x00A0;the&#x00A0;request&#x00A0;in&#x00A0;<br /><span class="label"><a 
- id="x1-32320r57"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;an&#x00A0;anonymous/&#x00A0;untrusted&#x00A0;state.&#x00A0;<br /><span class="label"><a 
- id="x1-32321r58"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
- id="x1-32322r59"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
- id="x1-32323r60"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
- id="x1-32324r61"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;Initially&#x00A0;written&#x00A0;against&#x00A0;<br /><span class="label"><a 
- id="x1-32325r62"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;Dave&#8217;s&#x00A0;webdav&#x00A0;auth&#x00A0;code&#x00A0;<br /><span class="label"><a 
- id="x1-32326r63"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;if&#x00A0;{[info&#x00A0;exists&#x00A0;username]&#x00A0;&amp;&amp;&#x00A0;[info&#x00A0;exists&#x00A0;password]}&#x00A0;{&#x00A0;<br /><span class="label"><a 
- id="x1-32327r64"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;foreach&#x00A0;authority&#x00A0;[auth::authority::get_authority_options]&#x00A0;{
+SoapAuthenticationInterceptor</td></tr></table><!--tex4ht:label?: x1-32270r6 -->&#x00A0;<br /><span class="label"><a 
+ id="x1-32272r1"></a></span>&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
+ id="x1-32273r2"></a></span>&#x00A0;<br /><span class="label"><a 
+ id="x1-32274r3"></a></span>&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
+ id="x1-32275r4"></a></span>&#x00A0;&#x00A0;#&#x00A0;Class&#x00A0;AuthenticationInterceptor&#x00A0;<br /><span class="label"><a 
+ id="x1-32276r5"></a></span>&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
+ id="x1-32277r6"></a></span>&#x00A0;&#x00A0;#&#x00A0;We&#x00A0;provide&#x00A0;for&#x00A0;a&#x00A0;sample&#x00A0;authentication&#x00A0;<br /><span class="label"><a 
+ id="x1-32278r7"></a></span>&#x00A0;&#x00A0;#&#x00A0;that&#x00A0;can&#x00A0;be&#x00A0;used&#x00A0;directly&#x00A0;or&#x00A0;specialised/adapted&#x00A0;<br /><span class="label"><a 
+ id="x1-32279r8"></a></span>&#x00A0;&#x00A0;#&#x00A0;further.&#x00A0;We&#x00A0;provide&#x00A0;of&#x00A0;a&#x00A0;kind-of&#x00A0;chain-of-responsibility,&#x00A0;<br /><span class="label"><a 
+ id="x1-32280r9"></a></span>&#x00A0;&#x00A0;#&#x00A0;following&#x00A0;an&#x00A0;order&#x00A0;of&#x00A0;precedence&#x00A0;for&#x00A0;resolving&#x00A0;<br /><span class="label"><a 
+ id="x1-32281r10"></a></span>&#x00A0;&#x00A0;#&#x00A0;authentication&#x00A0;data:&#x00A0;<br /><span class="label"><a 
+ id="x1-32282r11"></a></span>&#x00A0;&#x00A0;#&#x00A0;1-)&#x00A0;HTTP&#x00A0;basic&#x00A0;authentication&#x00A0;(see&#x00A0;RFC&#x00A0;2617&#x00A0;at&#x00A0;<br /><span class="label"><a 
+ id="x1-32283r12"></a></span>&#x00A0;&#x00A0;#&#x00A0;http://www.ietf.org/rfc/rfc2617.txt)&#x00A0;<br /><span class="label"><a 
+ id="x1-32284r13"></a></span>&#x00A0;&#x00A0;#&#x00A0;2-)&#x00A0;SOAP&#x00A0;Header&#x00A0;(header&#x00A0;fields:&#x00A0;&#8217;username&#8217;&#x00A0;+&#x00A0;&#8217;password&#8217;)&#x00A0;<br /><span class="label"><a 
+ id="x1-32285r14"></a></span>&#x00A0;&#x00A0;#&#x00A0;3-)&#x00A0;HTTP&#x00A0;cookies&#x00A0;(see&#x00A0;RFC&#x00A0;2965&#x00A0;at&#x00A0;<br /><span class="label"><a 
+ id="x1-32286r15"></a></span>&#x00A0;&#x00A0;#&#x00A0;http://tools.ietf.org/html/rfc2965)&#x00A0;<br /><span class="label"><a 
+ id="x1-32287r16"></a></span>&#x00A0;&#x00A0;#&#x00A0;?-)&#x00A0;some&#x00A0;SSO&#x00A0;example?&#x00A0;<br /><span class="label"><a 
+ id="x1-32288r17"></a></span>&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
+ id="x1-32289r18"></a></span>&#x00A0;&#x00A0;#&#x00A0;Note&#x00A0;the&#x00A0;use&#x00A0;of&#x00A0;the&#x00A0;checkPointcuts&#x00A0;method,&#x00A0;<br /><span class="label"><a 
+ id="x1-32290r19"></a></span>&#x00A0;&#x00A0;#&#x00A0;which&#x00A0;restricts&#x00A0;the&#x00A0;application&#x00A0;of&#x00A0;the&#x00A0;<br /><span class="label"><a 
+ id="x1-32291r20"></a></span>&#x00A0;&#x00A0;#&#x00A0;the&#x00A0;interceptor&#x00A0;to&#x00A0;requests&#x00A0;that&#x00A0;<br /><span class="label"><a 
+ id="x1-32292r21"></a></span>&#x00A0;&#x00A0;#&#x00A0;1-)&#x00A0;are&#x00A0;passed-in&#x00A0;from&#x00A0;the&#x00A0;soap&#x00A0;plug-in,&#x00A0;and&#x00A0;<br /><span class="label"><a 
+ id="x1-32293r22"></a></span>&#x00A0;&#x00A0;#&#x00A0;2-)&#x00A0;and&#x00A0;we&#x00A0;require&#x00A0;the&#x00A0;plug-in&#x00A0;instance&#x00A0;<br /><span class="label"><a 
+ id="x1-32294r23"></a></span>&#x00A0;&#x00A0;#&#x00A0;to&#x00A0;have&#x00A0;authentication&#x00A0;enabled&#x00A0;(package&#x00A0;<br /><span class="label"><a 
+ id="x1-32295r24"></a></span>&#x00A0;&#x00A0;#&#x00A0;parameter)&#x00A0;<br /><span class="label"><a 
+ id="x1-32296r25"></a></span>&#x00A0;<br /><span class="label"><a 
+ id="x1-32297r26"></a></span>&#x00A0;&#x00A0;#&#x003C;&#x00A0;lst:authenticationinterceptor&#x00A0;&#x003E;#&#x00A0;<br /><span class="label"><a 
+ id="x1-32298r27"></a></span>&#x00A0;&#x00A0;SoapInterceptor&#x00A0;AuthenticationInterceptor&#x00A0;<br /><span class="label"><a 
+ id="x1-32299r28"></a></span>&#x00A0;&#x00A0;AuthenticationInterceptor&#x00A0;proc&#x00A0;checkPointcuts&#x00A0;{context}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32300r29"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;$context&#x00A0;instvar&#x00A0;package&#x00A0;<br /><span class="label"><a 
+ id="x1-32301r30"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;return&#x00A0;[expr&#x00A0;{[next]&#x00A0;&amp;&amp;&#x00A0;[$package&#x00A0;get_parameter&#x00A0;authentication_support&#x00A0;0]}]&#x00A0;<br /><span class="label"><a 
+ id="x1-32302r31"></a></span>&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
+ id="x1-32303r32"></a></span>&#x00A0;&#x00A0;#&#x003C;&#x00A0;end&#x00A0;&#x003E;#&#x00A0;<br /><span class="label"><a 
+ id="x1-32304r33"></a></span>&#x00A0;&#x00A0;AuthenticationInterceptor&#x00A0;instproc&#x00A0;handleRequest&#x00A0;{context}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32305r34"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;challenge&#x00A0;[ns_set&#x00A0;get&#x00A0;[ns_conn&#x00A0;headers]&#x00A0;Authorization]&#x00A0;<br /><span class="label"><a 
+ id="x1-32306r35"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;cookie&#x00A0;[ns_set&#x00A0;get&#x00A0;[ns_conn&#x00A0;headers]&#x00A0;Cookie]&#x00A0;<br /><span class="label"><a 
+ id="x1-32307r36"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;if&#x00A0;{$challenge&#x00A0;ne&#x00A0;{}}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32308r37"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-1-&#x00A0;http&#x00A0;basic&#x00A0;auth&#x00A0;<br /><span class="label"><a 
+ id="x1-32309r38"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;--&#x00A0;get&#x00A0;credentials&#x00A0;<br /><span class="label"><a 
+ id="x1-32310r39"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;decoded&#x00A0;[ns_uudecode&#x00A0;[lindex&#x00A0;$challenge&#x00A0;1]]&#x00A0;<br /><span class="label"><a 
+ id="x1-32311r40"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;username&#x00A0;[lindex&#x00A0;[split&#x00A0;$decoded&#x00A0;":"]&#x00A0;0]&#x00A0;<br /><span class="label"><a 
+ id="x1-32312r41"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;password&#x00A0;[lindex&#x00A0;[split&#x00A0;$decoded&#x00A0;":"]&#x00A0;1]&#x00A0;<br /><span class="label"><a 
+ id="x1-32313r42"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;elseif&#x00A0;{[$context&#x00A0;contextExists&#x00A0;username&#x00A0;urn:org:vue:auth]&#x00A0;&amp;&amp;&#x00A0;\&#x00A0;<br /><span class="label"><a 
+ id="x1-32314r43"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;[$context&#x00A0;contextExists&#x00A0;password&#x00A0;urn:org:vue:auth]}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32315r44"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-2-&#x00A0;soap&#x00A0;header&#x00A0;<br /><span class="label"><a 
+ id="x1-32316r45"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;username&#x00A0;[$context&#x00A0;getContext&#x00A0;username&#x00A0;urn:org:vue:auth]&#x00A0;<br /><span class="label"><a 
+ id="x1-32317r46"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;set&#x00A0;password&#x00A0;[$context&#x00A0;getContext&#x00A0;password&#x00A0;urn:org:vue:auth]&#x00A0;<br /><span class="label"><a 
+ id="x1-32318r47"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;elseif&#x00A0;{$cookie&#x00A0;ne&#x00A0;{}}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32319r48"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-3-&#x00A0;http&#x00A0;cookie&#x00A0;<br /><span class="label"><a 
+ id="x1-32320r49"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;TODO:&#x00A0;somewhat&#x00A0;mimic&#x00A0;sec_login_handler&#x00A0;<br /><span class="label"><a 
+ id="x1-32321r50"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;else&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32322r51"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
+ id="x1-32323r52"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;One&#x00A0;would&#x00A0;have&#x00A0;many&#x00A0;options&#x00A0;<br /><span class="label"><a 
+ id="x1-32324r53"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;here,&#x00A0;but,&#x00A0;in&#x00A0;fact,&#x00A0;it&#x00A0;should&#x00A0;<br /><span class="label"><a 
+ id="x1-32325r54"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;be&#x00A0;left&#x00A0;to&#x00A0;a&#x00A0;policy&#x00A0;to&#x00A0;decide&#x00A0;<br /><span class="label"><a 
+ id="x1-32326r55"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;on&#x00A0;that.&#x00A0;we&#x00A0;just&#x00A0;do&#x00A0;nothing,&#x00A0;<br /><span class="label"><a 
+ id="x1-32327r56"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;which&#x00A0;leaves&#x00A0;the&#x00A0;request&#x00A0;in&#x00A0;<br /><span class="label"><a 
+ id="x1-32328r57"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;an&#x00A0;anonymous/&#x00A0;untrusted&#x00A0;state.&#x00A0;<br /><span class="label"><a 
+ id="x1-32329r58"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;-&#x00A0;<br /><span class="label"><a 
+ id="x1-32330r59"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;}&#x00A0;<br /><span class="label"><a 
+ id="x1-32331r60"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;/&#x00A0;<br /><span class="label"><a 
+ id="x1-32332r61"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;Initially&#x00A0;written&#x00A0;against&#x00A0;<br /><span class="label"><a 
+ id="x1-32333r62"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;#&#x00A0;Dave&#8217;s&#x00A0;webdav&#x00A0;auth&#x00A0;code&#x00A0;<br /><span class="label"><a 
+ id="x1-32334r63"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;if&#x00A0;{[info&#x00A0;exists&#x00A0;username]&#x00A0;&amp;&amp;&#x00A0;[info&#x00A0;exists&#x00A0;password]}&#x00A0;{&#x00A0;<br /><span class="label"><a 
+ id="x1-32335r64"></a></span>&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;&#x00A0;foreach&#x00A0;authority&#x00A0;[auth::authority::get_authority_options]&#x00A0;{
 
   </div>
 <!--l. 39--><p class="indent" >

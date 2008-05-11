@@ -1370,7 +1370,7 @@ namespace eval xorb {
 			 or ops.operation_outputtype_id = msgs.msg_type_id)
       
     } {
-      set r([lindex [split $msg_type_name "."] 2]) $msg_type_id      
+      set r([lindex [split $msg_type_name "."] end]) $msg_type_id      
     }
     foreach {type id} [array get r] {
        set s $arr($type)
