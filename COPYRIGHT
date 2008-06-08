@@ -4,7 +4,7 @@ and toolkits (see http://openacs.org) derived therefrom, e.g. dotLRN
 (see http://dotlrn.org). It allows for realising support for arbitrary
 remoting protocols in terms of protocol plug-ins.
 
-Copyright (C) 2005-2007  Stefan Sobernig (stefan.sobernig@wu-wien.ac.at)
+Copyright (C) 2005-2008  Stefan Sobernig (stefan.sobernig@wu-wien.ac.at)
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public

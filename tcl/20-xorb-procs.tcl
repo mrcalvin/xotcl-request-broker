@@ -1848,7 +1848,7 @@ namespace eval xorb {
 	set type [my identify $servant]
 	set obj [namespace qualifiers $servant]
 	set p [namespace tail $servant]
-#my debug type=$type
+	#my debug type=$type
 	switch -- $type {
 	  0 { return [info args $servant] }
 	  1 {
