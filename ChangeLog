@@ -1,3 +1,9 @@
+2008-06-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-callback-procs.tcl (before-uninstall): Make 0.3 ->
+	post-0.3 upgrades more robust (fail-safe). Thanks to Emmanuelle
+	Raffenne for reporting.
+
 2008-05-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* www/doc/manual/src: Added new listings package to complete the

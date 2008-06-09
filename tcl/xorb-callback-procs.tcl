@@ -103,12 +103,12 @@ namespace eval ::xorb {
       }
       return
     }
-    # -- 0.3 -> 0.4
+    # -- 0.3 -> post-0.3
     if {[apm_version_names_compare $from_version_name "0.3"] == 0 &&
-	[apm_version_names_compare $to_version_name "0.4"] > -1} {
+	[apm_version_names_compare $to_version_name "0.3"] > 0} {
       
       # / / / / / / / / / / / / / / / / / / / / /
-      # Upgrading from 0.3 to 0.4
+      # Upgrading from 0.3 to any post-0.3
       # - - - - - - - - - - - - - - - - - - - - - 
       # There is currently one limitation:
       # contracts and implementations that 
@@ -126,13 +126,13 @@ namespace eval ::xorb {
       set ctrs [list]
       set msgTypes [list]
       foreach sc [::xorb::ServiceContract allinstances] {
-	set n [$sc set name]
+	if {[catch {set n [$sc name]} msg]} continue;
 	lappend ctrs $n
 	lappend msgTypes $n.%
       }
       set impls [list]
       foreach si [::xorb::ServiceImplementation allinstances] {
-	set n [$si set name]
+	if {[catch {set n [$si name]} msg]} continue;
 	lappend impls $n
       }
       ConfigurationManager deleteContracts $ctrs
