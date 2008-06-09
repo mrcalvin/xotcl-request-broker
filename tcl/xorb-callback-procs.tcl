@@ -92,7 +92,7 @@ namespace eval ::xorb {
     }
   }
 
-  ad_proc after-upgrade {
+  ad_proc before-upgrade {
     -from_version_name
     -to_version_name
   } { 
