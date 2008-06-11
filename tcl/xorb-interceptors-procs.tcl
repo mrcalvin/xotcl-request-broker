@@ -68,7 +68,7 @@ namespace eval ::xorb {
     # of interceptors
     my instvar chain
     set pkg [$context package]
-    set c [$pkg get_parameter $chain ::xorb::$chain]
+    set c [$pkg get_parameter [namespace tail $chain] $chain]
     $i mixin [$c children -[self proc] $context]
     return [$i [self proc] $context]
   }
@@ -78,7 +78,7 @@ namespace eval ::xorb {
     my debug "load responseflow"
     my instvar chain
     set pkg [$context package]
-    set c [$pkg get_parameter $chain ::xorb::$chain]
+    set c [$pkg get_parameter [namespace tail $chain] $chain]
     #my debug "---CONFIG=$c,children=[$c children -[self proc] $context]"
     $i mixin [$c children -[self proc] $context]
     return [$i [self proc] $context]
@@ -116,7 +116,7 @@ namespace eval ::xorb {
   # Main provider-side handler class
   HandlerManager ServerRequestHandler \
       -superclass BasicRequestHandler \
-      -chain "provider_chain"
+      -chain "::xorb::provider_chain"
   
   ServerRequestHandler proc handle {context listener} {
     my transport $listener
@@ -145,7 +145,7 @@ namespace eval ::xorb {
   # Main consumer-side handler class
   ::xorb::HandlerManager ::xorb::client::ClientRequestHandler \
       -superclass ::xorb::BasicRequestHandler \
-      -chain "consumer_chain"
+      -chain "::xorb::client::consumer_chain"
 
   ::xorb::client::ClientRequestHandler proc dispatch {invocationContext} {
     # PASSIFIED: TransportProvider only takes over, if no

@@ -1,3 +1,13 @@
+2008-06-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-interceptors-procs.tcl: We provide for a more robust
+	resolution (and fall-back) for chain of interceptors. The old way
+	showed a weakness after the renaming of ::xorb::consumer_chain to
+	::xorb::client::consumer_chain. This weakness was due to the use
+	of the chain object's relative name as parameter key. Thanks to
+	Emmanuelle Raffenne for bringing up the issue and providing an
+	initial patch. 
+
 2008-06-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-callback-procs.tcl (before-uninstall): Make 0.3 ->
