@@ -1,3 +1,8 @@
+2008-06-16  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* xotcl-request-broker.info: Bumped xotcl-core dependency to
+	0.87+.
+
 2008-06-11  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-interceptors-procs.tcl: We provide for a more robust

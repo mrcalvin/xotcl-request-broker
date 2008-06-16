@@ -15,7 +15,7 @@
 
         <provides url="xotcl-request-broker" version="0.5d"/>
         <requires url="acs-service-contract" version="5.2.3"/>
-        <requires url="xotcl-core" version="0.86"/>
+        <requires url="xotcl-core" version="0.87"/>
 
         <callbacks>
             <callback type="before-uninstall"  proc="::xorb::before-uninstall"/>
