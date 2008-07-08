@@ -1626,8 +1626,8 @@ namespace eval xorb {
     [self class] instvar lightweight
     set __skeleton__ [my set domain]
     set target [namespace tail [my info class]]
+    my debug "---calling $target"
     my $target
-    
     # / / / / / / / / / / / / / / /
     # clear from slot object
     if {$lightweight} {
@@ -1776,6 +1776,7 @@ namespace eval xorb {
 	set __type__ [[self class] identify $servant]
 	# keep information from spec object in skeleton obj for
 	# later use (in policy validation, for instance)
+	my debug "===SETTING reg: [my name]"
 	$__skeleton__ set registry([my name]) [list $qservant $__type__]
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 	set isLifecycled 0
@@ -1898,7 +1899,6 @@ namespace eval xorb {
 	  return -1;
 	}
       }
-  
   Skeleton instmixin add ServantAdapter
 
   # # # # # # # # # # # # # # # #
