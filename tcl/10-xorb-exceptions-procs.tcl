@@ -100,7 +100,9 @@ namespace eval xorb::exceptions {
     # string to avoid errors due
     # to non-init variable
     #
-    my set __classDoc__ ""
+    if {![my exists __classDoc__]} {
+      my set __classDoc__ ""
+    }
     my superclass ::xoexception::Exception
     my instproc init {{message "n/a"}} {
       [self class] instvar __classDoc__
