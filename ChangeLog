@@ -1,3 +1,10 @@
+2008-07-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/10-xorb-exceptions-procs.tcl: Facilitated the creation for
+	application-specific/ custom exception kinds to be
+	specified. Includes minor fix for ad_docs on exception class
+	objects to do not vanish in the course of processing.
+
 2008-06-16  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* xotcl-request-broker.info: Bumped xotcl-core dependency to
