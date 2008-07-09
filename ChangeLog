@@ -1,3 +1,11 @@
+2008-07-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xorb-stub-procs.tcl: Adjusting timeout default from 10000ms
+	to 0 for both blocking/non-blocking scenarios. This avoids the
+	unsolicited use of blocking-timeout feature. Note that you need to
+	explicitly set a timeout value > 0 when setting asynchronous to
+	'true'.
+
 2008-07-08  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/10-xorb-exceptions-procs.tcl: Facilitated the creation for

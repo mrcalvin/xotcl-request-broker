@@ -42,11 +42,11 @@ namespace eval ::xorb::stub {
 	# as soon as we have fixed the request handler ...
 	# Attribute asynchronous -default false
 	Attribute callback
-	# / / / / / / / / / / / / /
+	# / / / / / / / / / / / / / / / / / /
 	# Timout constraint applied
-	# to non-blocking kind of 
+	# to blocking/non-blocking kind of 
 	# connections ...
-	Attribute timeout -default 10000
+	Attribute timeout -default 0
       } -ad_doc {
 	<p>The class ContextObject realises a specific pattern
 	of parameter passing which is used in xorb's client-side
