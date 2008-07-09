@@ -87,7 +87,17 @@ namespace eval ::xorb::context {
     my instvar context
     array unset context
   }
- 
+
+  #
+  # per-TYPE-OBJECT isSet
+  #
+  
+  InvocationInformationType instproc isSet {attribute} {
+    return [expr {[my exists $attribute] || \
+		      [my array exists $attribute]}]
+  }
+
+
 
   # / / / / / / / / / / / / / / / / / / / / /
   # Class InvocationInformation
@@ -177,14 +187,21 @@ namespace eval ::xorb::context {
   # introspecting on the invocation
   # informations >shared< state ...
 
+#   InvocationInformation instproc isSet {attribute} {
+#     my instvar informationType
+#     return [expr {[my exists $attribute] || \
+# 		      [$informationType exists $attribute] || \
+# 		      [my array exists $attribute] || \
+# 		      [$informationType array exists $attribute]}]
+#   }
+
   InvocationInformation instproc isSet {attribute} {
     my instvar informationType
-    my debug INFO=[::Serializer deepSerialize [self]]
     return [expr {[my exists $attribute] || \
-		      [$informationType exists $attribute] || \
 		      [my array exists $attribute] || \
-		      [$informationType array exists $attribute]}]
+		      [$informationType isSet $attribute]}]
   }
+
 
   InvocationInformation instproc clone {reference} {
     my copy $reference

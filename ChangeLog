@@ -1,5 +1,8 @@
 2008-07-09  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
+	* tcl/xorb-context-procs.tcl (InvocationInformationType): Adding
+	isSet helper method ...
+
 	* tcl/xorb-stub-procs.tcl: Adjusting timeout default from 10000ms
 	to 0 for both blocking/non-blocking scenarios. This avoids the
 	unsolicited use of blocking-timeout feature. Note that you need to
