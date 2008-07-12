@@ -119,13 +119,11 @@ namespace eval ::xorb::datatypes {
   # TODO: cache subclass tree?
   Anything proc subClassTree {{c {}}} {
     my instvar descendants
-    #my log "+++1"
     if {$c eq {}} {set c [self]}
     foreach s [$c info subclass] {
       set descendants($s) 0
       my subClassTree $s
     }
-    #my log "+++2: [array names descendants]"
     return [array names descendants]
   }
   # / / / / / / / / / / / / / / / / / / / /
@@ -142,7 +140,7 @@ namespace eval ::xorb::datatypes {
   }
 
   Anything proc resolve {key} {
-    if {[my isclass $key] && [$key info superclass [self]] ne ""} {
+    if {[my isclass $key] && [$key info superclass -closure [self]] ne ""} {
       return $key
     } else {
       set key [string toupper $key 0 0]
@@ -164,7 +162,6 @@ namespace eval ::xorb::datatypes {
 
   Anything instproc parseObject {reader object} {
     $reader instvar cast
-    my debug ANYINPARSE=$cast,[$cast serialize]
     foreach s [$cast info slots] {
       set type [$s anyType]
       set ar [AnyReader new \
@@ -180,14 +177,12 @@ namespace eval ::xorb::datatypes {
 	}
 	set value $tmp($s)
       }
-      my debug CLASS=[$ar any],value=$value,valueisobject?[my isobject $value]
       # -- Note, we need to make sure that, in case of
       # an object value, the value stores an absolute reference
       # to the object. Otherwise, this might be conflicting
       # because 'isobject' defaults to the global namespace 
       # provided that the stored object identifier is not absolute.
       if {[my isobject $value] && $value eq [$value self]} {
-	my debug SER=[$value serialize]
 	my add -parse true [[$ar any] new \
 			   -childof [self] \
 			   -name__ $tagName \
@@ -203,7 +198,6 @@ namespace eval ::xorb::datatypes {
   
   Anything instproc add {{-parse false} any} {
     my lappend __ordinary_map__ $any
-    my debug ANYPARSE=[$any serialize]
     if {$parse} {my set [$any name__] $any} 
   }
   
@@ -242,19 +236,14 @@ namespace eval ::xorb::datatypes {
       set ar [AnyReader new \
 		  -protocol $protocol \
 		  -typecode $typeKey]
-      my debug "+++3:typeKey=[$ar any]"
       # 3) recast anything into concrete anything implementation
       my class [$ar any]
       
       # 4) process anything further: validation + unwrapping
-      my debug --x1
       if {[my validate $ar]} {
-	my debug --x2
 	if {$object} {
-	  my debug --x3
 	  return [self]
 	} else {
-	  my debug --x4
 	  return [my unwrap]
 	}
       } elseif {[info exists default]} {
@@ -330,7 +319,6 @@ namespace eval ::xorb::datatypes {
     my instvar any cast suffix
     # a) tokenise
     set tc [my enbrace]
-    my debug tc=$tc
     switch [llength $tc] {
       1 { set tokens any;}
       2 { set tokens [list any cast]}
@@ -350,7 +338,7 @@ namespace eval ::xorb::datatypes {
     # dependent anything sponsor.
     set any [Anything resolve $any]
     if {$any eq {}} {
-      error "Invalid typecode specification: $tc"
+      error "Could not resolve typecode specification: $tc"
     }
 
     set sp [$any selectSponsor [my protocol]]
@@ -360,7 +348,6 @@ namespace eval ::xorb::datatypes {
 	in the realm of protocol '[my protocol]'.}]
     }
     set any $sp
-    my debug IN-READER=$sp/any=$any
   }
   
   AnyReader instproc get {what} {
@@ -386,7 +373,6 @@ namespace eval ::xorb::datatypes {
 	$any mixin add ${style}::${hstripped}
       }
     }
-    my debug MIXINS=$mixins
     if {[$any info methods expand=$what] ne {}} {
       set result [$any expand=$what [self]] 
     }
@@ -517,7 +503,6 @@ namespace eval ::xorb::datatypes {
       my anyType $type
       my type "$type validate"
     }
-    my debug tagName?[info exists tagName]
     if {![info exists tagName]} {
       set tagName [namespace tail [self]]
     }
@@ -601,11 +586,9 @@ namespace eval ::xorb::datatypes {
     # 1-) either ::xorb::Invoker
     # 2-) or ::xorb::stub::Requestor
     set p [self callingobject]
-    my debug UPLIFT-CALLER=$p,[my stackTrace]
     set ar [eval ::xorb::datatypes::AnyReader new \
 		-typecode $checkoption \
 		[expr {[$p exists protocol]?"-protocol [$p set protocol]":""}]]
-    my debug "CHECKOPTION:$checkoption,ARGS=$args,ANY=[$ar any]"
     if {[$ar any] ne {}} {
       # my log "ARANY=[$ar any]"
       switch [llength $args] {
@@ -618,7 +601,6 @@ namespace eval ::xorb::datatypes {
 	  foreach {argName argValue} $args break
 	  if {[my isobject $argValue] && \
 		  [$argValue istype $anyBase]} {
-	    my debug ===1,[$argValue serialize],[my stackTrace]
 	    uplevel [list set uplift(-$argName) \
 			 [eval $argValue as \
 			      [expr {[$p exists protocol]?\
@@ -627,17 +609,14 @@ namespace eval ::xorb::datatypes {
 
 	  } elseif {([my isobject $argValue] || \
 			 ![catch {array set tmp $argValue} msg]) && $isObj} {
-	    my debug ===2
 	    uplevel [list lappend returnObjs \
 			 [[$ar any] new \
 			      -name__ $argName \
 			      -parseObject $ar $argValue]]
 	  } else {
 	    # TODO: for return value checks -> conversion in any object?
-	    my debug ===3,$argValue,$argName
 	    set any [[$ar any] new -set __value__ $argValue -name__ $argName]
 	    if {[$any validate]} {
-	      my debug ===3a,ANY=$any,cp=[self callingproc],stack=[my stackTrace]
 	      uplevel [list lappend returnObjs $any]
 	    } else {
 	      error [::xorb::exceptions::TypeViolationException new [subst {
@@ -858,9 +837,7 @@ namespace eval ::xorb::datatypes {
       } else {
 	error "Cannot resolve accessor '$s' to nested element in Anything object."
       }
-      my debug any=$any,typeKey=$type
       set unwrapped [$any as -protocol ::xorb::AcsSc $type]
-      my debug unwrapped=$unwrapped
       $anyObj set $s $unwrapped
     }
     $anyObj class $template
