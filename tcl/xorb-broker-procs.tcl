@@ -147,7 +147,6 @@
 	set iid [$grep(impl) object_id]
 	set contract [$grep(impl) implements]
 	set cObj [::xorb::manager::CRepository resolve -name $contract]
-	my debug "STREAM-CHECK: cid=[$cObj object_id],iid=$iid,binds=[array get bindings]"
 	set verified [expr {
 			    [info exists bindings([$cObj object_id])] 
 			    && [lsearch $bindings([$cObj object_id]) $iid] != -1

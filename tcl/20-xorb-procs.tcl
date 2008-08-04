@@ -1410,7 +1410,7 @@ namespace eval xorb {
     } {
       my slots [subst {
 	::xorb::Delegate new \
-	    -name $impl_operation_name -for $impl_alias}]
+	    -name $impl_operation_name -for "$impl_alias"}]
     }
   }
 

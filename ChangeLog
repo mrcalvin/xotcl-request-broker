@@ -1,3 +1,13 @@
+2008-08-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: Protecting impl_alias parsing when
+	initialising implementation objects from db. It should now be
+	fail-safe when denoting calls to XOTcl objects by means of
+	white-space separators. The issue shows only when implementations
+	were defined through legacy ACS/SC interfaces (as it happens
+	in recent versions of xowiki dotlrn portlet). Thanks for Nima
+	Mazloumi for pointing to the issue. 
+
 2008-07-12  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xorb-datatypes-procs.tcl: Another 1.6 compat fix. Need to
