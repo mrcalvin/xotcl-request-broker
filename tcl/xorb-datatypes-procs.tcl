@@ -366,7 +366,6 @@ namespace eval ::xorb::datatypes {
     set class [$any info class]
     foreach h [concat $class [$class info heritage]] {
       set hstripped [namespace tail $h]
-      #my log ATTEMPT=${style}::${hstripped}
       set mixins {}
       if {[my isclass ${style}::${hstripped}]} {
 	append mixins ${style}::${hstripped}
@@ -590,7 +589,6 @@ namespace eval ::xorb::datatypes {
 		-typecode $checkoption \
 		[expr {[$p exists protocol]?"-protocol [$p set protocol]":""}]]
     if {[$ar any] ne {}} {
-      # my log "ARANY=[$ar any]"
       switch [llength $args] {
 	1 {
 	  foreach argName $args break

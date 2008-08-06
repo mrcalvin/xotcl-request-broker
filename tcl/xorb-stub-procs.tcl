@@ -756,8 +756,6 @@ namespace eval ::xorb::stub {
 	  [\$e message]
 	}]
       } catch {error e} {
-	#global errorInfo
-	#ns_log notice ERROR=\$errorInfo
 	error \$e
       }
     }]

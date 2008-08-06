@@ -1181,7 +1181,6 @@ namespace eval xorb {
 	impls.impl_id = :id
       }
     }
-    #my log "XXX:here for $container, recreate?$isRecreation"
     db_foreach [my qn bound_impls] $sql {
       set i $container
       if {!$isRecreation} {

@@ -335,7 +335,6 @@
       }
     }
     Repository instproc init args {
-      #my log "fetch=[my itemType] called"
       [my itemType] fetch -container [self] 
     }
     Repository instproc resolve {{-name *} {-id *}} {
