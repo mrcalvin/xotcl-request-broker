@@ -19,7 +19,10 @@ namespace eval ::xorb {
   # / / / / / / / / / / / / / / / /
   # A tentative package class for
   # the native ca plugin
-  PackageMgr AcsScPackage -superclass ProtocolPackage
+  PackageMgr AcsScPackage \
+      -pretty_name "XOTcl Service Contracts" \
+      -package_key "xo-service-contracts" \
+      -superclass ProtocolPackage
   AcsScPackage instproc acquireInvocationInformation {} {
     my instvar listener
     $listener instvar payload

@@ -1,3 +1,10 @@
+2008-10-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/xosc-procs.tcl: Newer xotcl-core versions (0.9*) are
+	pickier regarding meta-info provided to ::xo::PackageMgr instances
+	(package_key etc.). Thanks to Robert Koblischke and Nima Mazloumi
+	for reporting.
+
 2008-08-05  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/20-xorb-procs.tcl: Protecting impl_alias parsing when
