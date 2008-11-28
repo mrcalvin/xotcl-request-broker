@@ -78,28 +78,6 @@ namespace eval ::xorb::stub {
 	@author stefan.sobernig@wu-wien.ac.at
       }
 
-  ContextObject instproc getSubstified {attribute} {
-    # / / / / / / / / / /
-    # This escapes
-    # procentage chars
-    # specified like: '%%'
-    my instvar informationType
-    if {[my exists $attribute]} {
-      set value [my set $attribute]
-    } elseif {[$informationType exists $attribute]} {
-      set value [$informationType set $attribute]
-    } else {
-      error {
-	Cannot resolve '$attribute' in either 
-	invocation information or information type.
-      }
-    }
-    set value [string map {%% % % \$} $value]
-    set value [my subst $value]
-    set value [$informationType subst $value]
-    return $value
-  }
-
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
 

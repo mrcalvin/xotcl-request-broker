@@ -88,6 +88,29 @@ namespace eval ::xorb::context {
     array unset context
   }
 
+  InvocationInformationType instproc getSubstified {attribute} {
+    # / / / / / / / / / /
+    # This escapes
+    # procentage chars
+    # specified like: '%%'
+    set typeOwner [my info parent]
+    if {[$typeOwner exists $attribute]} {
+      set value [$typeOwner set $attribute]
+    } elseif {[my exists $attribute]} {
+      set value [my set $attribute]
+    } else {
+      error {
+	Cannot resolve '$attribute' in either 
+	invocation information or information type.
+      }
+    }
+    set value [string map {%% % % \$} $value]
+    set value [$typeOwner subst $value]
+    set value [my subst $value]
+    return $value
+  }
+
+
   #
   # per-TYPE-OBJECT isSet
   #
