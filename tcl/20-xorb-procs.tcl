@@ -1495,9 +1495,11 @@ namespace eval xorb {
       }
 
       # contract obj
-      Abstract instmixin add [self]
+      Abstract mixin add [self]
+      # Abstract instmixin add [self]
       eval $stream(contract)
-      Abstract instmixin delete [self]
+      # Abstract instmixin delete [self]
+      Abstract mixin delete [self]
       
       if {$lightweight} {
 	my clearVars [self]::$name
@@ -1564,9 +1566,11 @@ namespace eval xorb {
       }
      #my debug iname=$name
       # impl obj
-      Delegate instmixin add [self]
+      #Delegate instmixin add [self]
+      Delegate mixin add [self]
       eval $stream(impl)
-      Delegate instmixin delete [self]
+      #Delegate instmixin delete [self]
+      Delegate mixin delete [self]
       if {$lightweight} {
 	my clearVars [self]::$name
 	[self]::${name}::slot destroy
@@ -1620,31 +1624,30 @@ namespace eval xorb {
     }
     next
   }
-  Skeleton instproc init args {
-    my instvar __skeleton__
-    [self class] instvar lightweight
-    set __skeleton__ [my set domain]
-    set target [namespace tail [my info class]]
-    my debug "---calling $target"
-    my $target
+  
+  Skeleton instproc create {obj args} {
+    set o [next];# proceed with construction
+    set target [namespace tail [$o info class]]
+    my $target $o
     # / / / / / / / / / / / / / / /
     # clear from slot object
+    [self class] instvar lightweight
     if {$lightweight} {
-      my destroy
+      $o volatile
     }
+    return $o
   }
-  Skeleton instproc Abstract args {
-    my instvar __skeleton__
+
+  Skeleton instproc Abstract {obj} {
+    set __skeleton__ [$obj set domain]
     set arguments [list]
-    foreach arg [my arguments] {
+    foreach arg [$obj arguments] {
       # / / / / / / / / / / / / / / / /
       # TODO: default to 'required' or
       # leave it to the declaration?
       lappend arguments -$arg,required
     }
-   
-   #my debug HERE
-    $__skeleton__ instproc xorb=[my name] $arguments [subst {
+    $__skeleton__ instproc xorb=[$obj set name] $arguments [subst {
       # / / / / / / / / / / / / / / / /
       # a generic container for storing
       # validated, uplifted values of 
@@ -1655,25 +1658,24 @@ namespace eval xorb {
       ::xotcl::nonposArgs mixin delete \
 	  ::xorb::datatypes::Anything::CheckOption+Uplift
       set r \[eval next \[array get uplift\]\]
-      [expr {[my exists __rvc_call__]?\
+      [expr {[$obj exists __rvc_call__]?\
 		 [subst { ::xoexception::try {
 		         ::xotcl::nonposArgs mixin add \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
 		   ${__skeleton__}::rvc set protocol \[my set protocol\]
-		   set r \[[my set __rvc_call__] \$r\]
+		   set r \[[$obj set __rvc_call__] \$r\]
 		   ::xotcl::nonposArgs mixin delete \
 			     ::xorb::datatypes::Anything::CheckOption+Uplift
 		 } catch {error e} {
 		   #global errorInfo
 		   error \[::xorb::exceptions::ReturnValueTypeMismatch new \$e\]
 		 }}]:""}]
-     #my debug "r=\$r"
       return \$r
     }]
   }
-  Skeleton instproc Delegate args {
-    my instvar __skeleton__
-    eval $__skeleton__ instforward xorb=[my name] [my for]
+  Skeleton instproc Delegate {obj} {
+    my debug "*** obj -> [$obj serialize]"
+    eval [$obj set domain] instforward xorb=[$obj set name] [$obj set for]
   }
 
   # # # # # # # # # # # # # # # #
@@ -1688,30 +1690,30 @@ namespace eval xorb {
     } 
     return ${context}::rvc
   }
-  ReturnValueChecker instproc Abstract args {
-    my instvar __skeleton__
+  ReturnValueChecker instproc Abstract {obj} {
+    set __skeleton__ [$obj set domain]
     # / / / / / / / / / / / / / /
     # provide for return value
     # verification
     set rvc [ReturnValueChecker __require__ $__skeleton__]
-    switch -- [llength [my returns]] {
+    switch -- [llength [$obj set returns]] {
       0		{;}
       1		{
 	if {![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
-		  [my returns] _ 1 label tc]} {
+		  [$obj set returns] _ 1 label tc]} {
 	  error "Return value specification invalid." 
 	}
       }
       default	{
 	set slots ""
-	foreach r [my returns] {
+	foreach r [$obj set returns] {
 	  if {![regexp {^(((?!::)[^\:]+):(?=[^\:]))?(.+)$} \
 		    $r _ 1 label tc]} {
 	    error "Return value specification invalid." 
 	  }
 	  append slots "::xorb::datatypes::AnyAttribute $label -anyType $tc\n"
 	} 
-	set tc object([::xotcl::Class ${rvc}::OutputType.[my name] \
+	set tc object([::xotcl::Class ${rvc}::OutputType.[$obj set name] \
 			   -slots $slots \
 			   -destroy_on_cleanup])
       }
@@ -1722,11 +1724,11 @@ namespace eval xorb {
     if {![info exists tc] || $tc eq {}} {set tc void}
     set declaration ${label}:${tc}
     $rvc __add__\
-	-call [my name]\
+	-call [$obj set name]\
 	-declaration $declaration
     set npLabel [lindex [split $declaration :] 0]
-    my set __rvc_call__ [concat $rvc [my name] -$npLabel]
-    next;# Skeleton->Abstract
+    $obj set __rvc_call__ [concat $rvc [$obj set name] -$npLabel]
+    next $obj;# Skeleton->Abstract
   }
   ReturnValueChecker instproc __add__ {
     -call:required
@@ -1742,9 +1744,9 @@ namespace eval xorb {
 	# of the return value(s) as
 	# anythings
 	# TODO: multiple values/ anythings
-#my debug vars=[info vars]
+	# my debug vars=[info vars]
 	if {[info exists returnObjs]} {
-	 #my debug returnObjs=$returnObjs
+	  #my debug returnObjs=$returnObjs
 	  return $returnObjs 
 	}
       }
@@ -1763,9 +1765,9 @@ namespace eval xorb {
   # # # # # # # # # # # # # # # #
   
   ::xotcl::Class ServantAdapter \
-      -instproc Delegate args {
-	my instvar __skeleton__ 
-	set servant [my for]
+      -instproc Delegate {obj} {
+	set __skeleton__ [$obj set domain]
+	set servant [$obj set for]
 	set declaration [[self class] getDeclaration $servant]
 	
 	# / / / / / / / / / / / /
@@ -1775,8 +1777,8 @@ namespace eval xorb {
 	set __type__ [[self class] identify $servant]
 	# keep information from spec object in skeleton obj for
 	# later use (in policy validation, for instance)
-	my debug "===SETTING reg: [my name]"
-	$__skeleton__ set registry([my name]) [list $qservant $__type__]
+	my debug "===SETTING reg: [$obj set name]"
+	$__skeleton__ set registry([$obj set name]) [list $qservant $__type__]
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 	set isLifecycled 0
 	if {$__type__ eq "1" || $__type__ eq "2" || $__type__ eq "3"} {
@@ -1785,12 +1787,12 @@ namespace eval xorb {
 	  set s [namespace qualifiers $qservant]
 	  set m [namespace tail $qservant]
 	  set isLifecycled 1
-	  [my info class] slot for mixin add ::xotcl::Slot::Nocheck
-	  my for [concat $s $m]
-	  [my info class] slot for mixin delete ::xotcl::Slot::Nocheck
+	  [$obj info class] slot for mixin add ::xotcl::Slot::Nocheck
+	  $obj set for [concat $s $m]
+	  [$obj info class] slot for mixin delete ::xotcl::Slot::Nocheck
 	 }
 
-	$__skeleton__ instproc xorb=[my name] args [subst {
+	$__skeleton__ instproc xorb=[$obj set name] args [subst {
 	  set d [concat \[list $declaration\]]
 	  ::xoexception::try {
 	    if {\$d ne {} && \[string first - \$d\] == -1 && \
@@ -1809,14 +1811,14 @@ namespace eval xorb {
 	  
 	    ::xoexception::try {
 	     #my debug indirection=\[my serialize\],args=\$args
-	      set r \[eval my xorb=__[my name] \[expr { 
+	      set r \[eval my xorb=__[$obj set name] \[expr { 
 		\[info exists nargs\]?\$nargs:\$args 
 	      }\]\] 
 	    } catch {Exception e} {
 	      error \$e
 	    } catch {error e} {
 	      error \[::xorb::exceptions::ServantDispatchException new \
-		  "Dispatching call [my name] to servant failed: \$e"\]
+		  "Dispatching call [$obj set name] to servant failed: \$e"\]
 	    }
 	      
 	    [expr {$isLifecycled?[subst {
@@ -1836,7 +1838,7 @@ namespace eval xorb {
 	    return \$r
 	  }
 	}]
-	my name __[my name]
+	$obj set name __[$obj set name]
 	next;# Skeleton->Delegate
       }\
       -proc getCanonical {noncanonical} {

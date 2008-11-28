@@ -1,3 +1,14 @@
+2008-11-28  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
+
+	* tcl/20-xorb-procs.tcl: XOTcl 1.6.1+ compatibility
+	fixes. Starting with this XOTcl version, slots are uniformly
+	treated witn non-slot objects when being serialised: they are not
+	to be re-initialised ("-noinit") upon creation, as the underlying
+	parameter commands are now accessible by introspection and
+	streamed explicitly. At some points in xorb, we hooked into
+	the re-initialisation to apply some decoration. We, now, fixed
+	this to be perfectly forward- and backward compatible.
+
 2008-10-06  Stefan Sobernig  <stefan.sobernig@wu-wien.ac.at>
 
 	* tcl/xosc-procs.tcl: Newer xotcl-core versions (0.9*) are
