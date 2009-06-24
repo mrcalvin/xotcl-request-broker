@@ -1598,7 +1598,7 @@ namespace eval xorb {
      #my debug "SER=[$contractObj serialize]"
       
       # TODO: contract class as mixin or instmixin?
-      set skeletonObj [$implObj new -mixin $contractObj] 
+      set skeletonObj [$implObj new -mixin $contractObj -destroy_on_cleanup] 
       
     } catch {Exception e} {
       error [::xorb::exceptions::SkeletonGenerationException new $e]

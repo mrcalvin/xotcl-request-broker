@@ -115,6 +115,16 @@ namespace eval ::xorb::datatypes {
     Attribute name__
   }
 
+  Anything instproc init args {
+    my destroy_on_cleanup
+    next
+  }
+
+  Anything instproc destroy args {
+    # my log "===CLEANING [self class] [self] ([my info class])"
+    next
+  }
+
   # / / / / / / / / / / / /
   # TODO: cache subclass tree?
   Anything proc subClassTree {{c {}}} {
@@ -316,6 +326,10 @@ namespace eval ::xorb::datatypes {
   }
   
   AnyReader instproc init args {
+    # / / / / / / / / / / / / / /
+    # provide for auto-cleanup
+    my destroy_on_cleanup
+
     my instvar any cast suffix
     # a) tokenise
     set tc [my enbrace]

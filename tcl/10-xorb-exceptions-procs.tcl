@@ -89,6 +89,14 @@ namespace eval xorb::exceptions {
     return $msg
   }
   
+  Loggable instproc destroy args {
+    if {[my exists node]} {
+      [[my set node] ownerDocument] delete
+      my unset node
+    }
+    next
+  }
+  
   ::xotcl::Class LoggableException -superclass Class -parameter {
     {logCmd "ns_log"}
     {mode "notice"}

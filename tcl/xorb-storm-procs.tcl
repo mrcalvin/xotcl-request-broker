@@ -285,6 +285,13 @@ namespace eval ::xorb::storm {
     return [$node asXML]
   }
 
+  TestSuite instproc destroy args {
+    if {[my exists node]} {
+      [[my set node] ownerDocument] delete
+    }
+    next
+  }
+
 
   # / / / / / / / / / / / / / /
   # / / / / / / / / / / / / / /
@@ -439,6 +446,7 @@ namespace eval ::xorb::storm {
     Attribute message -default {}
   }
   TestResult instproc init msg {
+    my destroy_on_cleanup
     my message $msg
     next
   }

@@ -78,6 +78,11 @@ namespace eval ::xorb::stub {
 	@author stefan.sobernig@wu-wien.ac.at
       }
 
+  ContextObject instproc init args {
+    my destroy_on_cleanup
+    next
+  }
+
   # # # # # # # # # # # # #
   # # # # # # # # # # # # #
 
@@ -88,6 +93,12 @@ namespace eval ::xorb::stub {
     Attribute signatureMask
     Attribute returntype -default {}
   }
+
+  Requestor instproc init args {
+    my destroy_on_cleanup
+    next
+  }
+
   Requestor instproc setup {} {
     next
   }

@@ -45,6 +45,10 @@ namespace eval ::xoexception {
         } catch { ::xoexception::Throwable t } {
             puts "Throwable: [ $t message ]"
         }
+      } -instproc init args {
+	# / / / / / / / / / / / / /
+	# provide for auto-cleanup
+	my destroy_on_cleanup
       }
     namespace export Exception
 }

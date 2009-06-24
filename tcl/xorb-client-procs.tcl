@@ -133,7 +133,7 @@ namespace eval xorb::client {
       set bind [lindex $args [expr {$idx + 1}]]
       if {[string first "-" $bind] != 0} {
 	#set builder [InvocationProxy getStubBuilder -reference $bind]
-	set x [Class new -superclass [self]]
+	set x [Class new -superclass [self] -destroy_on_cleanup]
 	set plugin [RemotingProtocolPlugin getClass -uri $bind]
 	#	set pList [list]
 	#	foreach c [concat $plugin [$plugin info heritage]] {
@@ -155,7 +155,7 @@ namespace eval xorb::client {
     The same as the Stub-specific unknown mechanism, but in the sense of new semantics.
   } {
 
-    set x [Class new -superclass [self]]
+    set x [Class new -superclass [self] -destroy_on_cleanup]
     set plugin [RemotingProtocolPlugin getClass -uri $bind]
     #	set pList [list]
     #	foreach c [concat $plugin [$plugin info heritage]] {
@@ -165,7 +165,7 @@ namespace eval xorb::client {
     #	}
     #	$x parameter [lsort -unique $pList]
     $x parameter [$plugin info parameter]
-    eval $x new -bind $bind $args
+    eval $x new -bind $bind $args -destroy_on_cleanup
     
     
   } 
